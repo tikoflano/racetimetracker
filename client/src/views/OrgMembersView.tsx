@@ -8,7 +8,7 @@ import type { Organization, OrgMember, User } from '../module_bindings/types';
 export default function OrgMembersView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { user, isAuthenticated, canManageOrg, isOrgOwner } = useAuth();
+  const { isAuthenticated, canManageOrg, isOrgOwner } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
@@ -16,11 +16,16 @@ export default function OrgMembersView() {
 
   const addOrgMember = useReducer(reducers.addOrgMember);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
-  const claimOrgOwnership = useReducer(reducers.claimOrgOwnership);
+  const renameOrganization = useReducer(reducers.renameOrganization);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'manager'>('manager');
   const [error, setError] = useState('');
+
+  // Inline rename state
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [renameError, setRenameError] = useState('');
 
   const org = orgs.find((o: Organization) => o.id === oid);
   const isOwner = isOrgOwner(oid);
@@ -40,9 +45,6 @@ export default function OrgMembersView() {
     return users.find((u: User) => u.id === org.ownerUserId) ?? null;
   }, [org, users]);
 
-  // Org has no owner — allow claiming
-  const canClaim = isAuthenticated && org && org.ownerUserId === 0n;
-
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
@@ -51,9 +53,28 @@ export default function OrgMembersView() {
     return <div className="empty">Organization not found.</div>;
   }
 
-  if (!hasAccess && !canClaim) {
+  if (!hasAccess) {
     return <div className="empty">You don't have access to manage this organization.</div>;
   }
+
+  const startEditing = () => {
+    setEditName(org.name);
+    setRenameError('');
+    setEditing(true);
+  };
+
+  const handleRename = async () => {
+    setRenameError('');
+    const trimmed = editName.trim();
+    if (!trimmed) { setRenameError('Name cannot be empty'); return; }
+    if (trimmed === org.name) { setEditing(false); return; }
+    try {
+      await renameOrganization({ orgId: oid, name: trimmed });
+      setEditing(false);
+    } catch (e: any) {
+      setRenameError(e?.message || 'Failed to rename');
+    }
+  };
 
   const handleInvite = async () => {
     setError('');
@@ -78,25 +99,43 @@ export default function OrgMembersView() {
     }
   };
 
-  const handleClaim = async () => {
-    try {
-      await claimOrgOwnership({ orgId: oid });
-    } catch (e: any) {
-      setError(e?.message || 'Failed to claim ownership');
-    }
-  };
-
   return (
     <div>
-      <h1>{org.name}</h1>
-      <p className="muted small-text" style={{ marginBottom: 20 }}>Organization members and permissions</p>
-
-      {canClaim && (
-        <div className="card" style={{ borderColor: 'var(--accent)', marginBottom: 20 }}>
-          <p style={{ marginBottom: 8 }}>This organization has no owner.</p>
-          <button className="primary" onClick={handleClaim}>Claim Ownership</button>
+      {/* Org name — editable */}
+      {editing ? (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditing(false); }}
+              autoFocus
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--accent)',
+                background: 'var(--bg)',
+                color: 'var(--text)',
+                fontSize: '1.4rem',
+                fontWeight: 700,
+              }}
+            />
+            <button className="primary small" onClick={handleRename}>Save</button>
+            <button className="ghost small" onClick={() => setEditing(false)}>Cancel</button>
+          </div>
+          {renameError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>{renameError}</div>}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <h1 style={{ marginBottom: 0 }}>{org.name}</h1>
+          {hasAccess && (
+            <button className="ghost small" onClick={startEditing} title="Rename">&#9998;</button>
+          )}
         </div>
       )}
+      <p className="muted small-text" style={{ marginBottom: 20 }}>Organization members and permissions</p>
 
       {/* Owner */}
       <div className="section">

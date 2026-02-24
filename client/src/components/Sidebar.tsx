@@ -9,9 +9,9 @@ export default function Sidebar() {
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
 
-  // Orgs the user can manage (owner or admin) + unclaimed orgs
+  // Orgs the user can manage (owner or admin/manager)
   const managedOrgs = isAuthenticated
-    ? orgs.filter((o: Organization) => canManageOrg(o.id) || o.ownerUserId === 0n)
+    ? orgs.filter((o: Organization) => canManageOrg(o.id))
     : [];
 
   return (

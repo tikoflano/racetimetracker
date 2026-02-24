@@ -23,7 +23,7 @@ const spacetimedb = schema({
     { public: true },
     {
       id: t.u64().primaryKey().autoInc(),
-      name: t.string(),
+      name: t.string().unique(),
       owner_user_id: t.u64().index('btree'),
     }
   ),
@@ -258,13 +258,25 @@ function getEventIdFromEventTrack(ctx: any, eventTrackId: bigint): bigint {
 
 // ─── Lifecycle: upsert user on connect ──────────────────────────────────────
 
+// Generate a unique org name by appending a suffix if needed
+function generateUniqueOrgName(ctx: any, baseName: string): string {
+  let candidate = baseName;
+  let attempt = 0;
+  while (true) {
+    let taken = false;
+    for (const o of ctx.db.organization.iter()) {
+      if (o.name === candidate) { taken = true; break; }
+    }
+    if (!taken) return candidate;
+    attempt++;
+    candidate = `${baseName} ${attempt}`;
+  }
+}
+
 export const on_connect = spacetimedb.clientConnected((ctx) => {
   const jwt = ctx.senderAuth.jwt;
   // Anonymous connections are allowed (read-only via subscriptions)
   if (!jwt) return;
-
-  // Optional: restrict to Google issuer
-  // if (jwt.issuer !== GOOGLE_ISSUER) return;
 
   const sub = jwt.subject;
   const email = (jwt.fullPayload['email'] as string) ?? '';
@@ -276,6 +288,8 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
     if (u.google_sub === sub) { existing = u; break; }
   }
 
+  let userId: bigint;
+
   if (existing) {
     // Update identity, email, name on each login
     ctx.db.user.id.update({
@@ -286,8 +300,9 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
       name: name || existing.name,
       is_super_admin: existing.is_super_admin,
     });
+    userId = existing.id;
   } else {
-    ctx.db.user.insert({
+    const newUser = ctx.db.user.insert({
       id: 0n,
       identity: ctx.sender,
       google_sub: sub,
@@ -295,6 +310,18 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
       name,
       is_super_admin: false,
     });
+    userId = newUser.id;
+  }
+
+  // Auto-create an org if the user doesn't own one
+  let hasOrg = false;
+  for (const o of ctx.db.organization.iter()) {
+    if (o.owner_user_id === userId) { hasOrg = true; break; }
+  }
+  if (!hasOrg) {
+    const displayName = name || email.split('@')[0] || 'User';
+    const orgName = generateUniqueOrgName(ctx, `${displayName}'s Organization`);
+    ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: userId });
   }
 });
 
@@ -310,15 +337,21 @@ export const create_organization = spacetimedb.reducer(
   }
 );
 
-// Claim ownership of an org that has no owner (owner_user_id == 0)
-export const claim_org_ownership = spacetimedb.reducer(
-  { org_id: t.u64() },
+export const rename_organization = spacetimedb.reducer(
+  { org_id: t.u64(), name: t.string() },
   (ctx, args) => {
-    const user = requireUser(ctx);
+    requireOrgAdmin(ctx, args.org_id);
+    const trimmed = args.name.trim();
+    if (trimmed.length === 0) throw new SenderError('Name cannot be empty');
+    // Check uniqueness
+    for (const o of ctx.db.organization.iter()) {
+      if (o.id !== args.org_id && o.name === trimmed) {
+        throw new SenderError('An organization with that name already exists');
+      }
+    }
     const org = ctx.db.organization.id.find(args.org_id);
     if (!org) throw new SenderError('Organization not found');
-    if (org.owner_user_id !== 0n) throw new SenderError('Organization already has an owner');
-    ctx.db.organization.id.update({ ...org, owner_user_id: user.id });
+    ctx.db.organization.id.update({ ...org, name: trimmed });
   }
 );
 
@@ -566,7 +599,8 @@ export const seed_demo_data = spacetimedb.reducer(
     // If caller is authenticated, make them the org owner
     const caller = getUser(ctx);
     const ownerId = caller ? caller.id : 0n;
-    const org = ctx.db.organization.insert({ id: 0n, name: 'Demo Racing Org', owner_user_id: ownerId });
+    const orgName = generateUniqueOrgName(ctx, 'Demo Racing Org');
+    const org = ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: ownerId });
 
     const champ = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Enduro Series 2025', description: 'Regional enduro mountain bike series' });
 

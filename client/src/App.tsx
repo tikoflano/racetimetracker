@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from './module_bindings';
@@ -9,11 +9,13 @@ import { EventViewSkeleton } from './components/Skeleton';
 import EventView from './views/EventView';
 import TrackView from './views/TrackView';
 import OrgMembersView from './views/OrgMembersView';
+import type { Organization } from './module_bindings/types';
 
 export default function App() {
   const connState = useSpacetimeDB();
   const { user, isAuthenticated, logout } = useAuth();
   const [events] = useTable(tables.event);
+  const [orgs] = useTable(tables.organization);
 
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
@@ -26,6 +28,12 @@ export default function App() {
   const showSkeleton = !timedOut && !isConnected;
 
   const defaultEventId = hasEvents ? events[0].id : null;
+
+  // Find the user's own org (for redirect when they have no events)
+  const userOrg = useMemo(() => {
+    if (!user) return null;
+    return orgs.find((o: Organization) => o.ownerUserId === user.id) ?? null;
+  }, [user, orgs]);
 
   if (showSkeleton) {
     return (
@@ -83,8 +91,10 @@ export default function App() {
                 element={
                   defaultEventId !== null ? (
                     <Navigate to={`/event/${defaultEventId}`} replace />
+                  ) : userOrg ? (
+                    <Navigate to={`/org/${userOrg.id}/members`} replace />
                   ) : (
-                    <div className="empty">No events found.</div>
+                    <div className="empty">No events found. Sign in to get started.</div>
                   )
                 }
               />
