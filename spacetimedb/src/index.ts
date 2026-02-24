@@ -412,6 +412,18 @@ export const create_championship = spacetimedb.reducer(
   }
 );
 
+export const update_championship = spacetimedb.reducer(
+  { championship_id: t.u64(), name: t.string(), description: t.string() },
+  (ctx, args) => {
+    const champ = ctx.db.championship.id.find(args.championship_id);
+    if (!champ) throw new SenderError('Championship not found');
+    requireOrgEventManager(ctx, champ.org_id);
+    const trimmed = args.name.trim();
+    if (trimmed.length === 0) throw new SenderError('Name cannot be empty');
+    ctx.db.championship.id.update({ ...champ, name: trimmed, description: args.description });
+  }
+);
+
 // ─── Venue (any authenticated user can create) ──────────────────────────────
 
 export const create_venue = spacetimedb.reducer(

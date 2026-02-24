@@ -37,13 +37,21 @@ export default function Sidebar() {
         <div className="sidebar-section">
           <div className="sidebar-label">Manage</div>
           {managedOrgs.map((o: Organization) => (
-            <NavLink
-              key={String(o.id)}
-              to={`/org/${o.id}/members`}
-              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-            >
-              {o.name}
-            </NavLink>
+            <div key={String(o.id)}>
+              <div className="sidebar-org-name">{o.name}</div>
+              <NavLink
+                to={`/org/${o.id}/championships`}
+                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+              >
+                Championships
+              </NavLink>
+              <NavLink
+                to={`/org/${o.id}/members`}
+                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+              >
+                Members
+              </NavLink>
+            </div>
           ))}
         </div>
       )}
