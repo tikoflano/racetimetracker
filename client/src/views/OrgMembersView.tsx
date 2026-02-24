@@ -3,7 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Organization, OrgMember, User } from '../module_bindings/types';
+import type { Organization, OrgMember, User, Event } from '../module_bindings/types';
 
 export default function OrgMembersView() {
   const { orgId } = useParams<{ orgId: string }>();
@@ -14,9 +14,12 @@ export default function OrgMembersView() {
   const [orgMembers] = useTable(tables.org_member);
   const [users] = useTable(tables.user);
 
+  const [events] = useTable(tables.event);
+
   const addOrgMember = useReducer(reducers.addOrgMember);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
   const renameOrganization = useReducer(reducers.renameOrganization);
+  const seedDemoData = useReducer(reducers.seedDemoData);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'manager'>('manager');
@@ -149,6 +152,14 @@ export default function OrgMembersView() {
           <span className="badge" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>Owner</span>
         </div>
       </div>
+
+      {/* Seed demo data if org has no events */}
+      {isOwner && events.filter((e: Event) => e.orgId === oid).length === 0 && (
+        <div className="card" style={{ marginBottom: 16, textAlign: 'center', padding: 16 }}>
+          <p className="muted small-text" style={{ marginBottom: 8 }}>No events yet in this organization.</p>
+          <button className="primary" onClick={() => seedDemoData()}>Load Demo Data</button>
+        </div>
+      )}
 
       {/* Members */}
       <div className="section">

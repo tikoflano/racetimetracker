@@ -596,11 +596,19 @@ export const dnf_run = spacetimedb.reducer(
 
 export const seed_demo_data = spacetimedb.reducer(
   (ctx) => {
-    // If caller is authenticated, make them the org owner
+    // Use the caller's existing org, or create a new one
     const caller = getUser(ctx);
     const ownerId = caller ? caller.id : 0n;
-    const orgName = generateUniqueOrgName(ctx, 'Demo Racing Org');
-    const org = ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: ownerId });
+    let org = null;
+    if (caller) {
+      for (const o of ctx.db.organization.iter()) {
+        if (o.owner_user_id === caller.id) { org = o; break; }
+      }
+    }
+    if (!org) {
+      const orgName = generateUniqueOrgName(ctx, 'Demo Racing Org');
+      org = ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: ownerId });
+    }
 
     const champ = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Enduro Series 2025', description: 'Regional enduro mountain bike series' });
 
