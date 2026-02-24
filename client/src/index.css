@@ -112,6 +112,31 @@ body {
   background: var(--surface);
 }
 
+.sidebar-event-row {
+  display: flex;
+  align-items: center;
+}
+.sidebar-event-row .sidebar-link {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.fav-btn:hover {
+  color: var(--accent);
+}
+
 .sidebar-org-name {
   padding: 6px 16px 2px;
   font-size: 0.8rem;

@@ -151,6 +151,15 @@ const spacetimedb = schema({
       end_time: t.u64(),
     }
   ),
+
+  favorite_event: table(
+    { public: true },
+    {
+      id: t.u64().primaryKey().autoInc(),
+      user_id: t.u64().index('btree'),
+      event_id: t.u64().index('btree'),
+    }
+  ),
 });
 
 export default spacetimedb;
@@ -458,6 +467,23 @@ export const create_event = spacetimedb.reducer(
       start_date: args.start_date,
       end_date: args.end_date,
     });
+  }
+);
+
+// ─── Favorite events ────────────────────────────────────────────────────────
+
+export const toggle_favorite_event = spacetimedb.reducer(
+  { event_id: t.u64() },
+  (ctx, args) => {
+    const user = requireUser(ctx);
+    // Check if already favorited
+    for (const f of ctx.db.favorite_event.iter()) {
+      if (f.user_id === user.id && f.event_id === args.event_id) {
+        ctx.db.favorite_event.id.delete(f.id);
+        return;
+      }
+    }
+    ctx.db.favorite_event.insert({ id: 0n, user_id: user.id, event_id: args.event_id });
   }
 );
 
