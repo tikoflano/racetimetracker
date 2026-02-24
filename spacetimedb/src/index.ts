@@ -173,8 +173,16 @@ function requireUser(ctx: any) {
   return user;
 }
 
-// Check if user has org-level role (admin or manager) for a given org
+// Check if user is the org owner
+function isOrgOwner(ctx: any, userId: bigint, orgId: bigint): boolean {
+  const org = ctx.db.organization.id.find(orgId);
+  return org !== null && org.owner_user_id === userId;
+}
+
+// Check if user has org-level role (admin or manager) for a given org.
+// Org owners are implicitly treated as 'admin'.
 function getOrgRole(ctx: any, userId: bigint, orgId: bigint): string | null {
+  if (isOrgOwner(ctx, userId, orgId)) return 'admin';
   for (const m of ctx.db.org_member.iter()) {
     if (m.user_id === userId && m.org_id === orgId) return m.role;
   }
@@ -299,6 +307,18 @@ export const create_organization = spacetimedb.reducer(
     const org = ctx.db.organization.insert({ id: 0n, name: args.name, owner_user_id: user.id });
     // Creator becomes admin
     ctx.db.org_member.insert({ id: 0n, org_id: org.id, user_id: user.id, role: 'admin' });
+  }
+);
+
+// Claim ownership of an org that has no owner (owner_user_id == 0)
+export const claim_org_ownership = spacetimedb.reducer(
+  { org_id: t.u64() },
+  (ctx, args) => {
+    const user = requireUser(ctx);
+    const org = ctx.db.organization.id.find(args.org_id);
+    if (!org) throw new SenderError('Organization not found');
+    if (org.owner_user_id !== 0n) throw new SenderError('Organization already has an owner');
+    ctx.db.organization.id.update({ ...org, owner_user_id: user.id });
   }
 );
 
@@ -543,8 +563,10 @@ export const dnf_run = spacetimedb.reducer(
 
 export const seed_demo_data = spacetimedb.reducer(
   (ctx) => {
-    // Create a demo org
-    const org = ctx.db.organization.insert({ id: 0n, name: 'Demo Racing Org', owner_user_id: 0n });
+    // If caller is authenticated, make them the org owner
+    const caller = getUser(ctx);
+    const ownerId = caller ? caller.id : 0n;
+    const org = ctx.db.organization.insert({ id: 0n, name: 'Demo Racing Org', owner_user_id: ownerId });
 
     const champ = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Enduro Series 2025', description: 'Regional enduro mountain bike series' });
 

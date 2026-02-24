@@ -4,16 +4,17 @@ import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from './module_bindings';
 import { useAuth } from './auth';
 import LoginButton from './components/LoginButton';
+import Sidebar from './components/Sidebar';
 import { EventViewSkeleton } from './components/Skeleton';
 import EventView from './views/EventView';
 import TrackView from './views/TrackView';
+import OrgMembersView from './views/OrgMembersView';
 
 export default function App() {
   const connState = useSpacetimeDB();
   const { user, isAuthenticated, logout } = useAuth();
   const [events] = useTable(tables.event);
 
-  // Timeout fallback: if connection takes too long, show content anyway
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setTimedOut(true), 8000);
@@ -24,29 +25,29 @@ export default function App() {
   const hasEvents = events.length > 0;
   const showSkeleton = !timedOut && !isConnected;
 
-  useEffect(() => {
-    console.log('[App] isActive:', isConnected, 'events:', events.length, 'timedOut:', timedOut);
-  }, [isConnected, events.length, timedOut]);
-
   const defaultEventId = hasEvents ? events[0].id : null;
 
   if (showSkeleton) {
     return (
-      <div>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="app-shell">
+        <header className="app-header">
           <div className="connection-bar" style={{ marginBottom: 0 }}>
             <span className="dot" />
             Connecting...
           </div>
         </header>
-        <EventViewSkeleton />
+        <div className="app-body">
+          <main className="app-main">
+            <EventViewSkeleton />
+          </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="app-shell">
+      <header className="app-header">
         <div className="connection-bar" style={{ marginBottom: 0 }}>
           <span className={`dot ${isConnected ? 'on' : ''}`} />
           {isConnected ? 'Connected' : 'Connection failed'}
@@ -64,25 +65,35 @@ export default function App() {
       </header>
 
       {!isConnected ? (
-        <div className="card" style={{ textAlign: 'center', padding: 24 }}>
-          <p style={{ marginBottom: 8 }}>Unable to connect to the server.</p>
-          <button className="primary" onClick={() => window.location.reload()}>Retry</button>
+        <div className="app-body">
+          <main className="app-main">
+            <div className="card" style={{ textAlign: 'center', padding: 24 }}>
+              <p style={{ marginBottom: 8 }}>Unable to connect to the server.</p>
+              <button className="primary" onClick={() => window.location.reload()}>Retry</button>
+            </div>
+          </main>
         </div>
       ) : (
-        <Routes>
-          <Route
-            path="/"
-            element={
-              defaultEventId !== null ? (
-                <Navigate to={`/event/${defaultEventId}`} replace />
-              ) : (
-                <div className="empty">No events found.</div>
-              )
-            }
-          />
-          <Route path="/event/:eventId" element={<EventView />} />
-          <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
-        </Routes>
+        <div className="app-body">
+          {isAuthenticated && <Sidebar />}
+          <main className="app-main">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  defaultEventId !== null ? (
+                    <Navigate to={`/event/${defaultEventId}`} replace />
+                  ) : (
+                    <div className="empty">No events found.</div>
+                  )
+                }
+              />
+              <Route path="/event/:eventId" element={<EventView />} />
+              <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
+              <Route path="/org/:orgId/members" element={<OrgMembersView />} />
+            </Routes>
+          </main>
+        </div>
       )}
     </div>
   );

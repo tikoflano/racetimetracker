@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { useTable, useSpacetimeDB } from 'spacetimedb/react';
 import { tables } from './module_bindings';
-import type { User, OrgMember, EventMember } from './module_bindings/types';
+import type { User, OrgMember, EventMember, Organization } from './module_bindings/types';
 
 interface AuthState {
   token: string | null;
@@ -11,6 +11,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isReady: boolean;
   // Permission helpers
+  isOrgOwner: (orgId: bigint) => boolean;
   getOrgRole: (orgId: bigint) => string | null;
   getEventRole: (eventId: bigint) => string | null;
   canManageOrg: (orgId: bigint) => boolean;
@@ -25,14 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('auth_token'));
   const { identity } = useSpacetimeDB();
   const [users] = useTable(tables.user);
+  const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
   const [eventMembers] = useTable(tables.event_member);
 
   const isReady = users.length > 0 || !token;
 
-
-
-  // Only resolve user if we have a stored token (i.e., user explicitly logged in)
   const user = (token && identity)
     ? users.find((u: User) => u.identity.isEqual(identity)) ?? null
     : null;
@@ -40,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback((idToken: string) => {
     localStorage.setItem('auth_token', idToken);
     setToken(idToken);
-    // The page will reload to reconnect with the token
     window.location.reload();
   }, []);
 
@@ -50,12 +48,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.reload();
   }, []);
 
+  const isOrgOwner = useCallback((orgId: bigint): boolean => {
+    if (!user) return false;
+    const org = orgs.find((o: Organization) => o.id === orgId);
+    return org?.ownerUserId === user.id;
+  }, [user, orgs]);
+
+  // Org owners are implicitly 'admin'
   const getOrgRole = useCallback((orgId: bigint): string | null => {
     if (!user) return null;
     if (user.isSuperAdmin) return 'admin';
+    if (isOrgOwner(orgId)) return 'admin';
     const m = orgMembers.find((m: OrgMember) => m.orgId === orgId && m.userId === user.id);
     return m?.role ?? null;
-  }, [user, orgMembers]);
+  }, [user, orgMembers, isOrgOwner]);
 
   const getEventRole = useCallback((eventId: bigint): string | null => {
     if (!user) return null;
@@ -101,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!token && !!user,
         isReady,
+        isOrgOwner,
         getOrgRole,
         getEventRole,
         canManageOrg,
