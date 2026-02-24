@@ -3,15 +3,15 @@ import { NavLink } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Event, Organization, FavoriteEvent } from '../module_bindings/types';
+import type { Event, Organization, PinnedEvent } from '../module_bindings/types';
 
 export default function Sidebar() {
   const { user, isAuthenticated, canManageOrg } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
-  const [favorites] = useTable(tables.favorite_event);
+  const [pinnedEvents] = useTable(tables.pinned_event);
 
-  const toggleFavorite = useReducer(reducers.toggleFavoriteEvent);
+  const togglePin = useReducer(reducers.togglePinEvent);
 
   // Orgs the user can manage (owner or admin/manager)
   const managedOrgs = isAuthenticated
@@ -24,50 +24,57 @@ export default function Sidebar() {
     return new Set(orgs.filter((o: Organization) => o.ownerUserId === user.id).map(o => o.id));
   }, [user, orgs]);
 
-  // User's favorited event IDs
-  const favEventIds = useMemo(() => {
+  // User's pinned event IDs
+  const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(
-      favorites.filter((f: FavoriteEvent) => f.userId === user.id).map(f => f.eventId)
+      pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map(f => f.eventId)
     );
-  }, [user, favorites]);
+  }, [user, pinnedEvents]);
 
-  // Events from user's org(s), favorites first
-  const filteredEvents = useMemo(() => {
-    const orgEvents = events.filter((e: Event) => userOrgIds.has(e.orgId));
-    return [...orgEvents].sort((a, b) => {
-      const aFav = favEventIds.has(a.id) ? 0 : 1;
-      const bFav = favEventIds.has(b.id) ? 0 : 1;
-      return aFav - bFav;
-    });
-  }, [events, userOrgIds, favEventIds]);
+  // Events from user's org(s)
+  const orgEvents = useMemo(() => {
+    return events.filter((e: Event) => userOrgIds.has(e.orgId));
+  }, [events, userOrgIds]);
+
+  const pinnedList = useMemo(() => orgEvents.filter(e => pinnedEventIds.has(e.id)), [orgEvents, pinnedEventIds]);
+  const unpinnedList = useMemo(() => orgEvents.filter(e => !pinnedEventIds.has(e.id)), [orgEvents, pinnedEventIds]);
+
+  const renderEventRow = (e: Event) => (
+    <div key={String(e.id)} className="sidebar-event-row">
+      <NavLink
+        to={`/event/${e.id}`}
+        className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+      >
+        {e.name}
+      </NavLink>
+      {isAuthenticated && (
+        <button
+          className="pin-btn"
+          onClick={() => togglePin({ eventId: e.id })}
+          title={pinnedEventIds.has(e.id) ? 'Unpin event' : 'Pin event'}
+        >
+          {pinnedEventIds.has(e.id) ? '\u{1F4CC}' : '\u2606'}
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <nav className="sidebar">
+      {pinnedList.length > 0 && (
+        <div className="sidebar-section">
+          <div className="sidebar-label">Pinned Events</div>
+          {pinnedList.map(renderEventRow)}
+        </div>
+      )}
+
       <div className="sidebar-section">
         <div className="sidebar-label">Events</div>
-        {filteredEvents.length === 0 ? (
-          <div className="sidebar-empty">No events</div>
+        {unpinnedList.length === 0 ? (
+          <div className="sidebar-empty">{orgEvents.length === 0 ? 'No events' : 'All events pinned'}</div>
         ) : (
-          filteredEvents.map((e: Event) => (
-            <div key={String(e.id)} className="sidebar-event-row">
-              <NavLink
-                to={`/event/${e.id}`}
-                className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-              >
-                {e.name}
-              </NavLink>
-              {isAuthenticated && (
-                <button
-                  className="fav-btn"
-                  onClick={() => toggleFavorite({ eventId: e.id })}
-                  title={favEventIds.has(e.id) ? 'Remove from favorites' : 'Add to favorites'}
-                >
-                  {favEventIds.has(e.id) ? '\u2605' : '\u2606'}
-                </button>
-              )}
-            </div>
-          ))
+          unpinnedList.map(renderEventRow)
         )}
       </div>
 

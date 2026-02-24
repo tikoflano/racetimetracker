@@ -152,7 +152,7 @@ const spacetimedb = schema({
     }
   ),
 
-  favorite_event: table(
+  pinned_event: table(
     { public: true },
     {
       id: t.u64().primaryKey().autoInc(),
@@ -470,20 +470,20 @@ export const create_event = spacetimedb.reducer(
   }
 );
 
-// ─── Favorite events ────────────────────────────────────────────────────────
+// ─── Pinned events ────────────────────────────────────────────────────────
 
-export const toggle_favorite_event = spacetimedb.reducer(
+export const toggle_pin_event = spacetimedb.reducer(
   { event_id: t.u64() },
   (ctx, args) => {
     const user = requireUser(ctx);
-    // Check if already favorited
-    for (const f of ctx.db.favorite_event.iter()) {
+    // Check if already pinned
+    for (const f of ctx.db.pinned_event.iter()) {
       if (f.user_id === user.id && f.event_id === args.event_id) {
-        ctx.db.favorite_event.id.delete(f.id);
+        ctx.db.pinned_event.id.delete(f.id);
         return;
       }
     }
-    ctx.db.favorite_event.insert({ id: 0n, user_id: user.id, event_id: args.event_id });
+    ctx.db.pinned_event.insert({ id: 0n, user_id: user.id, event_id: args.event_id });
   }
 );
 

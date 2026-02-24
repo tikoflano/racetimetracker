@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Championship, Event, Venue, Organization, FavoriteEvent } from '../module_bindings/types';
+import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
 export default function ChampionshipDetailView() {
   const { orgId, champId } = useParams<{ orgId: string; champId: string }>();
@@ -15,18 +15,18 @@ export default function ChampionshipDetailView() {
   const [championships] = useTable(tables.championship);
   const [events] = useTable(tables.event);
   const [venues] = useTable(tables.venue);
-  const [favorites] = useTable(tables.favorite_event);
+  const [pinnedEvents] = useTable(tables.pinned_event);
 
   const updateChampionship = useReducer(reducers.updateChampionship);
   const createEvent = useReducer(reducers.createEvent);
-  const toggleFavorite = useReducer(reducers.toggleFavoriteEvent);
+  const toggleFavorite = useReducer(reducers.togglePinEvent);
 
-  const favEventIds = useMemo(() => {
+  const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(
-      favorites.filter((f: FavoriteEvent) => f.userId === user.id).map(f => f.eventId)
+      pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map(f => f.eventId)
     );
-  }, [user, favorites]);
+  }, [user, pinnedEvents]);
 
   // Edit championship state
   const [editing, setEditing] = useState(false);
@@ -237,11 +237,11 @@ export default function ChampionshipDetailView() {
                   <td>
                     {isAuthenticated && (
                       <button
-                        className="fav-btn"
+                        className="pin-btn"
                         onClick={() => toggleFavorite({ eventId: e.id })}
-                        title={favEventIds.has(e.id) ? 'Remove from favorites' : 'Add to favorites'}
+                        title={pinnedEventIds.has(e.id) ? 'Remove from pinnedEvents' : 'Add to pinnedEvents'}
                       >
-                        {favEventIds.has(e.id) ? '\u2605' : '\u2606'}
+                        {pinnedEventIds.has(e.id) ? '\u{1F4CC}' : '\u2606'}
                       </button>
                     )}
                   </td>

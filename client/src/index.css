@@ -123,7 +123,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.fav-btn {
+.pin-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -133,7 +133,7 @@ body {
   line-height: 1;
   flex-shrink: 0;
 }
-.fav-btn:hover {
+.pin-btn:hover {
   color: var(--accent);
 }
 
