@@ -32,6 +32,7 @@ export default function ChampionshipDetailView() {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editColor, setEditColor] = useState('');
   const [editError, setEditError] = useState('');
 
   // Add event state
@@ -73,6 +74,7 @@ export default function ChampionshipDetailView() {
   const startEditing = () => {
     setEditName(champ.name);
     setEditDesc(champ.description);
+    setEditColor(champ.color);
     setEditError('');
     setEditing(true);
   };
@@ -82,7 +84,7 @@ export default function ChampionshipDetailView() {
     const trimmed = editName.trim();
     if (!trimmed) { setEditError('Name cannot be empty'); return; }
     try {
-      await updateChampionship({ championshipId: cid, name: trimmed, description: editDesc.trim() });
+      await updateChampionship({ championshipId: cid, name: trimmed, description: editDesc.trim(), color: editColor });
       setEditing(false);
     } catch (e: any) {
       setEditError(e?.message || 'Failed to update');
@@ -142,6 +144,10 @@ export default function ChampionshipDetailView() {
               placeholder="Description"
               className="input"
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label className="input-label" style={{ marginBottom: 0 }}>Color</label>
+              <input type="color" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="color-input" />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="primary small" onClick={handleSave}>Save</button>
               <button className="ghost small" onClick={() => setEditing(false)}>Cancel</button>
@@ -152,6 +158,7 @@ export default function ChampionshipDetailView() {
       ) : (
         <div style={{ marginBottom: 4 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="color-dot" style={{ background: champ.color, width: 14, height: 14 }} />
             <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
             <button className="ghost small" onClick={startEditing} title="Edit">&#9998;</button>
           </div>

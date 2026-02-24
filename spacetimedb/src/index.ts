@@ -59,6 +59,7 @@ const spacetimedb = schema({
       org_id: t.u64().index('btree'),
       name: t.string(),
       description: t.string(),
+      color: t.string(), // hex color e.g. "#3b82f6"
     }
   ),
 
@@ -414,22 +415,22 @@ export const remove_event_member = spacetimedb.reducer(
 // ─── Championship (org-scoped) ──────────────────────────────────────────────
 
 export const create_championship = spacetimedb.reducer(
-  { org_id: t.u64(), name: t.string(), description: t.string() },
+  { org_id: t.u64(), name: t.string(), description: t.string(), color: t.string() },
   (ctx, args) => {
     requireOrgEventManager(ctx, args.org_id);
-    ctx.db.championship.insert({ id: 0n, org_id: args.org_id, name: args.name, description: args.description });
+    ctx.db.championship.insert({ id: 0n, org_id: args.org_id, name: args.name, description: args.description, color: args.color || '#3b82f6' });
   }
 );
 
 export const update_championship = spacetimedb.reducer(
-  { championship_id: t.u64(), name: t.string(), description: t.string() },
+  { championship_id: t.u64(), name: t.string(), description: t.string(), color: t.string() },
   (ctx, args) => {
     const champ = ctx.db.championship.id.find(args.championship_id);
     if (!champ) throw new SenderError('Championship not found');
     requireOrgEventManager(ctx, champ.org_id);
     const trimmed = args.name.trim();
     if (trimmed.length === 0) throw new SenderError('Name cannot be empty');
-    ctx.db.championship.id.update({ ...champ, name: trimmed, description: args.description });
+    ctx.db.championship.id.update({ ...champ, name: trimmed, description: args.description, color: args.color || champ.color });
   }
 );
 
@@ -648,21 +649,50 @@ export const seed_demo_data = spacetimedb.reducer(
       org = ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: ownerId });
     }
 
-    const champ = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Enduro Series 2025', description: 'Regional enduro mountain bike series' });
+    // Championships
+    const champ1 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Enduro Series 2025', description: 'Regional enduro mountain bike series', color: '#3b82f6' });
+    const champ2 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Downhill Cup 2025', description: 'Gravity-focused downhill racing', color: '#ef4444' });
+    const champ3 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'XC Marathon Series', description: 'Cross-country endurance events', color: '#22c55e' });
 
-    const venue = ctx.db.venue.insert({ id: 0n, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', latitude: 38.8977, longitude: -77.0365 });
+    // Venues
+    const venue1 = ctx.db.venue.insert({ id: 0n, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', latitude: 38.8977, longitude: -77.0365 });
+    const venue2 = ctx.db.venue.insert({ id: 0n, name: 'Eagle Rock Resort', description: 'Steep downhill runs with jumps', latitude: 40.9176, longitude: -76.0452 });
+    const venue3 = ctx.db.venue.insert({ id: 0n, name: 'Lakeside Trails', description: 'Rolling singletrack around the lake', latitude: 35.5951, longitude: -82.5515 });
 
-    const track1 = ctx.db.track.insert({ id: 0n, venue_id: venue.id, name: 'Widow Maker' });
-    const tv1 = ctx.db.track_variation.insert({ id: 0n, track_id: track1.id, name: 'Full Send', description: 'Complete top-to-bottom run with rock gardens and drops', start_latitude: 38.900, start_longitude: -77.040, end_latitude: 38.895, end_longitude: -77.035 });
-
-    const track2 = ctx.db.track.insert({ id: 0n, venue_id: venue.id, name: 'Rock Garden' });
+    // Tracks & variations
+    const track1 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Widow Maker' });
+    const tv1 = ctx.db.track_variation.insert({ id: 0n, track_id: track1.id, name: 'Full Send', description: 'Top-to-bottom with rock gardens and drops', start_latitude: 38.900, start_longitude: -77.040, end_latitude: 38.895, end_longitude: -77.035 });
+    const track2 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Rock Garden' });
     const tv2 = ctx.db.track_variation.insert({ id: 0n, track_id: track2.id, name: 'Default', description: 'Technical rock garden descent', start_latitude: 38.899, start_longitude: -77.038, end_latitude: 38.894, end_longitude: -77.033 });
+    const track3 = ctx.db.track.insert({ id: 0n, venue_id: venue2.id, name: 'Thunderbolt' });
+    const tv3 = ctx.db.track_variation.insert({ id: 0n, track_id: track3.id, name: 'Race Line', description: 'Fast downhill with gap jumps', start_latitude: 40.920, start_longitude: -76.048, end_latitude: 40.915, end_longitude: -76.043 });
+    const track4 = ctx.db.track.insert({ id: 0n, venue_id: venue3.id, name: 'Lakeshore Loop' });
+    const tv4 = ctx.db.track_variation.insert({ id: 0n, track_id: track4.id, name: 'Full Loop', description: '25km singletrack loop', start_latitude: 35.598, start_longitude: -82.554, end_latitude: 35.595, end_longitude: -82.551 });
 
-    const evt = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ.id, venue_id: venue.id, name: 'Round 1 - Pine Mountain', description: 'Opening round of the Enduro Series', start_date: '2025-06-15', end_date: '2025-06-16' });
+    // Enduro Series events
+    const evt1 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue1.id, name: 'Enduro R1 - Pine Mountain', description: 'Opening round', start_date: '2025-03-15', end_date: '2025-03-16' });
+    const evt2 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue2.id, name: 'Enduro R2 - Eagle Rock', description: 'Second round', start_date: '2025-05-10', end_date: '2025-05-11' });
+    const evt3 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue3.id, name: 'Enduro R3 - Lakeside', description: 'Season finale', start_date: '2025-07-19', end_date: '2025-07-20' });
 
-    const et1 = ctx.db.event_track.insert({ id: 0n, event_id: evt.id, track_variation_id: tv1.id, sort_order: 1 });
-    const et2 = ctx.db.event_track.insert({ id: 0n, event_id: evt.id, track_variation_id: tv2.id, sort_order: 2 });
+    // Downhill Cup events
+    const evt4 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ2.id, venue_id: venue2.id, name: 'DH Cup R1 - Eagle Rock', description: 'Downhill opener', start_date: '2025-04-05', end_date: '2025-04-06' });
+    const evt5 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ2.id, venue_id: venue1.id, name: 'DH Cup R2 - Pine Mountain', description: 'Mid-season round', start_date: '2025-06-14', end_date: '2025-06-15' });
 
+    // XC Marathon events
+    const evt6 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ3.id, venue_id: venue3.id, name: 'XC Marathon R1 - Lakeside', description: 'Endurance opener', start_date: '2025-04-26', end_date: '2025-04-27' });
+    const evt7 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ3.id, venue_id: venue1.id, name: 'XC Marathon R2 - Pine Mountain', description: 'Mountain stage', start_date: '2025-08-09', end_date: '2025-08-10' });
+
+    // Event tracks
+    const et1 = ctx.db.event_track.insert({ id: 0n, event_id: evt1.id, track_variation_id: tv1.id, sort_order: 1 });
+    const et2 = ctx.db.event_track.insert({ id: 0n, event_id: evt1.id, track_variation_id: tv2.id, sort_order: 2 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evt2.id, track_variation_id: tv3.id, sort_order: 1 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evt3.id, track_variation_id: tv4.id, sort_order: 1 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evt4.id, track_variation_id: tv3.id, sort_order: 1 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evt5.id, track_variation_id: tv1.id, sort_order: 1 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evt6.id, track_variation_id: tv4.id, sort_order: 1 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evt7.id, track_variation_id: tv1.id, sort_order: 1 });
+
+    // Riders
     const ridersData = [
       { first_name: 'Alex', last_name: 'Morgan', age: 28 },
       { first_name: 'Sam', last_name: 'Rivera', age: 24 },
@@ -672,10 +702,12 @@ export const seed_demo_data = spacetimedb.reducer(
 
     const riders = ridersData.map((r) => {
       const rider = ctx.db.rider.insert({ id: 0n, first_name: r.first_name, last_name: r.last_name, age: r.age });
-      ctx.db.event_rider.insert({ id: 0n, event_id: evt.id, rider_id: rider.id });
+      // Register riders for the first event
+      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id });
       return rider;
     });
 
+    // Queue runs for first event's tracks
     for (const etId of [et1.id, et2.id]) {
       let order = 1;
       for (const rider of riders) {

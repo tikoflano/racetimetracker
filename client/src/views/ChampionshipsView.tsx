@@ -19,6 +19,7 @@ export default function ChampionshipsView() {
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [newColor, setNewColor] = useState('#3b82f6');
   const [error, setError] = useState('');
 
   const org = orgs.find((o: Organization) => o.id === oid);
@@ -53,9 +54,10 @@ export default function ChampionshipsView() {
     const trimmed = newName.trim();
     if (!trimmed) { setError('Name is required'); return; }
     try {
-      await createChampionship({ orgId: oid, name: trimmed, description: newDesc.trim() });
+      await createChampionship({ orgId: oid, name: trimmed, description: newDesc.trim(), color: newColor });
       setNewName('');
       setNewDesc('');
+      setNewColor('#3b82f6');
       setShowForm(false);
     } catch (e: any) {
       setError(e?.message || 'Failed to create championship');
@@ -93,6 +95,10 @@ export default function ChampionshipsView() {
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               className="input"
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label className="input-label" style={{ marginBottom: 0 }}>Color</label>
+              <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="color-input" />
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="primary small" onClick={handleCreate}>Create</button>
               <button className="ghost small" onClick={() => { setShowForm(false); setError(''); }}>Cancel</button>
@@ -107,6 +113,7 @@ export default function ChampionshipsView() {
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: 12 }}></th>
               <th>Name</th>
               <th>Events</th>
               <th>Start</th>
@@ -116,6 +123,7 @@ export default function ChampionshipsView() {
           <tbody>
             {champRows.map(({ championship: c, eventCount, startDate, endDate }) => (
               <tr key={String(c.id)}>
+                <td><span className="color-dot" style={{ background: c.color }} /></td>
                 <td>
                   <Link to={`/org/${orgId}/championship/${c.id}`} className="table-link">
                     {c.name}

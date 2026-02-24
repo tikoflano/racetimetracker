@@ -11,6 +11,7 @@ import TrackView from './views/TrackView';
 import OrgMembersView from './views/OrgMembersView';
 import ChampionshipsView from './views/ChampionshipsView';
 import ChampionshipDetailView from './views/ChampionshipDetailView';
+import CalendarView from './views/CalendarView';
 import type { Organization } from './module_bindings/types';
 
 export default function App() {
@@ -103,6 +104,7 @@ export default function App() {
               <Route path="/event/:eventId" element={<EventView />} />
               <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
               <Route path="/org/:orgId/members" element={<OrgMembersView />} />
+              <Route path="/calendar" element={<CalendarView />} />
               <Route path="/org/:orgId/championships" element={<ChampionshipsView />} />
               <Route path="/org/:orgId/championship/:champId" element={<ChampionshipDetailView />} />
             </Routes>

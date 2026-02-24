@@ -58,6 +58,17 @@ export default function Sidebar() {
         )}
       </div>
 
+      {isAuthenticated && (
+        <div className="sidebar-section">
+          <NavLink
+            to="/calendar"
+            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          >
+            Calendar
+          </NavLink>
+        </div>
+      )}
+
       {managedOrgs.length > 0 && (
         <div className="sidebar-section">
           <div className="sidebar-label">Manage</div>
