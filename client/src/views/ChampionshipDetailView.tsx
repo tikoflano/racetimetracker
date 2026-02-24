@@ -3,21 +3,30 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Championship, Event, Venue, Organization } from '../module_bindings/types';
+import type { Championship, Event, Venue, Organization, FavoriteEvent } from '../module_bindings/types';
 
 export default function ChampionshipDetailView() {
   const { orgId, champId } = useParams<{ orgId: string; champId: string }>();
   const oid = BigInt(orgId ?? '0');
   const cid = BigInt(champId ?? '0');
-  const { isAuthenticated, canManageOrgEvents } = useAuth();
+  const { user, isAuthenticated, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [championships] = useTable(tables.championship);
   const [events] = useTable(tables.event);
   const [venues] = useTable(tables.venue);
+  const [favorites] = useTable(tables.favorite_event);
 
   const updateChampionship = useReducer(reducers.updateChampionship);
   const createEvent = useReducer(reducers.createEvent);
+  const toggleFavorite = useReducer(reducers.toggleFavoriteEvent);
+
+  const favEventIds = useMemo(() => {
+    if (!user) return new Set<bigint>();
+    return new Set(
+      favorites.filter((f: FavoriteEvent) => f.userId === user.id).map(f => f.eventId)
+    );
+  }, [user, favorites]);
 
   // Edit championship state
   const [editing, setEditing] = useState(false);
@@ -215,6 +224,7 @@ export default function ChampionshipDetailView() {
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: 32 }}></th>
                 <th>Name</th>
                 <th>Venue</th>
                 <th>Start</th>
@@ -224,6 +234,17 @@ export default function ChampionshipDetailView() {
             <tbody>
               {champEvents.map((e: Event) => (
                 <tr key={String(e.id)}>
+                  <td>
+                    {isAuthenticated && (
+                      <button
+                        className="fav-btn"
+                        onClick={() => toggleFavorite({ eventId: e.id })}
+                        title={favEventIds.has(e.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        {favEventIds.has(e.id) ? '\u2605' : '\u2606'}
+                      </button>
+                    )}
+                  </td>
                   <td>
                     <Link to={`/event/${e.id}`} className="table-link">{e.name}</Link>
                   </td>
