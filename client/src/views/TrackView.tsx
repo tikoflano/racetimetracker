@@ -68,6 +68,7 @@ export default function TrackView() {
   const handleDnf = (runId: bigint) => dnfRun({ runId });
 
   if (!eventTrack) {
+    if (eventTracks.length === 0) return null;
     return <div className="empty">Track not found.</div>;
   }
 

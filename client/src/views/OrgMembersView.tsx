@@ -50,6 +50,7 @@ export default function OrgMembersView() {
   }
 
   if (!org) {
+    if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;
   }
 

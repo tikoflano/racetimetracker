@@ -99,7 +99,9 @@ export default function EventView() {
       });
   }, [runs, sortedEventTracks, eventRiderIds, riderMap]);
 
+  // Don't show "not found" until the events subscription has delivered data
   if (!event) {
+    if (events.length === 0) return null;
     return <div className="empty">Event not found.</div>;
   }
 
