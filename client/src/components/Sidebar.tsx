@@ -18,12 +18,6 @@ export default function Sidebar() {
     ? orgs.filter((o: Organization) => canManageOrg(o.id))
     : [];
 
-  // IDs of orgs the user owns
-  const userOrgIds = useMemo(() => {
-    if (!user) return new Set<bigint>();
-    return new Set(orgs.filter((o: Organization) => o.ownerUserId === user.id).map(o => o.id));
-  }, [user, orgs]);
-
   // User's pinned event IDs
   const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
@@ -32,49 +26,35 @@ export default function Sidebar() {
     );
   }, [user, pinnedEvents]);
 
-  // Events from user's org(s)
-  const orgEvents = useMemo(() => {
-    return events.filter((e: Event) => userOrgIds.has(e.orgId));
-  }, [events, userOrgIds]);
-
-  const pinnedList = useMemo(() => orgEvents.filter(e => pinnedEventIds.has(e.id)), [orgEvents, pinnedEventIds]);
-  const unpinnedList = useMemo(() => orgEvents.filter(e => !pinnedEventIds.has(e.id)), [orgEvents, pinnedEventIds]);
-
-  const renderEventRow = (e: Event) => (
-    <div key={String(e.id)} className="sidebar-event-row">
-      <NavLink
-        to={`/event/${e.id}`}
-        className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-      >
-        {e.name}
-      </NavLink>
-      {isAuthenticated && (
-        <button
-          className="pin-btn"
-          onClick={() => togglePin({ eventId: e.id })}
-          title={pinnedEventIds.has(e.id) ? 'Unpin event' : 'Pin event'}
-        >
-          {pinnedEventIds.has(e.id) ? '\u{1F4CC}' : '\u2606'}
-        </button>
-      )}
-    </div>
-  );
+  // Pinned events resolved to full Event objects
+  const pinnedList = useMemo(() => {
+    return events.filter((e: Event) => pinnedEventIds.has(e.id));
+  }, [events, pinnedEventIds]);
 
   return (
     <nav className="sidebar">
-      {pinnedList.length > 0 && (
-        <div className="sidebar-section">
-          <div className="sidebar-label">Pinned Events</div>
-          {pinnedList.map(renderEventRow)}
-        </div>
-      )}
-
       <div className="sidebar-section">
-        <div className="sidebar-label">Events</div>
-        {unpinnedList.length === 0 ? (
-          <div className="sidebar-empty">{orgEvents.length === 0 ? 'No events' : 'All events pinned'}</div>
+        <div className="sidebar-label">Pinned Events</div>
+        {pinnedList.length === 0 ? (
+          <div className="sidebar-empty">No pinned events</div>
         ) : (
-          unpinnedList.map(renderEventRow)
+          pinnedList.map((e: Event) => (
+            <div key={String(e.id)} className="sidebar-event-row">
+              <NavLink
+                to={`/event/${e.id}`}
+                className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+              >
+                {e.name}
+              </NavLink>
+              <button
+                className="pin-btn"
+                onClick={() => togglePin({ eventId: e.id })}
+                title="Unpin event"
+              >
+                {'\u{1F4CC}'}
+              </button>
+            </div>
+          ))
         )}
       </div>
 

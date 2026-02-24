@@ -19,7 +19,7 @@ export default function ChampionshipDetailView() {
 
   const updateChampionship = useReducer(reducers.updateChampionship);
   const createEvent = useReducer(reducers.createEvent);
-  const toggleFavorite = useReducer(reducers.togglePinEvent);
+  const togglePin = useReducer(reducers.togglePinEvent);
 
   const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
@@ -237,11 +237,11 @@ export default function ChampionshipDetailView() {
                   <td>
                     {isAuthenticated && (
                       <button
-                        className="pin-btn"
-                        onClick={() => toggleFavorite({ eventId: e.id })}
-                        title={pinnedEventIds.has(e.id) ? 'Remove from pinnedEvents' : 'Add to pinnedEvents'}
+                        className={`pin-btn${pinnedEventIds.has(e.id) ? ' pinned' : ''}`}
+                        onClick={() => togglePin({ eventId: e.id })}
+                        title={pinnedEventIds.has(e.id) ? 'Unpin event' : 'Pin event'}
                       >
-                        {pinnedEventIds.has(e.id) ? '\u{1F4CC}' : '\u2606'}
+                        {'\u{1F4CC}'}
                       </button>
                     )}
                   </td>
