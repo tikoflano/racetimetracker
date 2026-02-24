@@ -1,0 +1,5 @@
+{
+  "name": "bike-race-tracker",
+  "private": true,
+  "workspaces": ["spacetimedb", "client"]
+}
