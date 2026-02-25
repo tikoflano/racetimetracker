@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTable } from 'spacetimedb/react';
 import { tables } from '../module_bindings';
@@ -29,7 +29,9 @@ export default function CalendarView() {
 
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
-  const [filterChampId, setFilterChampId] = useState<string>('all');
+  const [selectedChampIds, setSelectedChampIds] = useState<Set<bigint> | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // User's org IDs
   const userOrgIds = useMemo(() => {
@@ -42,21 +44,54 @@ export default function CalendarView() {
     return championships.filter((c: Championship) => userOrgIds.has(c.orgId));
   }, [championships, userOrgIds]);
 
+  // Default: all selected. null means "not yet initialized"
+  const activeChampIds = useMemo(() => {
+    if (selectedChampIds !== null) return selectedChampIds;
+    return new Set(orgChamps.map(c => c.id));
+  }, [selectedChampIds, orgChamps]);
+
   const champMap = useMemo(() => {
     const m = new Map<bigint, Championship>();
     for (const c of orgChamps) m.set(c.id, c);
     return m;
   }, [orgChamps]);
 
-  // Events in user's orgs, optionally filtered by championship
+  const toggleChamp = (id: bigint) => {
+    setSelectedChampIds(prev => {
+      const current = prev ?? new Set(orgChamps.map(c => c.id));
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedChampIds(null);
+  const selectNone = () => setSelectedChampIds(new Set());
+
+  const allSelected = activeChampIds.size === orgChamps.length;
+  const noneSelected = activeChampIds.size === 0;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
+
+  // Events in user's orgs, filtered by selected championships
   const filteredEvents = useMemo(() => {
     let evts = events.filter((e: Event) => userOrgIds.has(e.orgId));
-    if (filterChampId !== 'all') {
-      const cid = BigInt(filterChampId);
-      evts = evts.filter((e: Event) => e.championshipId === cid);
+    if (!allSelected) {
+      evts = evts.filter((e: Event) => activeChampIds.has(e.championshipId));
     }
     return evts;
-  }, [events, userOrgIds, filterChampId]);
+  }, [events, userOrgIds, activeChampIds, allSelected]);
 
   // Map date keys to events (expand multi-day events)
   const dateEvents = useMemo(() => {
@@ -104,35 +139,67 @@ export default function CalendarView() {
 
   const today = dateKey(new Date());
 
+  // Dropdown label
+  const dropdownLabel = allSelected
+    ? 'All Championships'
+    : noneSelected
+      ? 'No Championships'
+      : activeChampIds.size === 1
+        ? champMap.get([...activeChampIds][0])?.name ?? '1 selected'
+        : `${activeChampIds.size} Championships`;
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <h1 style={{ marginBottom: 0 }}>Calendar</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <select
-            value={filterChampId}
-            onChange={(e) => setFilterChampId(e.target.value)}
-            className="input"
-            style={{ width: 'auto', minWidth: 180 }}
-          >
-            <option value="all">All Championships</option>
-            {orgChamps.map((c: Championship) => (
-              <option key={String(c.id)} value={String(c.id)}>
-                {'\u25CF'} {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      {/* Championship legend */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-        {orgChamps.map((c: Championship) => (
-          <div key={String(c.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
-            <span className="color-dot" style={{ background: c.color }} />
-            <span className="muted">{c.name}</span>
-          </div>
-        ))}
+        {/* Multi-select championship dropdown */}
+        <div ref={dropdownRef} style={{ position: 'relative' }}>
+          <button
+            className="input"
+            onClick={() => setDropdownOpen(o => !o)}
+            style={{ width: 'auto', minWidth: 200, textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {!allSelected && !noneSelected && (
+                <span style={{ display: 'flex', gap: 2 }}>
+                  {[...activeChampIds].slice(0, 4).map(id => {
+                    const c = champMap.get(id);
+                    return c ? <span key={String(id)} className="color-dot" style={{ background: c.color }} /> : null;
+                  })}
+                </span>
+              )}
+              {dropdownLabel}
+            </span>
+            <span style={{ fontSize: '0.6rem' }}>{dropdownOpen ? '\u25B2' : '\u25BC'}</span>
+          </button>
+
+          {dropdownOpen && (
+            <div className="champ-dropdown">
+              <div className="champ-dropdown-actions">
+                <button className="ghost small" onClick={selectAll} disabled={allSelected}>All</button>
+                <button className="ghost small" onClick={selectNone} disabled={noneSelected}>None</button>
+              </div>
+              {orgChamps.map((c: Championship) => {
+                const checked = activeChampIds.has(c.id);
+                return (
+                  <label key={String(c.id)} className="champ-dropdown-item">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleChamp(c.id)}
+                    />
+                    <span className="color-dot" style={{ background: c.color }} />
+                    <span>{c.name}</span>
+                  </label>
+                );
+              })}
+              {orgChamps.length === 0 && (
+                <div className="champ-dropdown-empty">No championships</div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Month navigation */}
