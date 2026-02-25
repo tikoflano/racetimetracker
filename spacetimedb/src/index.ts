@@ -990,6 +990,11 @@ export const add_track_to_event = spacetimedb.reducer(
   { event_id: t.u64(), track_variation_id: t.u64(), sort_order: t.u32() },
   (ctx, args) => {
     requireEventOrganizer(ctx, args.event_id);
+    for (const et of ctx.db.event_track.iter()) {
+      if (et.event_id === args.event_id && et.track_variation_id === args.track_variation_id) {
+        throw new SenderError('This track variation is already added to the event');
+      }
+    }
     ctx.db.event_track.insert({ id: 0n, event_id: args.event_id, track_variation_id: args.track_variation_id, sort_order: args.sort_order });
   }
 );
