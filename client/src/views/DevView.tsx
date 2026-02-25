@@ -18,9 +18,6 @@ export default function DevView() {
   const [users] = useTable(tables.user);
 
   const [seedStatus, setSeedStatus] = useState<string | null>(null);
-  const [wipeStatus, setWipeStatus] = useState<string | null>(null);
-  const [wipeConfirm, setWipeConfirm] = useState(false);
-
   const [transferOrgId, setTransferOrgId] = useState('');
   const [transferEmail, setTransferEmail] = useState('');
   const [transferStatus, setTransferStatus] = useState<string | null>(null);
@@ -46,21 +43,6 @@ export default function DevView() {
       }, 1000);
     } catch (e: any) {
       setSeedStatus(`Error: ${e?.message || 'Failed to seed data'}`);
-    }
-  };
-
-  const handleWipe = async () => {
-    setWipeStatus(null);
-    try {
-      await wipeAllData();
-      setWipeConfirm(false);
-      setWipeStatus('All data wiped. You will be signed out.');
-      setTimeout(() => {
-        localStorage.clear();
-        window.location.href = '/';
-      }, 1500);
-    } catch (e: any) {
-      setWipeStatus(`Error: ${e?.message || 'Failed to wipe data'}`);
     }
   };
 
@@ -133,39 +115,6 @@ export default function DevView() {
         </div>
       </div>
 
-      {/* Wipe */}
-      <div className="section">
-        <div className="section-title">Wipe All Data</div>
-        <div className="card">
-          <div className="muted small-text" style={{ marginBottom: 12 }}>Deletes all rows from every table. You will be signed out.</div>
-          {!wipeConfirm ? (
-            <button
-              onClick={() => setWipeConfirm(true)}
-              style={{
-                padding: '8px 16px', borderRadius: 'var(--radius)', border: '1px solid var(--red, #ef4444)',
-                background: 'none', color: 'var(--red, #ef4444)', cursor: 'pointer', fontSize: '0.85rem',
-              }}
-            >
-              Wipe All Data...
-            </button>
-          ) : (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ color: 'var(--red, #ef4444)', fontSize: '0.85rem', fontWeight: 600 }}>Are you sure?</span>
-              <button
-                onClick={handleWipe}
-                style={{
-                  padding: '8px 16px', borderRadius: 'var(--radius)', border: 'none',
-                  background: 'var(--red, #ef4444)', color: 'white', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                }}
-              >
-                Yes, wipe everything
-              </button>
-              <button className="ghost small" onClick={() => setWipeConfirm(false)}>Cancel</button>
-            </div>
-          )}
-          <StatusMessage status={wipeStatus} />
-        </div>
-      </div>
     </div>
   );
 }
