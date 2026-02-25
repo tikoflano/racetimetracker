@@ -103,15 +103,15 @@ export default function App() {
               {sidebarOpen ? '\u2715' : '\u2630'}
             </button>
           )}
-          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
+          <span className="header-title" style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
           {activeOrg && (
             <>
-              <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>/</span>
+              <span className="header-title" style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>/</span>
               <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>{activeOrg.name}</span>
             </>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="header-user" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated ? (
             <>
               <span className="small-text">{user?.name || user?.email || 'User'}</span>
@@ -162,6 +162,8 @@ export default function App() {
                 activeOrg={activeOrg}
                 userOrgs={userOrgs}
                 onSwitchOrg={setActiveOrgId}
+                userName={user?.name || user?.email || 'User'}
+                onLogout={logout}
               />
             </>
           )}

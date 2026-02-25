@@ -11,9 +11,11 @@ interface SidebarProps {
   activeOrg: Organization | null;
   userOrgs: readonly Organization[];
   onSwitchOrg: (orgId: bigint) => void;
+  userName: string;
+  onLogout: () => void;
 }
 
-export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchOrg }: SidebarProps) {
+export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchOrg, userName, onLogout }: SidebarProps) {
   const { user, isAuthenticated, canManageOrg, getOrgRole, isOrgOwner } = useAuth();
   const [events] = useTable(tables.event);
   const [pinnedEvents] = useTable(tables.pinned_event);
@@ -115,6 +117,15 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
           >
             Switch Organization
           </button>
+        </div>
+      )}
+
+      {isAuthenticated && (
+        <div className="sidebar-section sidebar-user-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="small-text" style={{ opacity: 0.8 }}>{userName}</span>
+            <button className="ghost small" onClick={onLogout}>Sign out</button>
+          </div>
         </div>
       )}
 
