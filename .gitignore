@@ -7,3 +7,4 @@ build/
 *.log
 .DS_Store
 client/src/module_bindings/
+spacetime.local.json
