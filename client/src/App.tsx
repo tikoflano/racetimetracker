@@ -202,11 +202,25 @@ export default function App() {
                 <Route path="/venue/:venueId" element={<VenueDetailView />} />
                 <Route path="/register/:token" element={<RegisterView />} />
                 <Route path="/register/:token/qr" element={<QRCodeView />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </OrgProvider>
           </main>
         </div>
       )}
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+      <div style={{ fontSize: '4rem', fontWeight: 700, opacity: 0.2, marginBottom: 8 }}>404</div>
+      <h2 style={{ marginBottom: 8 }}>Page not found</h2>
+      <p className="muted" style={{ marginBottom: 20 }}>The page you're looking for doesn't exist.</p>
+      <a href="/" className="primary" style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 'var(--radius)', textDecoration: 'none' }}>
+        Go home
+      </a>
     </div>
   );
 }
