@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
 import type { Venue, Track, Organization } from '../module_bindings/types';
 
 export default function VenuesView() {
-  const { orgId } = useParams<{ orgId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const oid = useActiveOrg();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
@@ -124,7 +124,7 @@ export default function VenuesView() {
             {orgVenues.map((v: Venue) => (
               <tr key={String(v.id)}>
                 <td>
-                  <Link to={`/org/${orgId}/venue/${v.id}`} className="table-link">{v.name}</Link>
+                  <Link to={`/venue/${v.id}`} className="table-link">{v.name}</Link>
                   {v.description && <div className="muted small-text">{v.description}</div>}
                 </td>
                 <td>{trackCounts.get(v.id) ?? 0}</td>

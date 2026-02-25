@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
 type EventStatus = 'in_progress' | 'not_started' | 'completed';
@@ -22,8 +23,8 @@ const STATUS_LABEL: Record<EventStatus, string> = { in_progress: 'In Progress', 
 const STATUS_BADGE: Record<EventStatus, string> = { in_progress: 'running', not_started: 'queued', completed: 'finished' };
 
 export default function ChampionshipDetailView() {
-  const { orgId, champId } = useParams<{ orgId: string; champId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const { champId } = useParams<{ champId: string }>();
+  const oid = useActiveOrg();
   const cid = BigInt(champId ?? '0');
   const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
@@ -191,7 +192,7 @@ export default function ChampionshipDetailView() {
 
   return (
     <div>
-      <Link to={`/org/${orgId}/championships`} className="back-link">&larr; Championships</Link>
+      <Link to="/championships" className="back-link">&larr; Championships</Link>
 
       {/* Championship name + description — editable */}
       {editing ? (

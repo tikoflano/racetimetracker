@@ -1,13 +1,13 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
 import type { Organization, OrgMember, User, Event } from '../module_bindings/types';
 
 export default function OrgMembersView() {
-  const { orgId } = useParams<{ orgId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const oid = useActiveOrg();
   const { isAuthenticated, isReady, canManageOrg, isOrgOwner, canImpersonate } = useAuth();
 
   const [orgs] = useTable(tables.organization);

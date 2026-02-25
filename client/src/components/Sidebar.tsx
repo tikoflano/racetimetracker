@@ -78,26 +78,26 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
         <div className="sidebar-section">
           <div className="sidebar-label">Manage</div>
           <NavLink
-            to={`/org/${activeOrg.id}/championships`}
+            to="/championships"
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
           >
             Championships
           </NavLink>
           <NavLink
-            to={`/org/${activeOrg.id}/venues`}
+            to="/venues"
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
           >
             Venues
           </NavLink>
           <NavLink
-            to={`/org/${activeOrg.id}/racers`}
+            to="/racers"
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
           >
             Racers
           </NavLink>
           {canManageOrg(activeOrg.id) && (
             <NavLink
-              to={`/org/${activeOrg.id}/members`}
+              to="/members"
               className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
             >
               Members

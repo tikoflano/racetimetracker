@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
 import type { Rider, Organization, RegistrationToken } from '../module_bindings/types';
 
 export default function RacersView() {
-  const { orgId } = useParams<{ orgId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const oid = useActiveOrg();
   const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);

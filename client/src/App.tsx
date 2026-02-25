@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from './module_bindings';
 import { useAuth } from './auth';
+import { OrgProvider } from './OrgContext';
 import LoginButton from './components/LoginButton';
 import Sidebar from './components/Sidebar';
 import { EventViewSkeleton } from './components/Skeleton';
@@ -175,32 +176,34 @@ export default function App() {
             </>
           )}
           <main className="app-main">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  defaultEventId !== null ? (
-                    <Navigate to={`/event/${defaultEventId}`} replace />
-                  ) : userOrg ? (
-                    <Navigate to={`/org/${userOrg.id}/members`} replace />
-                  ) : (
-                    <div className="empty">No events found. Sign in to get started.</div>
-                  )
-                }
-              />
-              <Route path="/event/:eventId" element={<EventView />} />
-              <Route path="/event/:eventId/manage" element={<EventManageView />} />
-              <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
-              <Route path="/org/:orgId/members" element={<OrgMembersView />} />
-              <Route path="/calendar" element={<CalendarView />} />
-              <Route path="/org/:orgId/championships" element={<ChampionshipsView />} />
-              <Route path="/org/:orgId/championship/:champId" element={<ChampionshipDetailView />} />
-              <Route path="/org/:orgId/racers" element={<RacersView />} />
-              <Route path="/org/:orgId/venues" element={<VenuesView />} />
-              <Route path="/org/:orgId/venue/:venueId" element={<VenueDetailView />} />
-              <Route path="/register/:token" element={<RegisterView />} />
-              <Route path="/register/:token/qr" element={<QRCodeView />} />
-            </Routes>
+            <OrgProvider value={{ activeOrgId: activeOrgId }}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    defaultEventId !== null ? (
+                      <Navigate to={`/event/${defaultEventId}`} replace />
+                    ) : userOrg ? (
+                      <Navigate to="/members" replace />
+                    ) : (
+                      <div className="empty">No events found. Sign in to get started.</div>
+                    )
+                  }
+                />
+                <Route path="/event/:eventId" element={<EventView />} />
+                <Route path="/event/:eventId/manage" element={<EventManageView />} />
+                <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
+                <Route path="/members" element={<OrgMembersView />} />
+                <Route path="/calendar" element={<CalendarView />} />
+                <Route path="/championships" element={<ChampionshipsView />} />
+                <Route path="/championship/:champId" element={<ChampionshipDetailView />} />
+                <Route path="/racers" element={<RacersView />} />
+                <Route path="/venues" element={<VenuesView />} />
+                <Route path="/venue/:venueId" element={<VenueDetailView />} />
+                <Route path="/register/:token" element={<RegisterView />} />
+                <Route path="/register/:token/qr" element={<QRCodeView />} />
+              </Routes>
+            </OrgProvider>
           </main>
         </div>
       )}

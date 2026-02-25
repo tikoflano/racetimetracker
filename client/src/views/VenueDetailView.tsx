@@ -6,6 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 
@@ -58,8 +59,8 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
 }
 
 export default function VenueDetailView() {
-  const { orgId, venueId } = useParams<{ orgId: string; venueId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const { venueId } = useParams<{ venueId: string }>();
+  const oid = useActiveOrg();
   const vid = BigInt(venueId ?? '0');
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
@@ -252,7 +253,7 @@ export default function VenueDetailView() {
   return (
     <div>
       <div className="venue-header">
-        <Link to={`/org/${orgId}/venues`} className="back-link">&larr; Venues</Link>
+        <Link to="/venues" className="back-link">&larr; Venues</Link>
 
         {/* Venue header */}
         {editingVenue ? (

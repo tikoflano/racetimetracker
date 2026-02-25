@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
 import type { Championship, Event, Organization } from '../module_bindings/types';
 
 type ChampStatus = 'in_progress' | 'not_started' | 'completed';
@@ -37,8 +38,7 @@ function SortTh({ label, sortKey, current, onSort }: { label: string; sortKey: S
 }
 
 export default function ChampionshipsView() {
-  const { orgId } = useParams<{ orgId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const oid = useActiveOrg();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
@@ -241,7 +241,7 @@ export default function ChampionshipsView() {
               <tr key={String(c.id)}>
                 <td><span className="color-dot" style={{ background: c.color }} /></td>
                 <td>
-                  <Link to={`/org/${orgId}/championship/${c.id}`} className="table-link">
+                  <Link to={`/championship/${c.id}`} className="table-link">
                     {c.name}
                   </Link>
                 </td>
