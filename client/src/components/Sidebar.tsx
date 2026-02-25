@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { IS_DEV } from '../env';
 import Modal from './Modal';
 import type { Event, Organization, PinnedEvent, OrgMember } from '../module_bindings/types';
 
@@ -105,6 +106,18 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
               Members
             </NavLink>
           )}
+        </div>
+      )}
+
+      {IS_DEV && isAuthenticated && (
+        <div className="sidebar-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+          <NavLink
+            to="/dev"
+            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+            style={{ fontSize: '0.8rem', opacity: 0.6 }}
+          >
+            Dev Tools
+          </NavLink>
         </div>
       )}
 

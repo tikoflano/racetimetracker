@@ -19,6 +19,7 @@ import VenueDetailView from './views/VenueDetailView';
 import EventManageView from './views/EventManageView';
 import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
+import DevView from './views/DevView';
 import type { Organization } from './module_bindings/types';
 
 const ACTIVE_ORG_KEY = 'active_org_id';
@@ -184,6 +185,7 @@ export default function App() {
                 <Route path="/venue/:venueId" element={<VenueDetailView />} />
                 <Route path="/register/:token" element={<RegisterView />} />
                 <Route path="/register/:token/qr" element={<QRCodeView />} />
+                <Route path="/dev" element={<DevView />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </OrgProvider>
