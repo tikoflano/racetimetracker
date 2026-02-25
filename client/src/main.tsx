@@ -15,7 +15,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'PLACEHOLDER';
 // VITE_STDB_ENV=local  → connect through Vite proxy to localhost:3000
 const stdbEnv = import.meta.env.VITE_STDB_ENV || 'local';
 const stdbCloudHost = import.meta.env.VITE_STDB_CLOUD_HOST || 'maincloud.spacetimedb.com';
-const stdbDatabase = import.meta.env.VITE_STDB_DATABASE || 'bike-race-tracker';
+const stdbDatabase = import.meta.env.VITE_STDB_DATABASE || 'racetimetracker-dev';
 
 const wsUri = stdbEnv === 'cloud'
   ? `wss://${stdbCloudHost}`

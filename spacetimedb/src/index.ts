@@ -1,4 +1,5 @@
 import { schema, table, t, SenderError } from 'spacetimedb/server';
+import { Identity } from 'spacetimedb';
 
 // Replace with your Google OAuth Client ID
 const GOOGLE_ISSUER = 'https://accounts.google.com';
@@ -263,6 +264,14 @@ const spacetimedb = schema({
 
 export default spacetimedb;
 
+function placeholderIdentity(email: string): Identity {
+  let hash = 1n;
+  for (let i = 0; i < email.length; i++) {
+    hash = hash * 31n + BigInt(email.charCodeAt(i));
+  }
+  return new Identity(hash);
+}
+
 // ─── Auth helpers ───────────────────────────────────────────────────────────
 
 // Returns the real user for ctx.sender (no impersonation).
@@ -415,14 +424,20 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
     if (u.google_sub === sub) { existing = u; break; }
   }
 
+  // If not found by google_sub, check for a pending user with the same email
+  if (!existing && email) {
+    for (const u of ctx.db.user.iter()) {
+      if (u.email === email && u.google_sub.startsWith('pending:')) { existing = u; break; }
+    }
+  }
+
   let userId: bigint;
 
   if (existing) {
-    // Update identity, email, name on each login
     ctx.db.user.id.update({
       id: existing.id,
       identity: ctx.sender,
-      google_sub: existing.google_sub,
+      google_sub: sub,
       email: email || existing.email,
       name: name || existing.name,
       is_super_admin: existing.is_super_admin,
@@ -492,6 +507,40 @@ export const add_org_member = spacetimedb.reducer(
       if (m.org_id === args.org_id && m.user_id === args.user_id) throw new SenderError('User already a member');
     }
     ctx.db.org_member.insert({ id: 0n, org_id: args.org_id, user_id: args.user_id, role: args.role });
+  }
+);
+
+export const invite_org_member = spacetimedb.reducer(
+  { org_id: t.u64(), email: t.string(), role: t.string() },
+  (ctx, args) => {
+    requireOrgAdmin(ctx, args.org_id);
+    if (args.role !== 'admin' && args.role !== 'manager') throw new SenderError('Invalid role');
+
+    const trimmedEmail = args.email.trim().toLowerCase();
+    if (!trimmedEmail || !trimmedEmail.includes('@')) throw new SenderError('Valid email is required');
+
+    let targetUser = null;
+    for (const u of ctx.db.user.iter()) {
+      if (u.email === trimmedEmail) { targetUser = u; break; }
+    }
+
+    if (!targetUser) {
+      targetUser = ctx.db.user.insert({
+        id: 0n,
+        identity: placeholderIdentity(trimmedEmail),
+        google_sub: `pending:${trimmedEmail}`,
+        email: trimmedEmail,
+        name: trimmedEmail.split('@')[0],
+        is_super_admin: false,
+      });
+    }
+
+    for (const m of ctx.db.org_member.iter()) {
+      if (m.org_id === args.org_id && m.user_id === targetUser.id) {
+        throw new SenderError('User already a member');
+      }
+    }
+    ctx.db.org_member.insert({ id: 0n, org_id: args.org_id, user_id: targetUser.id, role: args.role });
   }
 );
 

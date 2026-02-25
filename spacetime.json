@@ -1,27 +1,5 @@
 {
-  "module": {
-    "path": "spacetimedb"
-  },
-  "client": {
-    "path": "client",
-    "lang": "typescript",
-    "out_dir": "src/module_bindings"
-  },
-  "dev": {
-    "run": "cd client && npm run dev"
-  },
-  "databases": {
-    "local": {
-      "server": "local",
-      "name": "bike-race-tracker"
-    },
-    "dev": {
-      "server": "maincloud",
-      "name": "racetimetracker-dev"
-    },
-    "prod": {
-      "server": "maincloud",
-      "name": "racetimetracker-prod"
-    }
-  }
+  "module_path": "spacetimedb",
+  "server": "local",
+  "database": "racetimetracker-dev"
 }

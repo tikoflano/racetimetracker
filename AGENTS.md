@@ -72,13 +72,13 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 
 ## Database Targets
 
-Defined in `spacetime.json`:
+`spacetime.json` defaults to the local server with database `racetimetracker-dev`. Cloud publish uses `--no-config` with explicit server flags.
 
-| Target | Server | Database |
-|--------|--------|----------|
-| `local` | `localhost:3000` | `bike-race-tracker` |
-| `dev` | `maincloud.spacetimedb.com` | `racetimetracker-dev` |
-| `prod` | `maincloud.spacetimedb.com` | `racetimetracker-prod` |
+| Target | Server | Database | Command |
+|--------|--------|----------|---------|
+| local (dev) | `localhost:3000` | `racetimetracker-dev` | `npm run dev:spacetime` |
+| cloud (dev) | `maincloud.spacetimedb.com` | `racetimetracker-dev` | `npm run publish` |
+| cloud (prod) | `maincloud.spacetimedb.com` | `racetimetracker-prod` | `npm run publish` (change db name) |
 
 ## Auth & RBAC
 
@@ -100,28 +100,61 @@ Defined in `spacetime.json`:
 
 **Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.
 
-### Regenerate client bindings after schema changes
+### Local development with `spacetime dev`
+
+Start the full stack (SpacetimeDB server must be running on port 3000):
+
+```bash
+spacetime start &          # Start local server (if not already running)
+npm run dev:spacetime      # Build + publish + generate bindings + start Vite
+```
+
+`spacetime dev` watches for file changes and auto-rebuilds/republishes/regenerates.
+
+### Regenerate client bindings manually
 
 ```bash
 spacetime generate --lang typescript --out-dir client/src/module_bindings --module-path spacetimedb
 ```
 
-### Publish module to dev
-
-After schema or reducer changes, run this yourself (do not leave it for the user):
+### Publish module to cloud (dev)
 
 ```bash
-spacetime publish racetimetracker-dev --server maincloud -p spacetimedb
+npm run publish
 ```
 
-### Seed demo data
+### Seed demo data (local)
 
 ```bash
-spacetime call --server maincloud racetimetracker-dev seed_demo_data
+spacetime call --server local racetimetracker-dev seed_demo_data
 ```
 
-### Query cloud database
+### Query local database
 
 ```bash
-spacetime sql --server maincloud racetimetracker-dev "SELECT * FROM event"
+spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 ```
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- SpacetimeDB CLI is installed at `~/.local/bin/spacetime`. Ensure `PATH` includes `~/.local/bin`.
+- Node.js 22+ and npm are pre-installed.
+- `npm install` at the workspace root installs both `client/` and `spacetimedb/` via npm workspaces.
+
+### Running locally
+
+1. Start the SpacetimeDB standalone server: `spacetime start --listen-addr 0.0.0.0:3000 &`
+2. Run `npm run dev:spacetime` — this handles build, publish, binding generation, and Vite startup.
+3. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
+4. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
+
+### Gotchas
+
+- `spacetime dev` does **not** auto-start the local server. You must run `spacetime start` first.
+- The `dev:spacetime` script uses `--no-config` because SpacetimeDB CLI v2.0.1 doesn't support the nested `databases` config format in `spacetime.json`. All flags are passed explicitly.
+- `client/src/module_bindings/` is gitignored and auto-generated. Never edit manually; `spacetime dev` regenerates on each run.
+- Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
+- The `client/.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `client/.env.local.example`.
+- Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.

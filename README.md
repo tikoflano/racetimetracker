@@ -50,25 +50,26 @@ spacetime generate --lang typescript --out-dir client/src/module_bindings --modu
 
 ### Local development
 
-Start a local SpacetimeDB instance and publish the module:
+Start a local SpacetimeDB instance and run the full dev stack:
 
 ```bash
-spacetime start
-spacetime publish bike-race-tracker --server local -p spacetimedb
-spacetime call --server local bike-race-tracker seed_demo_data
+spacetime start &
+npm run dev:spacetime
 ```
 
-Set `client/.env`:
+This builds the module, publishes to the local server, generates client bindings, and starts the Vite dev server — all with file watching for auto-rebuild.
+
+To seed demo data:
+
+```bash
+spacetime call --server local racetimetracker-dev seed_demo_data
+```
+
+Set `client/.env` (copy from `client/.env.local.example`):
 
 ```
 VITE_STDB_ENV=local
-VITE_STDB_DATABASE=bike-race-tracker
-```
-
-Start the dev server:
-
-```bash
-cd client && npm run dev
+VITE_STDB_DATABASE=racetimetracker-dev
 ```
 
 The Vite proxy forwards `/v1/*` (including WebSocket) to `localhost:3000`.
