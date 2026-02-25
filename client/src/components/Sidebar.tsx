@@ -21,7 +21,6 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
   const [events] = useTable(tables.event);
   const [pinnedEvents] = useTable(tables.pinned_event);
   const [orgMembers] = useTable(tables.org_member);
-  const [timekeeperAssignments] = useTable(tables.timekeeper_assignment);
 
   const togglePin = useReducer(reducers.togglePinEvent);
 
@@ -39,11 +38,6 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
   }, [events, pinnedEventIds]);
 
   const hasMultipleOrgs = userOrgs.length > 1;
-
-  const hasTimekeepAssignments = useMemo(() => {
-    if (!user) return false;
-    return timekeeperAssignments.some((a: any) => a.userId === user.id);
-  }, [user, timekeeperAssignments]);
 
   return (
     <nav className={`sidebar ${className}`.trim()}>
@@ -80,14 +74,12 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
           >
             Calendar
           </NavLink>
-          {hasTimekeepAssignments && (
-            <NavLink
-              to="/timekeep"
-              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-            >
-              Timekeeping
-            </NavLink>
-          )}
+          <NavLink
+            to="/timekeep"
+            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+          >
+            Timekeeping
+          </NavLink>
         </div>
       )}
 

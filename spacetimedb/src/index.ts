@@ -1545,6 +1545,25 @@ export const dnf_run = spacetimedb.reducer(
   }
 );
 
+export const dns_run = spacetimedb.reducer(
+  { run_id: t.u64() },
+  (ctx, { run_id }) => {
+    const eventId = getEventIdFromRun(ctx, run_id);
+    requireTimekeeper(ctx, eventId);
+    const run = ctx.db.run.id.find(run_id);
+    if (!run || run.status !== 'queued') return;
+    ctx.db.run.id.update({
+      id: run.id,
+      event_track_id: run.event_track_id,
+      rider_id: run.rider_id,
+      sort_order: run.sort_order,
+      status: 'dns',
+      start_time: 0n,
+      end_time: 0n,
+    });
+  }
+);
+
 // ─── Images ─────────────────────────────────────────────────────────────────
 
 // Resolve entity to its venue's org_id for permission checks
