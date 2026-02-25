@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
@@ -6,7 +6,7 @@ import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
 import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization } from '../module_bindings/types';
-import { FontAwesomeIcon, faPen, faThumbtack, faLink } from '../icons';
+import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical, faGear } from '../icons';
 import { formatElapsed } from '../utils';
 
 export default function EventView() {
@@ -56,6 +56,7 @@ export default function EventView() {
   const [nameError, setNameError] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [eventMenuOpen, setEventMenuOpen] = useState(false);
 
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
   const eventOrg = event ? orgs.find((o: Organization) => o.id === event.orgId) : undefined;
@@ -205,37 +206,22 @@ export default function EventView() {
           {nameError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>}
         </div>
       ) : (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
-            {canEdit && (
-              <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename"><FontAwesomeIcon icon={faPen} /></button>
-            )}
-            {isAuthenticated && (
-              <button
-                className={`pin-btn${isPinned ? ' pinned' : ''}`}
-                onClick={() => togglePin({ eventId: eid })}
-                title={isPinned ? 'Unpin event' : 'Pin event'}
-            >
-              <FontAwesomeIcon icon={faThumbtack} />
-            </button>
-          )}
-          {publicUrl && (
-            <button
-              className="ghost small"
-              onClick={() => { setCopied(false); setShareOpen(true); }}
-              title="Share"
-              style={{ fontSize: '0.9rem' }}
-            >
-              <FontAwesomeIcon icon={faLink} />
-            </button>
-            )}
-          </div>
-          {canEdit && (
-            <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', padding: '6px 14px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-              Manage Event
-            </Link>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
+          <EventActionMenu
+            open={eventMenuOpen}
+            onToggle={() => setEventMenuOpen(!eventMenuOpen)}
+            onClose={() => setEventMenuOpen(false)}
+            canEdit={canEdit}
+            isAuthenticated={isAuthenticated}
+            isPinned={isPinned}
+            hasPublicUrl={!!publicUrl}
+            onRename={() => { setEventMenuOpen(false); setNameValue(event.name); setNameError(''); setEditingName(true); }}
+            onPin={() => { setEventMenuOpen(false); togglePin({ eventId: eid }); }}
+            onShare={() => { setEventMenuOpen(false); setCopied(false); setShareOpen(true); }}
+            onManage={() => { setEventMenuOpen(false); }}
+            manageUrl={`/event/${event.slug}/manage`}
+          />
         </div>
       )}
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
@@ -361,6 +347,89 @@ export default function EventView() {
           </button>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, isPinned, hasPublicUrl, onRename, onPin, onShare, onManage, manageUrl }: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  canEdit: boolean;
+  isAuthenticated: boolean;
+  isPinned: boolean;
+  hasPublicUrl: boolean;
+  onRename: () => void;
+  onPin: () => void;
+  onShare: () => void;
+  onManage: () => void;
+  manageUrl: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open, onClose]);
+
+  const itemStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+    gap: 10, width: '100%',
+    padding: '9px 14px', border: 'none', background: 'none',
+    color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+  };
+  const iconStyle: React.CSSProperties = { width: 16, textAlign: 'center', flexShrink: 0 };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button className="ghost small" onClick={onToggle} title="Event actions" style={{ fontSize: '1rem', padding: '4px 8px' }}>
+        <FontAwesomeIcon icon={faEllipsisVertical} />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', left: 0, top: '100%', marginTop: 4,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          minWidth: 200, zIndex: 50, overflow: 'hidden',
+        }}>
+          {canEdit && (
+            <button onClick={onRename} style={itemStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename event</span>
+            </button>
+          )}
+          {isAuthenticated && (
+            <button onClick={onPin} style={itemStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={iconStyle}><FontAwesomeIcon icon={faThumbtack} /></span><span>{isPinned ? 'Unpin event' : 'Pin event'}</span>
+            </button>
+          )}
+          {hasPublicUrl && (
+            <button onClick={onShare} style={itemStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={iconStyle}><FontAwesomeIcon icon={faLink} /></span><span>Share event</span>
+            </button>
+          )}
+          {canEdit && (
+            <Link to={manageUrl} onClick={onManage} style={{ ...itemStyle, textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={iconStyle}><FontAwesomeIcon icon={faGear} /></span><span>Manage event</span>
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
