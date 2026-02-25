@@ -25,7 +25,7 @@ export default function ChampionshipDetailView() {
   const { orgId, champId } = useParams<{ orgId: string; champId: string }>();
   const oid = BigInt(orgId ?? '0');
   const cid = BigInt(champId ?? '0');
-  const { user, isAuthenticated, canManageOrgEvents } = useAuth();
+  const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [championships] = useTable(tables.championship);
@@ -105,6 +105,7 @@ export default function ChampionshipDetailView() {
     return m;
   }, [venues]);
 
+  if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!org) {
     if (orgs.length === 0) return null;

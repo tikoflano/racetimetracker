@@ -9,7 +9,7 @@ import type { Rider, Organization, RegistrationToken } from '../module_bindings/
 export default function RacersView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { user, isAuthenticated, canManageOrgEvents } = useAuth();
+  const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [riders] = useTable(tables.rider);
@@ -50,6 +50,7 @@ export default function RacersView() {
     return tokens.filter((t: RegistrationToken) => t.orgId === oid);
   }, [tokens, oid]);
 
+  if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!org) {
     if (orgs.length === 0) return null;

@@ -8,7 +8,7 @@ import type { Venue, Track, Organization } from '../module_bindings/types';
 export default function VenuesView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { isAuthenticated, canManageOrgEvents } = useAuth();
+  const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [venues] = useTable(tables.venue);
@@ -38,6 +38,7 @@ export default function VenuesView() {
     return m;
   }, [tracks, orgVenues]);
 
+  if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!org) {
     if (orgs.length === 0) return null;

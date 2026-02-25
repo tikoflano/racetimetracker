@@ -39,7 +39,7 @@ function SortTh({ label, sortKey, current, onSort }: { label: string; sortKey: S
 export default function ChampionshipsView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { isAuthenticated, canManageOrgEvents } = useAuth();
+  const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [championships] = useTable(tables.championship);
@@ -128,6 +128,7 @@ export default function ChampionshipsView() {
     return rows;
   }, [filteredRows, sort]);
 
+  if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!org) {
     if (orgs.length === 0) return null;

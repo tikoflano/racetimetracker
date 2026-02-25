@@ -8,7 +8,7 @@ import type { Organization, OrgMember, User, Event } from '../module_bindings/ty
 export default function OrgMembersView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { isAuthenticated, canManageOrg, isOrgOwner } = useAuth();
+  const { isAuthenticated, isReady, canManageOrg, isOrgOwner } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
@@ -48,6 +48,7 @@ export default function OrgMembersView() {
     return users.find((u: User) => u.id === org.ownerUserId) ?? null;
   }, [org, users]);
 
+  if (!isReady) return null;
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
