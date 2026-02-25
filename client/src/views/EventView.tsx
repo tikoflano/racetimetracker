@@ -5,7 +5,7 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
-import type { Event, Venue, EventTrack, Rider, EventRider, PinnedEvent, Organization } from '../module_bindings/types';
+import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization } from '../module_bindings/types';
 import { formatElapsed } from '../utils';
 
 export default function EventView() {
@@ -17,6 +17,8 @@ export default function EventView() {
   const [orgs] = useTable(tables.organization);
   const [venues] = useTable(tables.venue);
   const [eventTracks] = useTable(tables.event_track);
+  const [trackVariations] = useTable(tables.track_variation);
+  const [tracksData] = useTable(tables.track);
   const [runs] = useTable(tables.run);
   const [riders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
@@ -24,6 +26,8 @@ export default function EventView() {
 
   const updateEvent = useReducer(reducers.updateEvent);
   const togglePin = useReducer(reducers.togglePinEvent);
+
+  const [expandedRiderId, setExpandedRiderId] = useState<bigint | null>(null);
 
   const event = useMemo(() => {
     if (!eventSlug) return null;
@@ -82,36 +86,57 @@ export default function EventView() {
     return m;
   }, [riders]);
 
+  const tvMap = useMemo(() => {
+    const m = new Map<bigint, TrackVariation>();
+    for (const v of trackVariations) m.set(v.id, v as TrackVariation);
+    return m;
+  }, [trackVariations]);
+
+  const trackMap = useMemo(() => {
+    const m = new Map<bigint, Track>();
+    for (const t of tracksData) m.set(t.id, t as Track);
+    return m;
+  }, [tracksData]);
+
+  type RunDetail = { eventTrackId: bigint; trackName: string; status: string; elapsed: number };
+
   const leaderboard = useMemo(() => {
     const etIds = new Set(sortedEventTracks.map((et: EventTrack) => et.id));
-    const riderTimes = new Map<bigint, { total: number; trackCount: number; dnf: boolean }>();
+    const riderData = new Map<bigint, { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }>();
 
     for (const run of runs) {
       if (!etIds.has(run.eventTrackId)) continue;
       if (!eventRiderIds.has(run.riderId)) continue;
 
-      const entry = riderTimes.get(run.riderId) ?? { total: 0, trackCount: 0, dnf: false };
+      const entry = riderData.get(run.riderId) ?? { total: 0, trackCount: 0, dnf: false, runs: [] };
+      const et = sortedEventTracks.find((e: EventTrack) => e.id === run.eventTrackId);
+      const tv = et ? tvMap.get(et.trackVariationId) : undefined;
+      const track = tv ? trackMap.get(tv.trackId) : undefined;
+      const trackName = track ? track.name : 'Track';
+      const elapsed = run.status === 'finished' ? Number(run.endTime) - Number(run.startTime) : 0;
 
       if (run.status === 'finished') {
-        const elapsed = Number(run.endTime) - Number(run.startTime);
         entry.total += elapsed;
         entry.trackCount++;
       } else if (run.status === 'dnf') {
         entry.dnf = true;
       }
 
-      riderTimes.set(run.riderId, entry);
+      entry.runs.push({ eventTrackId: run.eventTrackId, trackName, status: run.status, elapsed });
+      riderData.set(run.riderId, entry);
     }
 
     const totalTracks = sortedEventTracks.length;
 
-    return [...riderTimes.entries()]
+    return [...riderData.entries()]
       .map(([riderId, data]) => ({
+        riderId,
         rider: riderMap.get(riderId),
         total: data.total,
         complete: data.trackCount === totalTracks && !data.dnf,
         dnf: data.dnf,
         trackCount: data.trackCount,
+        runs: data.runs,
       }))
       .sort((a, b) => {
         if (a.complete && !b.complete) return -1;
@@ -122,7 +147,7 @@ export default function EventView() {
         if (a.trackCount !== b.trackCount) return b.trackCount - a.trackCount;
         return a.total - b.total;
       });
-  }, [runs, sortedEventTracks, eventRiderIds, riderMap]);
+  }, [runs, sortedEventTracks, eventRiderIds, riderMap, tvMap, trackMap]);
 
   if (!event) {
     if (events.length === 0) return null;
@@ -179,47 +204,45 @@ export default function EventView() {
           {nameError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
+            {canEdit && (
+              <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename">&#9998;</button>
+            )}
+            {isAuthenticated && (
+              <button
+                className={`pin-btn${isPinned ? ' pinned' : ''}`}
+                onClick={() => togglePin({ eventId: eid })}
+                title={isPinned ? 'Unpin event' : 'Pin event'}
+              >
+                {'\u{1F4CC}'}
+              </button>
+            )}
+            {publicUrl && (
+              <button
+                className="ghost small"
+                onClick={() => { setCopied(false); setShareOpen(true); }}
+                title="Share"
+                style={{ fontSize: '0.9rem' }}
+              >
+                &#x1F517;
+              </button>
+            )}
+          </div>
           {canEdit && (
-            <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename">&#9998;</button>
-          )}
-          {isAuthenticated && (
-            <button
-              className={`pin-btn${isPinned ? ' pinned' : ''}`}
-              onClick={() => togglePin({ eventId: eid })}
-              title={isPinned ? 'Unpin event' : 'Pin event'}
-            >
-              {'\u{1F4CC}'}
-            </button>
-          )}
-          {publicUrl && (
-            <button
-              className="ghost small"
-              onClick={() => { setCopied(false); setShareOpen(true); }}
-              title="Share"
-              style={{ fontSize: '0.9rem' }}
-            >
-              &#x1F517;
-            </button>
+            <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', padding: '6px 14px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              Manage Event
+            </Link>
           )}
         </div>
       )}
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
       {venue && (
-        <p className="muted small-text" style={{ marginBottom: 4 }}>
+        <p className="muted small-text" style={{ marginBottom: 16 }}>
           <Link to={`/venue/${venue.id}`} style={{ color: 'inherit' }}>{venue.name}</Link>
           {' '}&middot; {event.startDate} &ndash; {event.endDate}
         </p>
-      )}
-
-      {/* Manage event link */}
-      {canEdit && (
-        <div style={{ marginBottom: 20 }}>
-          <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', display: 'inline-block', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem' }}>
-            Manage Event
-          </Link>
-        </div>
       )}
 
       {/* Leaderboard — always visible */}
@@ -228,7 +251,7 @@ export default function EventView() {
         {leaderboard.length === 0 ? (
           <div className="empty">No results yet.</div>
         ) : (
-          <table className="table">
+          <table className="data-table">
             <thead>
               <tr>
                 <th style={{ width: 40 }}>Pos</th>
@@ -241,24 +264,64 @@ export default function EventView() {
               {leaderboard.map((entry, idx) => {
                 const pos = idx + 1;
                 const posClass = pos === 1 ? 'position p1' : pos === 2 ? 'position p2' : pos === 3 ? 'position p3' : 'position';
+                const isExpanded = expandedRiderId === entry.riderId;
                 return (
-                  <tr key={entry.rider ? String(entry.rider.id) : idx}>
-                    <td><span className={posClass}>{entry.complete ? pos : '-'}</span></td>
-                    <td>
-                      {entry.rider ? `${entry.rider.firstName} ${entry.rider.lastName}` : 'Unknown'}
-                    </td>
-                    <td className="muted small-text">
-                      {entry.trackCount}/{sortedEventTracks.length}
-                      {entry.dnf && <span className="badge dnf" style={{ marginLeft: 6 }}>DNF</span>}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      {entry.total > 0 ? (
-                        <span className="elapsed">{formatElapsed(entry.total)}</span>
-                      ) : (
-                        <span className="muted">--:--</span>
-                      )}
-                    </td>
-                  </tr>
+                  <>
+                    <tr
+                      key={entry.rider ? String(entry.rider.id) : idx}
+                      onClick={() => setExpandedRiderId(isExpanded ? null : entry.riderId)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td><span className={posClass}>{entry.complete ? pos : '-'}</span></td>
+                      <td>
+                        {entry.rider ? `${entry.rider.firstName} ${entry.rider.lastName}` : 'Unknown'}
+                      </td>
+                      <td className="muted small-text">
+                        {entry.trackCount}/{sortedEventTracks.length}
+                        {entry.dnf && <span className="badge dnf" style={{ marginLeft: 6 }}>DNF</span>}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {entry.total > 0 ? (
+                          <span className="elapsed">{formatElapsed(entry.total)}</span>
+                        ) : (
+                          <span className="muted">--:--</span>
+                        )}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${entry.riderId}-detail`}>
+                        <td colSpan={4} style={{ padding: '0 12px 12px 52px', background: 'var(--surface-hover, rgba(255,255,255,0.02))' }}>
+                          <table style={{ width: '100%', fontSize: '0.8rem' }}>
+                            <tbody>
+                              {sortedEventTracks.map((et: EventTrack) => {
+                                const tv = tvMap.get(et.trackVariationId);
+                                const track = tv ? trackMap.get(tv.trackId) : undefined;
+                                const run = entry.runs.find(r => r.eventTrackId === et.id);
+                                return (
+                                  <tr key={String(et.id)} style={{ borderBottom: '1px solid var(--border)' }}>
+                                    <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>{track?.name ?? 'Track'}</td>
+                                    <td style={{ padding: '6px 0', textAlign: 'right' }}>
+                                      {run ? (
+                                        run.status === 'finished' ? (
+                                          <span className="elapsed">{formatElapsed(run.elapsed)}</span>
+                                        ) : (
+                                          <span className={`badge ${run.status === 'dnf' ? 'dnf' : run.status === 'dns' ? '' : 'running'}`}>
+                                            {run.status.toUpperCase()}
+                                          </span>
+                                        )
+                                      ) : (
+                                        <span className="muted">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
