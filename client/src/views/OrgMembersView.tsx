@@ -142,59 +142,64 @@ export default function OrgMembersView() {
       )}
       <p className="muted small-text" style={{ marginBottom: 20 }}>Organization members and permissions</p>
 
-      {/* Owner */}
+      {/* Members table */}
       <div className="section">
-        <div className="section-title">Owner</div>
-        <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span>{ownerUser ? `${ownerUser.name || ownerUser.email}` : 'No owner'}</span>
-            {ownerUser && <span className="muted small-text" style={{ marginLeft: 8 }}>{ownerUser.email}</span>}
-          </div>
-          <span className="badge" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>Owner</span>
-        </div>
-      </div>
-
-      {/* Members */}
-      <div className="section">
-        <div className="section-title">Members ({members.length})</div>
-        {members.length === 0 ? (
-          <div className="empty">No members yet. Invite someone below.</div>
-        ) : (
-          members.map(({ member, user: memberUser }) => {
-            const isPending = memberUser?.googleSub?.startsWith('pending:') ?? false;
-            const showImpersonate = canImpersonate && member.role !== 'admin' && memberUser;
-            const menuOpen = openMenuId === member.id;
-            return (
-              <div
-                key={String(member.id)}
-                className="card"
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={isPending ? { opacity: 0.7 } : undefined}>
-                    {memberUser ? `${memberUser.name || memberUser.email}` : `User #${member.userId}`}
-                  </span>
-                  {memberUser && !isPending && <span className="muted small-text">{memberUser.email}</span>}
-                  {isPending && <span className="badge" style={{ background: 'var(--yellow-bg, #fef3c7)', color: 'var(--yellow, #d97706)', fontSize: '0.7rem' }}>Pending</span>}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className={`badge ${member.role === 'admin' ? 'running' : 'queued'}`}>
-                    {member.role}
-                  </span>
+        <div className="section-title">Members</div>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Role</th>
+              {isOwner && <th style={{ width: 40 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Owner row */}
+            <tr>
+              <td>{ownerUser ? (ownerUser.name || ownerUser.email) : 'No owner'}</td>
+              <td className="muted">{ownerUser?.email || ''}</td>
+              <td></td>
+              <td><span className="badge" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>owner</span></td>
+              {isOwner && <td></td>}
+            </tr>
+            {/* Member rows */}
+            {members.map(({ member, user: memberUser }) => {
+              const isPending = memberUser?.googleSub?.startsWith('pending:') ?? false;
+              const showImpersonate = canImpersonate && member.role !== 'admin' && memberUser;
+              const menuOpen = openMenuId === member.id;
+              return (
+                <tr key={String(member.id)}>
+                  <td style={isPending ? { opacity: 0.7 } : undefined}>
+                    {memberUser ? (memberUser.name || memberUser.email) : `User #${member.userId}`}
+                  </td>
+                  <td className="muted">{isPending ? '' : memberUser?.email || ''}</td>
+                  <td>
+                    {isPending && <span className="badge" style={{ background: 'var(--yellow-bg, #fef3c7)', color: 'var(--yellow, #d97706)' }}>Pending</span>}
+                  </td>
+                  <td>
+                    <span className={`badge ${member.role === 'admin' ? 'running' : 'queued'}`}>{member.role}</span>
+                  </td>
                   {isOwner && (
-                    <MemberMenu
-                      open={menuOpen}
-                      onToggle={() => setOpenMenuId(menuOpen ? null : member.id)}
-                      onClose={() => setOpenMenuId(null)}
-                      showImpersonate={!!showImpersonate}
-                      onImpersonate={() => { setOpenMenuId(null); if (memberUser) startImpersonation({ targetUserId: memberUser.id }); }}
-                      onRemove={() => { setOpenMenuId(null); handleRemove(member.id); }}
-                    />
+                    <td>
+                      <MemberMenu
+                        open={menuOpen}
+                        onToggle={() => setOpenMenuId(menuOpen ? null : member.id)}
+                        onClose={() => setOpenMenuId(null)}
+                        showImpersonate={!!showImpersonate}
+                        onImpersonate={() => { setOpenMenuId(null); if (memberUser) startImpersonation({ targetUserId: memberUser.id }); }}
+                        onRemove={() => { setOpenMenuId(null); handleRemove(member.id); }}
+                      />
+                    </td>
                   )}
-                </div>
-              </div>
-            );
-          })
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {members.length === 0 && (
+          <div className="empty" style={{ marginTop: 8 }}>No members yet. Invite someone below.</div>
         )}
       </div>
 
