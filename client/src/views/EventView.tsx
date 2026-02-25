@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useTable } from 'spacetimedb/react';
-import { tables } from '../module_bindings';
+import { useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import type { Event, Venue, EventTrack, TrackVariation, Track, Run, Rider, EventRider } from '../module_bindings/types';
 import { formatElapsed } from '../utils';
@@ -20,10 +20,17 @@ export default function EventView() {
   const [riders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
 
+  const updateEvent = useReducer(reducers.updateEvent);
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameError, setNameError] = useState('');
+
   const event = events.find((e: Event) => e.id === eid);
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
 
   const hasAccess = event ? (canTimekeep(eid, event.orgId) || canOrganizeEvent(eid, event.orgId)) : false;
+  const canEdit = event ? canOrganizeEvent(eid, event.orgId) : false;
 
   const sortedEventTracks = useMemo(() => {
     return [...eventTracks]
@@ -107,7 +114,48 @@ export default function EventView() {
 
   return (
     <div>
-      <h1>{event.name}</h1>
+      {editingName ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <input
+            type="text"
+            value={nameValue}
+            onChange={e => setNameValue(e.target.value)}
+            onKeyDown={async e => {
+              if (e.key === 'Enter') {
+                setNameError('');
+                const trimmed = nameValue.trim();
+                if (!trimmed) { setNameError('Name cannot be empty'); return; }
+                try {
+                  await updateEvent({ eventId: eid, name: trimmed, description: event.description, startDate: event.startDate, endDate: event.endDate });
+                  setEditingName(false);
+                } catch (err: any) { setNameError(err?.message || 'Failed'); }
+              }
+              if (e.key === 'Escape') setEditingName(false);
+            }}
+            autoFocus
+            className="input"
+            style={{ fontSize: '1.4rem', fontWeight: 700, flex: 1, maxWidth: 400 }}
+          />
+          <button className="primary small" onClick={async () => {
+            setNameError('');
+            const trimmed = nameValue.trim();
+            if (!trimmed) { setNameError('Name cannot be empty'); return; }
+            try {
+              await updateEvent({ eventId: eid, name: trimmed, description: event.description, startDate: event.startDate, endDate: event.endDate });
+              setEditingName(false);
+            } catch (err: any) { setNameError(err?.message || 'Failed'); }
+          }}>Save</button>
+          <button className="ghost small" onClick={() => setEditingName(false)}>Cancel</button>
+          {nameError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
+          {canEdit && (
+            <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename">&#9998;</button>
+          )}
+        </div>
+      )}
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
       {venue && (
         <p className="muted small-text" style={{ marginBottom: 20 }}>
