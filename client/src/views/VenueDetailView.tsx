@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
@@ -16,6 +16,32 @@ function circleIcon(color: string, size = 12) {
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
+}
+
+function pinIcon(color: string, label: string) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="display:flex;flex-direction:column;align-items:center">
+      <div style="background:${color};color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.4)">${label}</div>
+      <div style="width:2px;height:8px;background:${color}"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>
+    </div>`,
+    iconSize: [40, 30],
+    iconAnchor: [20, 30],
+  });
+}
+
+const START_ICON = pinIcon('#22c55e', 'START');
+const END_ICON = pinIcon('#ef4444', 'END');
+
+// Click handler for placing pins on the map
+function MapClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onPlace(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
 }
 
 // Auto-fit map bounds to markers
@@ -59,6 +85,7 @@ export default function VenueDetailView() {
   const [showVarForm, setShowVarForm] = useState<bigint | null>(null);
   const [varForm, setVarForm] = useState({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' });
   const [editingVarId, setEditingVarId] = useState<bigint | null>(null);
+  const [placingPin, setPlacingPin] = useState<'start' | 'end' | null>(null);
   const [error, setError] = useState('');
 
   const org = orgs.find((o: Organization) => o.id === oid);
@@ -160,15 +187,17 @@ export default function VenueDetailView() {
     setVarForm({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' });
     setEditingVarId(null);
     setShowVarForm(trackId);
+    setPlacingPin('start');
     setError('');
   };
   const startEditVar = (tv: TrackVariation) => {
     setVarForm({ name: tv.name, description: tv.description, startLat: String(tv.startLatitude), startLng: String(tv.startLongitude), endLat: String(tv.endLatitude), endLng: String(tv.endLongitude) });
     setEditingVarId(tv.id);
     setShowVarForm(tv.trackId);
+    setPlacingPin(null);
     setError('');
   };
-  const resetVarForm = () => { setVarForm({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' }); setEditingVarId(null); setShowVarForm(null); setError(''); };
+  const resetVarForm = () => { setVarForm({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' }); setEditingVarId(null); setShowVarForm(null); setPlacingPin(null); setError(''); };
   const handleVarSubmit = async () => {
     setError('');
     if (!varForm.name.trim()) { setError('Variation name is required'); return; }
@@ -339,26 +368,100 @@ export default function VenueDetailView() {
                     </div>
 
                     {/* Variation form */}
-                    {showVarForm === track.id && (
-                      <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: 12, marginBottom: 8 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                            <div><label className="input-label">Name *</label><input type="text" value={varForm.name} onChange={e => setVarForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus /></div>
-                            <div><label className="input-label">Description</label><input type="text" value={varForm.description} onChange={e => setVarForm(f => ({ ...f, description: e.target.value }))} className="input" /></div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
-                            <div><label className="input-label">Start Lat</label><input type="number" step="any" value={varForm.startLat} onChange={e => setVarForm(f => ({ ...f, startLat: e.target.value }))} className="input" /></div>
-                            <div><label className="input-label">Start Lng</label><input type="number" step="any" value={varForm.startLng} onChange={e => setVarForm(f => ({ ...f, startLng: e.target.value }))} className="input" /></div>
-                            <div><label className="input-label">End Lat</label><input type="number" step="any" value={varForm.endLat} onChange={e => setVarForm(f => ({ ...f, endLat: e.target.value }))} className="input" /></div>
-                            <div><label className="input-label">End Lng</label><input type="number" step="any" value={varForm.endLng} onChange={e => setVarForm(f => ({ ...f, endLng: e.target.value }))} className="input" /></div>
-                          </div>
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button className="primary small" onClick={handleVarSubmit}>{editingVarId ? 'Save' : 'Add'}</button>
-                            <button className="ghost small" onClick={resetVarForm}>Cancel</button>
+                    {showVarForm === track.id && (() => {
+                      const hasStart = varForm.startLat !== '' && varForm.startLng !== '';
+                      const hasEnd = varForm.endLat !== '' && varForm.endLng !== '';
+                      const startPos: [number, number] | null = hasStart ? [parseFloat(varForm.startLat), parseFloat(varForm.startLng)] : null;
+                      const endPos: [number, number] | null = hasEnd ? [parseFloat(varForm.endLat), parseFloat(varForm.endLng)] : null;
+                      const handleMapPlace = (lat: number, lng: number) => {
+                        if (placingPin === 'start') {
+                          setVarForm(f => ({ ...f, startLat: lat.toFixed(6), startLng: lng.toFixed(6) }));
+                          setPlacingPin(hasEnd ? null : 'end');
+                        } else if (placingPin === 'end') {
+                          setVarForm(f => ({ ...f, endLat: lat.toFixed(6), endLng: lng.toFixed(6) }));
+                          setPlacingPin(null);
+                        } else if (!hasStart) {
+                          setVarForm(f => ({ ...f, startLat: lat.toFixed(6), startLng: lng.toFixed(6) }));
+                          setPlacingPin('end');
+                        } else if (!hasEnd) {
+                          setVarForm(f => ({ ...f, endLat: lat.toFixed(6), endLng: lng.toFixed(6) }));
+                          setPlacingPin(null);
+                        }
+                      };
+                      return (
+                        <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: 12, marginBottom: 8 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                              <div><label className="input-label">Name *</label><input type="text" value={varForm.name} onChange={e => setVarForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus /></div>
+                              <div><label className="input-label">Description</label><input type="text" value={varForm.description} onChange={e => setVarForm(f => ({ ...f, description: e.target.value }))} className="input" /></div>
+                            </div>
+
+                            {/* Pin placement map */}
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                <label className="input-label" style={{ marginBottom: 0 }}>Drop pins on the map</label>
+                                <button
+                                  className={`ghost small ${placingPin === 'start' ? 'pin-active-start' : ''}`}
+                                  onClick={() => setPlacingPin(placingPin === 'start' ? null : 'start')}
+                                  style={placingPin === 'start' ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' } : {}}
+                                >
+                                  {hasStart ? 'Move Start' : 'Place Start'}
+                                </button>
+                                <button
+                                  className={`ghost small ${placingPin === 'end' ? 'pin-active-end' : ''}`}
+                                  onClick={() => setPlacingPin(placingPin === 'end' ? null : 'end')}
+                                  style={placingPin === 'end' ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' } : {}}
+                                >
+                                  {hasEnd ? 'Move End' : 'Place End'}
+                                </button>
+                              </div>
+                              {placingPin && (
+                                <div className="small-text" style={{ marginBottom: 4, color: placingPin === 'start' ? '#22c55e' : '#ef4444' }}>
+                                  Click on the map to place the {placingPin} pin
+                                </div>
+                              )}
+                              {!placingPin && !hasStart && (
+                                <div className="small-text muted" style={{ marginBottom: 4 }}>
+                                  Click on the map to place the start pin
+                                </div>
+                              )}
+                              <div className="venue-map-container">
+                                <MapContainer
+                                  center={[venue.latitude, venue.longitude]}
+                                  zoom={14}
+                                  style={{ height: 280, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: placingPin ? 'crosshair' : '' }}
+                                >
+                                  <TileLayer
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                  />
+                                  <MapClickHandler onPlace={handleMapPlace} />
+                                  {startPos && <Marker position={startPos} icon={START_ICON} />}
+                                  {endPos && <Marker position={endPos} icon={END_ICON} />}
+                                  {startPos && endPos && (
+                                    <Polyline positions={[startPos, endPos]} pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }} />
+                                  )}
+                                </MapContainer>
+                              </div>
+                              {/* Coordinate readout */}
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6, fontSize: '0.75rem' }}>
+                                <div className="muted">
+                                  Start: {hasStart ? `${varForm.startLat}, ${varForm.startLng}` : 'not set'}
+                                </div>
+                                <div className="muted">
+                                  End: {hasEnd ? `${varForm.endLat}, ${varForm.endLng}` : 'not set'}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button className="primary small" onClick={handleVarSubmit}>{editingVarId ? 'Save' : 'Add'}</button>
+                              <button className="ghost small" onClick={resetVarForm}>Cancel</button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Variation list */}
                     <table className="data-table">
