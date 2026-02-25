@@ -5,7 +5,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
-import { FontAwesomeIcon, faPen } from '../icons';
+import { faPen, faTrash } from '../icons';
+import { RowActionMenu } from '../components/ActionMenu';
 import type { Rider, Organization, RegistrationToken } from '../module_bindings/types';
 
 export default function RacersView() {
@@ -250,10 +251,10 @@ export default function RacersView() {
                 <td className="muted">{r.phone || '—'}</td>
                 <td>{r.dateOfBirth || '—'}</td>
                 <td>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button className="ghost small" onClick={() => startEdit(r)} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
-                    <button className="ghost small" onClick={() => handleDelete(r)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                  </div>
+                  <RowActionMenu items={[
+                    { icon: faPen, label: 'Edit racer', onClick: () => startEdit(r) },
+                    { icon: faTrash, label: 'Delete racer', danger: true, onClick: () => handleDelete(r) },
+                  ]} />
                 </td>
               </tr>
             ))}

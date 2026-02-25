@@ -6,6 +6,7 @@ import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faThumbtack } from '../icons';
 import ActionMenu from '../components/ActionMenu';
+import { RowActionMenu } from '../components/ActionMenu';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
 type EventStatus = 'in_progress' | 'not_started' | 'completed';
@@ -339,6 +340,7 @@ export default function ChampionshipDetailView() {
                 <th>Venue</th>
                 <th>Start</th>
                 <th>End</th>
+                <th style={{ width: 40 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -375,16 +377,18 @@ export default function ChampionshipDetailView() {
                         {editEventError && <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>{editEventError}</span>}
                       </div>
                     ) : (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Link to={`/event/${e.slug}`} className="table-link">{e.name}</Link>
-                        <button className="ghost small" onClick={() => startEditEvent(e)} title="Rename" style={{ padding: '2px 6px', fontSize: '0.75rem' }}><FontAwesomeIcon icon={faPen} /></button>
-                      </span>
+                      <Link to={`/event/${e.slug}`} className="table-link">{e.name}</Link>
                     )}
                   </td>
                   <td><span className={`badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span></td>
                   <td>{venueMap.get(e.venueId)?.name ?? '—'}</td>
                   <td>{e.startDate}</td>
                   <td>{e.endDate}</td>
+                  <td>
+                    <RowActionMenu items={[
+                      { icon: faPen, label: 'Rename event', onClick: () => startEditEvent(e) },
+                    ]} />
+                  </td>
                 </tr>
               ))}
             </tbody>

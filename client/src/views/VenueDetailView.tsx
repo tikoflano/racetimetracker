@@ -9,6 +9,7 @@ import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faTrash } from '../icons';
 import ActionMenu from '../components/ActionMenu';
+import { RowActionMenu } from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 
@@ -410,10 +411,10 @@ export default function VenueDetailView() {
                     <span className="muted small-text">({vars.length} variation{vars.length !== 1 ? 's' : ''})</span>
                   </div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost small" onClick={() => startEditTrack(track)} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
-                      <button className="ghost small" onClick={() => handleDeleteTrack(track)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                    </div>
+                    <RowActionMenu items={[
+                      { icon: faPen, label: 'Edit track', onClick: () => startEditTrack(track) },
+                      { icon: faTrash, label: 'Delete track', danger: true, onClick: () => handleDeleteTrack(track) },
+                    ]} />
                     <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
                   </div>
                 </div>
@@ -553,12 +554,10 @@ export default function VenueDetailView() {
                             <td className="muted small-text">{tv.description || '—'}</td>
                             <td>
                               {tv.name !== 'Default' ? (
-                                <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                                  <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
-                                  {vars.length > 1 && (
-                                    <button className="ghost small" onClick={() => handleDeleteVar(tv)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                                  )}
-                                </div>
+                                <RowActionMenu items={[
+                                  { icon: faPen, label: 'Edit variation', onClick: () => startEditVar(tv) },
+                                  ...(vars.length > 1 ? [{ icon: faTrash, label: 'Delete variation', danger: true as const, onClick: () => handleDeleteVar(tv) }] : []),
+                                ]} />
                               ) : (
                                 <span className="muted small-text">Default</span>
                               )}
