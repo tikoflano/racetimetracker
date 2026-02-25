@@ -186,7 +186,7 @@ export default function App() {
                 <Route path="/register/:token" element={<RegisterView />} />
                 <Route path="/register/:token/qr" element={<QRCodeView />} />
                 <Route path="/dev" element={<DevView />} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={isAuthenticated ? <NotFound /> : <Navigate to="/" replace />} />
               </Routes>
             </OrgProvider>
           </main>
