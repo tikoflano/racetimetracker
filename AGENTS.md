@@ -72,13 +72,13 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 
 ## Database Targets
 
-Defined in `spacetime.json`:
+`spacetime.json` defaults to the local server with database `racetimetracker-dev`. Cloud publish uses `--no-config` with explicit server flags.
 
-| Target | Server | Database |
-|--------|--------|----------|
-| `local` | `localhost:3000` | `racetimetracker-dev` |
-| `dev` | `maincloud.spacetimedb.com` | `racetimetracker-dev` |
-| `prod` | `maincloud.spacetimedb.com` | `racetimetracker-prod` |
+| Target | Server | Database | Command |
+|--------|--------|----------|---------|
+| local (dev) | `localhost:3000` | `racetimetracker-dev` | `npm run dev:spacetime` |
+| cloud (dev) | `maincloud.spacetimedb.com` | `racetimetracker-dev` | `npm run publish` |
+| cloud (prod) | `maincloud.spacetimedb.com` | `racetimetracker-prod` | `npm run publish` (change db name) |
 
 ## Auth & RBAC
 
@@ -100,28 +100,37 @@ Defined in `spacetime.json`:
 
 **Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.
 
-### Regenerate client bindings after schema changes
+### Local development with `spacetime dev`
+
+Start the full stack (SpacetimeDB server must be running on port 3000):
+
+```bash
+spacetime start &          # Start local server (if not already running)
+npm run dev:spacetime      # Build + publish + generate bindings + start Vite
+```
+
+`spacetime dev` watches for file changes and auto-rebuilds/republishes/regenerates.
+
+### Regenerate client bindings manually
 
 ```bash
 spacetime generate --lang typescript --out-dir client/src/module_bindings --module-path spacetimedb
 ```
 
-### Publish module to dev
-
-After schema or reducer changes, run this yourself (do not leave it for the user):
+### Publish module to cloud (dev)
 
 ```bash
-spacetime publish racetimetracker-dev --server maincloud -p spacetimedb
+npm run publish
 ```
 
-### Seed demo data
+### Seed demo data (local)
 
 ```bash
-spacetime call --server maincloud racetimetracker-dev seed_demo_data
+spacetime call --server local racetimetracker-dev seed_demo_data
 ```
 
-### Query cloud database
+### Query local database
 
 ```bash
-spacetime sql --server maincloud racetimetracker-dev "SELECT * FROM event"
+spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 ```
