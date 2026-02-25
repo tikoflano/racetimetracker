@@ -134,3 +134,27 @@ spacetime call --server local racetimetracker-dev seed_demo_data
 ```bash
 spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 ```
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- SpacetimeDB CLI is installed at `~/.local/bin/spacetime`. Ensure `PATH` includes `~/.local/bin`.
+- Node.js 22+ and npm are pre-installed.
+- `npm install` at the workspace root installs both `client/` and `spacetimedb/` via npm workspaces.
+
+### Running locally
+
+1. Start the SpacetimeDB standalone server: `spacetime start --listen-addr 0.0.0.0:3000 &`
+2. Run `npm run dev:spacetime` — this handles build, publish, binding generation, and Vite startup.
+3. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
+4. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
+
+### Gotchas
+
+- `spacetime dev` does **not** auto-start the local server. You must run `spacetime start` first.
+- The `dev:spacetime` script uses `--no-config` because SpacetimeDB CLI v2.0.1 doesn't support the nested `databases` config format in `spacetime.json`. All flags are passed explicitly.
+- `client/src/module_bindings/` is gitignored and auto-generated. Never edit manually; `spacetime dev` regenerates on each run.
+- Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
+- The `client/.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `client/.env.local.example`.
+- Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.
