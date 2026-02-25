@@ -8,7 +8,7 @@ import type { Organization, OrgMember, User, Event } from '../module_bindings/ty
 export default function OrgMembersView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { isAuthenticated, isReady, canManageOrg, isOrgOwner, isImpersonating, canImpersonate } = useAuth();
+  const { isAuthenticated, isReady, canManageOrg, isOrgOwner, canImpersonate } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
@@ -21,7 +21,6 @@ export default function OrgMembersView() {
   const renameOrganization = useReducer(reducers.renameOrganization);
   const seedDemoData = useReducer(reducers.seedDemoData);
   const startImpersonation = useReducer(reducers.startImpersonation);
-  const stopImpersonation = useReducer(reducers.stopImpersonation);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'manager'>('manager');
@@ -109,27 +108,6 @@ export default function OrgMembersView() {
 
   return (
     <div>
-      {/* Impersonation banner */}
-      {isImpersonating && (
-        <div style={{
-          background: 'var(--yellow-bg, #fef3c7)',
-          color: 'var(--yellow, #d97706)',
-          padding: '8px 16px',
-          borderRadius: 'var(--radius)',
-          marginBottom: 16,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '0.85rem',
-          fontWeight: 600,
-        }}>
-          <span>You are impersonating a user</span>
-          <button className="ghost small" style={{ color: 'var(--yellow, #d97706)', fontWeight: 600 }} onClick={() => stopImpersonation()}>
-            Stop Impersonating
-          </button>
-        </div>
-      )}
-
       {/* Org name — editable */}
       {editing ? (
         <div style={{ marginBottom: 20 }}>

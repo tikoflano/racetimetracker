@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useSpacetimeDB, useTable } from 'spacetimedb/react';
-import { tables } from './module_bindings';
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from './module_bindings';
 import { useAuth } from './auth';
 import LoginButton from './components/LoginButton';
 import Sidebar from './components/Sidebar';
@@ -25,6 +25,7 @@ export default function App() {
   const { user, realUser, isAuthenticated, isImpersonating, logout } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
+  const stopImpersonation = useReducer(reducers.stopImpersonation);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
@@ -97,8 +98,21 @@ export default function App() {
 
       {isImpersonating && user && realUser && (
         <div className="impersonation-banner">
-          Viewing as: <strong>{user.name || user.email}</strong>
-          <span className="muted" style={{ marginLeft: 4 }}>(ID: {String(user.id)})</span>
+          <span>
+            Viewing as: <strong>{user.name || user.email}</strong>
+          </span>
+          <button onClick={() => stopImpersonation()} style={{
+            background: 'rgba(255,255,255,0.2)',
+            color: 'white',
+            border: '1px solid rgba(255,255,255,0.4)',
+            borderRadius: 'var(--radius)',
+            padding: '2px 10px',
+            fontSize: '0.75rem',
+            cursor: 'pointer',
+            fontWeight: 600,
+          }}>
+            Stop
+          </button>
         </div>
       )}
 
