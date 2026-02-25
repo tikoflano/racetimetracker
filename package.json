@@ -1,5 +1,13 @@
 {
   "name": "bike-race-tracker",
   "private": true,
-  "workspaces": ["spacetimedb", "client"]
+  "workspaces": [
+    "spacetimedb",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w client",
+    "publish": "spacetime publish racetimetracker-dev --server maincloud.spacetimedb.com -p spacetimedb --no-config -y",
+    "clear-data": "npm run publish -- --delete-data"
+  }
 }

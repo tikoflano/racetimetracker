@@ -3,7 +3,7 @@
 //
 // See https://aka.ms/devcontainer.json for more information.
 {
-	"name": "Ona",
+	"name": "RaceTimeTracker",
 	// This universal image (~10GB) includes many development tools and languages,
 	// providing a convenient all-in-one development environment.
 	//
@@ -20,20 +20,21 @@
 	// or build your own using the Dockerfile option below.
 	"image": "mcr.microsoft.com/devcontainers/universal:4.0.1-noble",
 	"mounts": [
-		"source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume"
+		"source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume",
+		"source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume"
 	],
-	"postCreateCommand": "curl -sSf https://install.spacetimedb.com | sh -s -- --yes"
+	"postCreateCommand": "bash .devcontainer/post-create.sh"
 	// Use "build":
 	// instead of the image to use a Dockerfile to build an image.
 	// "build": {
-    //     "context": ".",
-    //     "dockerfile": "Dockerfile"
-    // }
+	//     "context": ".",
+	//     "dockerfile": "Dockerfile"
+	// }
 	// Features add additional features to your environment. See https://containers.dev/features
 	// Beware: features are not supported on all platforms and may have unintended side-effects.
 	// "features": {
-    //   "ghcr.io/devcontainers/features/docker-in-docker": {
-    //     "moby": false
-    //   }
-    // }
+	//   "ghcr.io/devcontainers/features/docker-in-docker": {
+	//     "moby": false
+	//   }
+	// }
 }
