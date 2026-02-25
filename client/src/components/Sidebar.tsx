@@ -5,7 +5,7 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import type { Event, Organization, PinnedEvent } from '../module_bindings/types';
 
-export default function Sidebar() {
+export default function Sidebar({ className = '' }: { className?: string }) {
   const { user, isAuthenticated, canManageOrg } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
@@ -32,7 +32,7 @@ export default function Sidebar() {
   }, [events, pinnedEventIds]);
 
   return (
-    <nav className="sidebar">
+    <nav className={`sidebar ${className}`.trim()}>
       <div className="sidebar-section">
         <div className="sidebar-label">Pinned Events</div>
         {pinnedList.length === 0 ? (

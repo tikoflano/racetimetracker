@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from './module_bindings';
 import { useAuth } from './auth';
@@ -19,6 +19,14 @@ export default function App() {
   const { user, isAuthenticated, logout } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
@@ -59,9 +67,20 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="connection-bar" style={{ marginBottom: 0 }}>
-          <span className={`dot ${isConnected ? 'on' : ''}`} />
-          {isConnected ? 'Connected' : 'Connection failed'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {isAuthenticated && (
+            <button
+              className="ghost small menu-toggle"
+              onClick={() => setSidebarOpen(o => !o)}
+              aria-label="Toggle menu"
+            >
+              {sidebarOpen ? '\u2715' : '\u2630'}
+            </button>
+          )}
+          <div className="connection-bar" style={{ marginBottom: 0 }}>
+            <span className={`dot ${isConnected ? 'on' : ''}`} />
+            {isConnected ? 'Connected' : 'Connection failed'}
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated ? (
@@ -86,7 +105,12 @@ export default function App() {
         </div>
       ) : (
         <div className="app-body">
-          {isAuthenticated && <Sidebar />}
+          {isAuthenticated && (
+            <>
+              {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+              <Sidebar className={sidebarOpen ? 'open' : ''} />
+            </>
+          )}
           <main className="app-main">
             <Routes>
               <Route

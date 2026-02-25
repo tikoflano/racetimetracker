@@ -327,9 +327,48 @@ body {
   padding-left: 4px;
 }
 
+/* Hamburger toggle - hidden on desktop */
+.menu-toggle {
+  display: none;
+  font-size: 1.2rem;
+  padding: 4px 8px;
+}
+
+/* Sidebar overlay backdrop */
+.sidebar-overlay {
+  display: none;
+}
+
 @media (max-width: 700px) {
-  .sidebar { display: none; }
+  .menu-toggle {
+    display: inline-flex;
+  }
+  .sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding-top: 56px;
+    overflow-y: auto;
+  }
+  .sidebar.open {
+    display: block;
+  }
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.5);
+  }
   .app-main { padding: 16px; }
+  .cal-cell { min-height: 60px; }
+  .cal-event { font-size: 0.6rem; }
 }
 
 a { color: var(--accent); text-decoration: none; }
