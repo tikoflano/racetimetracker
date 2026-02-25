@@ -175,8 +175,8 @@ export default function TrackView() {
         </div>
       )}
 
-      {/* All done */}
-      {queuedRuns.length === 0 && runningRuns.length === 0 && (
+      {/* All done — only show when there are runs and all are finished */}
+      {trackRuns.length > 0 && queuedRuns.length === 0 && runningRuns.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: 24 }}>
           <p className="muted">All riders have completed this track.</p>
         </div>

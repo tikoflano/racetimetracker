@@ -6,7 +6,7 @@ import { useAuth } from '../auth';
 import AddRacerModal from '../components/AddRacerModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
-import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack } from '../module_bindings/types';
+import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule } from '../module_bindings/types';
 
 export default function EventManageView() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -19,6 +19,7 @@ export default function EventManageView() {
   const [trackVariations] = useTable(tables.track_variation);
   const [tracksData] = useTable(tables.track);
   const [runs] = useTable(tables.run);
+  const [trackSchedules] = useTable(tables.event_track_schedule);
   const [allCategories] = useTable(tables.event_category);
   const [categoryTracks] = useTable(tables.category_track);
   const [allRiders] = useTable(tables.rider);
@@ -35,6 +36,8 @@ export default function EventManageView() {
   const addRiderToEvent = useReducer(reducers.addRiderToEvent);
   const importRiders = useReducer(reducers.importRidersFromEvent);
   const updateEventRider = useReducer(reducers.updateEventRider);
+  const generateTrackSchedule = useReducer(reducers.generateTrackSchedule);
+  const clearTrackSchedule = useReducer(reducers.clearTrackSchedule);
 
   const event = events.find((e: Event) => e.id === eid);
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
@@ -143,6 +146,13 @@ export default function EventManageView() {
     return m;
   }, [categories]);
 
+  // Schedule config per event track
+  const scheduleByEventTrackId = useMemo(() => {
+    const m = new Map<bigint, EventTrackSchedule>();
+    for (const s of trackSchedules) m.set(s.eventTrackId, s);
+    return m;
+  }, [trackSchedules]);
+
   // Assigned number per rider: use er.assignedNumber if set (non-zero), else computed from category
   const assignedNumberByRiderId = useMemo(() => {
     const m = new Map<bigint, number | null>();
@@ -184,7 +194,9 @@ export default function EventManageView() {
   const [checkInModal, setCheckInModal] = useState<{ rider: Rider; eventRider: EventRider } | null>(null);
   const [showAddTrackModal, setShowAddTrackModal] = useState(false);
   const [addTrackError, setAddTrackError] = useState('');
-  const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers'>('tracks');
+  const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers' | 'runs'>('tracks');
+  const [scheduleError, setScheduleError] = useState('');
+  const [scheduleFormByTrack, setScheduleFormByTrack] = useState<Record<string, { startDateTime: string; intervalValue: string; intervalUnit: 'minutes' | 'seconds' }>>({});
 
   const resetCatForm = () => {
     setCatForm({ name: '', description: '', rangeStart: '', rangeEnd: '' });
@@ -332,6 +344,73 @@ export default function EventManageView() {
     } catch (e: any) { setAddTrackError(e?.message || 'Failed'); }
   };
 
+  const getScheduleForm = (etId: bigint) => {
+    const key = String(etId);
+    const existing = scheduleFormByTrack[key];
+    const schedule = scheduleByEventTrackId.get(etId);
+    if (existing) return existing;
+    if (schedule && event) {
+      const d = new Date(Number(schedule.startTime));
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const h = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      const intervalSec = schedule.intervalSeconds;
+      const intervalUnit = intervalSec >= 60 && intervalSec % 60 === 0 ? 'minutes' : 'seconds';
+      const intervalValue = intervalUnit === 'minutes' ? String(intervalSec / 60) : String(intervalSec);
+      return { startDateTime: `${y}-${m}-${day}T${h}:${min}`, intervalValue, intervalUnit };
+    }
+    if (event) {
+      const start = event.startDate + 'T09:00';
+      return { startDateTime: start, intervalValue: '3', intervalUnit: 'minutes' as const };
+    }
+    return { startDateTime: '', intervalValue: '3', intervalUnit: 'minutes' as const };
+  };
+
+  const setScheduleForm = (etId: bigint, updates: Partial<{ startDateTime: string; intervalValue: string; intervalUnit: 'minutes' | 'seconds' }>) => {
+    const key = String(etId);
+    const base = getScheduleForm(etId);
+    const merged = { ...base, ...updates };
+    const valid: { startDateTime: string; intervalValue: string; intervalUnit: 'minutes' | 'seconds' } = {
+      startDateTime: merged.startDateTime,
+      intervalValue: merged.intervalValue,
+      intervalUnit: merged.intervalUnit === 'seconds' ? 'seconds' : 'minutes',
+    };
+    setScheduleFormByTrack(prev => ({ ...prev, [key]: valid }));
+  };
+
+  const handleGenerateSchedule = async (et: EventTrack) => {
+    if (!event) return;
+    setScheduleError('');
+    const form = getScheduleForm(et.id);
+    const startMs = new Date(form.startDateTime).getTime();
+    if (isNaN(startMs)) {
+      setScheduleError('Please enter a valid start date and time.');
+      return;
+    }
+    const intervalNum = parseInt(form.intervalValue, 10);
+    if (isNaN(intervalNum) || intervalNum < 1) {
+      setScheduleError('Interval must be at least 1.');
+      return;
+    }
+    const intervalSeconds = form.intervalUnit === 'minutes' ? intervalNum * 60 : intervalNum;
+    try {
+      await generateTrackSchedule({ eventTrackId: et.id, startTime: BigInt(startMs), intervalSeconds });
+    } catch (e: any) { setScheduleError(e?.message || 'Failed'); }
+  };
+
+  const handleClearSchedule = async (et: EventTrack) => {
+    const tv = tvMap.get(et.trackVariationId);
+    const track = tv ? trackMap.get(tv.trackId) : undefined;
+    const label = track ? `${track.name} — ${tv?.name}` : 'this track';
+    if (!confirm(`Clear schedule and all queued runs for "${label}"?`)) return;
+    setScheduleError('');
+    try {
+      await clearTrackSchedule({ eventTrackId: et.id });
+    } catch (e: any) { setScheduleError(e?.message || 'Failed'); }
+  };
+
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!event) {
@@ -367,6 +446,12 @@ export default function EventManageView() {
           onClick={() => setActiveTab('racers')}
         >
           Racers ({assignedRiders.length})
+        </button>
+        <button
+          className={activeTab === 'runs' ? 'active' : ''}
+          onClick={() => setActiveTab('runs')}
+        >
+          Runs
         </button>
       </div>
 
@@ -762,6 +847,105 @@ export default function EventManageView() {
             </table>
           );
         })()}
+      </div>
+      )}
+
+      {activeTab === 'runs' && (
+      <div className="section">
+        <div className="section-title" style={{ marginBottom: 8 }}>
+          Run Schedule
+        </div>
+        <p className="muted small-text" style={{ marginBottom: 16 }}>
+          Create a schedule of runs for each track using all registered riders. Start time must be within the event dates ({event?.startDate} to {event?.endDate}). Riders are ordered by category and assigned number.
+        </p>
+
+        {scheduleError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{scheduleError}</div>}
+
+        {sortedEventTracks.length === 0 ? (
+          <div className="empty">No tracks assigned to this event. Add tracks first.</div>
+        ) : assignedRiders.length === 0 ? (
+          <div className="empty">No racers registered. Add racers to create a schedule.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {sortedEventTracks.map((et: EventTrack) => {
+              const tv = tvMap.get(et.trackVariationId);
+              const track = tv ? trackMap.get(tv.trackId) : undefined;
+              const trackLabel = track ? `${track.name}${tv ? ` — ${tv.name}` : ''}` : 'Track';
+              const trackRuns = runs.filter((r: Run) => r.eventTrackId === et.id);
+              const schedule = scheduleByEventTrackId.get(et.id);
+              const form = getScheduleForm(et.id);
+              const minDatetime = event ? `${event.startDate}T00:00` : '';
+              const maxDatetime = event ? `${event.endDate}T23:59` : '';
+
+              return (
+                <div key={String(et.id)} className="card" style={{ padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div>
+                      <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>{trackLabel}</h3>
+                      <Link to={`/event/${eventId}/track/${et.id}`} className="small-text" style={{ color: 'var(--accent)' }}>
+                        Track timing →
+                      </Link>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {schedule && (
+                        <span className="badge" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
+                          {trackRuns.length} run{trackRuns.length !== 1 ? 's' : ''} scheduled
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
+                    <div>
+                      <label className="input-label">Start date & time</label>
+                      <input
+                        type="datetime-local"
+                        className="input"
+                        value={form.startDateTime}
+                        min={minDatetime}
+                        max={maxDatetime}
+                        onChange={e => setScheduleForm(et.id, { startDateTime: e.target.value })}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div>
+                        <label className="input-label">Interval between riders</label>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <input
+                            type="number"
+                            min="1"
+                            className="input"
+                            value={form.intervalValue}
+                            onChange={e => setScheduleForm(et.id, { intervalValue: e.target.value })}
+                            style={{ width: 80 }}
+                          />
+                          <select
+                            className="input"
+                            value={form.intervalUnit}
+                            onChange={e => setScheduleForm(et.id, { intervalUnit: e.target.value as 'minutes' | 'seconds' })}
+                            style={{ width: 100 }}
+                          >
+                            <option value="minutes">minutes</option>
+                            <option value="seconds">seconds</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="primary small" onClick={() => handleGenerateSchedule(et)}>
+                        {schedule ? 'Regenerate' : 'Generate'} Schedule
+                      </button>
+                      {schedule && (
+                        <button className="ghost small" onClick={() => handleClearSchedule(et)} style={{ color: 'var(--red)' }}>
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       )}
 

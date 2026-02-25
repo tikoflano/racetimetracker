@@ -98,6 +98,8 @@ Defined in `spacetime.json`:
 
 ## Common Tasks
 
+**Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.
+
 ### Regenerate client bindings after schema changes
 
 ```bash
@@ -105,6 +107,8 @@ spacetime generate --lang typescript --out-dir client/src/module_bindings --modu
 ```
 
 ### Publish module to dev
+
+After schema or reducer changes, run this yourself (do not leave it for the user):
 
 ```bash
 spacetime publish racetimetracker-dev --server maincloud -p spacetimedb
