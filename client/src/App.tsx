@@ -170,7 +170,7 @@ export default function App() {
           <main className="app-main">
             <OrgProvider value={{ activeOrgId: activeOrgId }}>
               <Routes>
-                <Route path="/" element={<Navigate to="/championships" replace />} />
+                <Route path="/" element={isAuthenticated ? <Navigate to="/championships" replace /> : <HomePage />} />
                 <Route path="/event/:eventSlug" element={<EventView />} />
                 <Route path="/event/:eventSlug/manage" element={<EventManageView />} />
                 <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
@@ -190,6 +190,21 @@ export default function App() {
           </main>
         </div>
       )}
+    </div>
+  );
+}
+
+function HomePage() {
+  return (
+    <div style={{ textAlign: 'center', padding: '80px 20px', maxWidth: 480, margin: '0 auto' }}>
+      <div style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: 8 }}>RaceTimeTracker</div>
+      <p className="muted" style={{ marginBottom: 32, fontSize: '1rem' }}>
+        Real-time enduro bike race timing. Start and stop timers across the course — everyone sees results instantly.
+      </p>
+      <div style={{ marginBottom: 24 }}>
+        <LoginButton />
+      </div>
+      <p className="muted small-text">Sign in with Google to create events, manage riders, and run races.</p>
     </div>
   );
 }
