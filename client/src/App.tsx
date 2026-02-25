@@ -201,7 +201,7 @@ function HomePage() {
       <p className="muted" style={{ marginBottom: 32, fontSize: '1rem' }}>
         Real-time enduro bike race timing. Start and stop timers across the course — everyone sees results instantly.
       </p>
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
         <LoginButton />
       </div>
       <p className="muted small-text">Sign in with Google to create events, manage riders, and run races.</p>
