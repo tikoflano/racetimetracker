@@ -471,6 +471,7 @@ export default function VenueDetailView() {
                       <thead>
                         <tr>
                           <th>Name</th>
+                          <th>Description</th>
                           <th>Start</th>
                           <th>End</th>
                           <th style={{ width: 80 }}></th>
@@ -479,10 +480,8 @@ export default function VenueDetailView() {
                       <tbody>
                         {vars.map((tv: TrackVariation) => (
                           <tr key={String(tv.id)}>
-                            <td>
-                              {tv.name}
-                              {tv.description && <div className="muted small-text">{tv.description}</div>}
-                            </td>
+                            <td>{tv.name}</td>
+                            <td className="muted small-text">{tv.description || '—'}</td>
                             <td className="muted small-text">{tv.startLatitude.toFixed(4)}, {tv.startLongitude.toFixed(4)}</td>
                             <td className="muted small-text">{tv.endLatitude.toFixed(4)}, {tv.endLongitude.toFixed(4)}</td>
                             <td>
