@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
@@ -8,22 +8,25 @@ import type { Organization, OrgMember, User } from '../module_bindings/types';
 
 export default function OrgMembersView() {
   const oid = useActiveOrg();
-  const { isAuthenticated, isReady, canManageOrg, isOrgOwner, canImpersonate } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isReady, canManageOrg, isOrgOwner, canImpersonate } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
   const [users] = useTable(tables.user);
 
-
   const inviteOrgMember = useReducer(reducers.inviteOrgMember);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
   const renameOrganization = useReducer(reducers.renameOrganization);
+  const leaveOrganization = useReducer(reducers.leaveOrganization);
   const startImpersonation = useReducer(reducers.startImpersonation);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'manager' | 'timekeeper'>('manager');
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState<bigint | null>(null);
+  const [orgMenuOpen, setOrgMenuOpen] = useState(false);
+  const [showInviteForm, setShowInviteForm] = useState(false);
 
   // Inline rename state
   const [editing, setEditing] = useState(false);
@@ -47,6 +50,30 @@ export default function OrgMembersView() {
     if (!org) return null;
     return users.find((u: User) => u.id === org.ownerUserId) ?? null;
   }, [org, users]);
+
+  const willDeleteOrg = useMemo(() => {
+    if (!org || !user) return false;
+    const isCallerOwner = org.ownerUserId === user.id;
+    if (!isCallerOwner) return false;
+    for (const { member, user: mu } of members) {
+      if (member.userId === user.id) continue;
+      if (member.role === 'admin' && mu && !mu.googleSub?.startsWith('pending:')) return false;
+    }
+    return true;
+  }, [org, user, members]);
+
+  const handleLeave = async () => {
+    const msg = willDeleteOrg
+      ? 'You are the only admin. Leaving will permanently delete this organization and all its data. Are you sure?'
+      : 'Are you sure you want to leave this organization?';
+    if (!confirm(msg)) return;
+    try {
+      await leaveOrganization({ orgId: oid });
+      navigate('/');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to leave organization');
+    }
+  };
 
   if (!isReady) return null;
   if (!isAuthenticated) {
@@ -106,7 +133,7 @@ export default function OrgMembersView() {
 
   return (
     <div>
-      {/* Org name — editable */}
+      {/* Org name with dropdown */}
       {editing ? (
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -116,16 +143,8 @@ export default function OrgMembersView() {
               onChange={(e) => setEditName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditing(false); }}
               autoFocus
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: 'var(--radius)',
-                border: '1px solid var(--accent)',
-                background: 'var(--bg)',
-                color: 'var(--text)',
-                fontSize: '1.4rem',
-                fontWeight: 700,
-              }}
+              className="input"
+              style={{ flex: 1, fontSize: '1.4rem', fontWeight: 700 }}
             />
             <button className="primary small" onClick={handleRename}>Save</button>
             <button className="ghost small" onClick={() => setEditing(false)}>Cancel</button>
@@ -135,9 +154,16 @@ export default function OrgMembersView() {
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <h1 style={{ marginBottom: 0 }}>{org.name}</h1>
-          {hasAccess && (
-            <button className="ghost small" onClick={startEditing} title="Rename">&#9998;</button>
-          )}
+          <OrgActionMenu
+            open={orgMenuOpen}
+            onToggle={() => setOrgMenuOpen(!orgMenuOpen)}
+            onClose={() => setOrgMenuOpen(false)}
+            onRename={() => { setOrgMenuOpen(false); startEditing(); }}
+            onInvite={() => { setOrgMenuOpen(false); setShowInviteForm(true); }}
+            onLeave={() => { setOrgMenuOpen(false); handleLeave(); }}
+            willDeleteOrg={willDeleteOrg}
+            isAdmin={hasAccess}
+          />
         </div>
       )}
       <p className="muted small-text" style={{ marginBottom: 20 }}>Organization members and permissions</p>
@@ -203,8 +229,8 @@ export default function OrgMembersView() {
         )}
       </div>
 
-      {/* Invite form */}
-      {hasAccess && (
+      {/* Invite form — toggled from org menu */}
+      {hasAccess && showInviteForm && (
         <div className="section">
           <div className="section-title">Invite Member</div>
           <div className="card">
@@ -218,6 +244,7 @@ export default function OrgMembersView() {
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
+                autoFocus
                 style={{
                   flex: 1,
                   minWidth: 200,
@@ -246,8 +273,81 @@ export default function OrgMembersView() {
                 <option value="admin">Admin</option>
               </select>
               <button className="primary" onClick={handleInvite}>Invite</button>
+              <button className="ghost small" onClick={() => setShowInviteForm(false)}>Cancel</button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, willDeleteOrg, isAdmin }: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onRename: () => void;
+  onInvite: () => void;
+  onLeave: () => void;
+  willDeleteOrg: boolean;
+  isAdmin: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open, onClose]);
+
+  const itemStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+    padding: '8px 12px', border: 'none', background: 'none',
+    color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        className="ghost small"
+        onClick={onToggle}
+        style={{ fontSize: '1rem', padding: '4px 8px' }}
+        title="Organization actions"
+      >
+        ⚙
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', left: 0, top: '100%', marginTop: 4,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          minWidth: 200, zIndex: 50, overflow: 'hidden',
+        }}>
+          {isAdmin && (
+            <button onClick={onRename} style={itemStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span>✏️</span> Rename organization
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={onInvite} style={itemStyle}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              <span>👤</span> Invite member
+            </button>
+          )}
+          <button onClick={onLeave} style={{ ...itemStyle, color: 'var(--red, #ef4444)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <span>🚪</span> {willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}
+          </button>
         </div>
       )}
     </div>

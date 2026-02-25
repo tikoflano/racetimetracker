@@ -602,6 +602,74 @@ export const remove_org_member = spacetimedb.reducer(
   }
 );
 
+export const leave_organization = spacetimedb.reducer(
+  { org_id: t.u64() },
+  (ctx, args) => {
+    const user = requireUser(ctx);
+    const org = ctx.db.organization.id.find(args.org_id);
+    if (!org) throw new SenderError('Organization not found');
+
+    // Find caller's membership
+    let myMember = null;
+    for (const m of ctx.db.org_member.iter()) {
+      if (m.org_id === args.org_id && m.user_id === user.id) { myMember = m; break; }
+    }
+
+    // Check if there are other real (non-pending) admins
+    let hasOtherAdmin = false;
+    if (org.owner_user_id !== user.id) {
+      hasOtherAdmin = true; // owner stays
+    } else {
+      for (const m of ctx.db.org_member.iter()) {
+        if (m.org_id === args.org_id && m.user_id !== user.id && m.role === 'admin') {
+          const u = ctx.db.user.id.find(m.user_id);
+          if (u && !u.google_sub.startsWith('pending:')) { hasOtherAdmin = true; break; }
+        }
+      }
+    }
+
+    // Remove membership
+    if (myMember) ctx.db.org_member.id.delete(myMember.id);
+
+    if (hasOtherAdmin) return;
+
+    // No other admins — delete the org and all its data
+    for (const evt of ctx.db.event.iter()) {
+      if (evt.org_id !== args.org_id) continue;
+      for (const et of ctx.db.event_track.iter()) {
+        if (et.event_id !== evt.id) continue;
+        for (const r of ctx.db.run.iter()) { if (r.event_track_id === et.id) ctx.db.run.id.delete(r.id); }
+        for (const s of ctx.db.event_track_schedule.iter()) { if (s.event_track_id === et.id) ctx.db.event_track_schedule.id.delete(s.id); }
+        for (const a of ctx.db.timekeeper_assignment.iter()) { if (a.event_track_id === et.id) ctx.db.timekeeper_assignment.id.delete(a.id); }
+        ctx.db.event_track.id.delete(et.id);
+      }
+      for (const er of ctx.db.event_rider.iter()) { if (er.event_id === evt.id) ctx.db.event_rider.id.delete(er.id); }
+      for (const em of ctx.db.event_member.iter()) { if (em.event_id === evt.id) ctx.db.event_member.id.delete(em.id); }
+      for (const ec of ctx.db.event_category.iter()) {
+        if (ec.event_id !== evt.id) continue;
+        for (const ct of ctx.db.category_track.iter()) { if (ct.category_id === ec.id) ctx.db.category_track.id.delete(ct.id); }
+        ctx.db.event_category.id.delete(ec.id);
+      }
+      for (const pe of ctx.db.pinned_event.iter()) { if (pe.event_id === evt.id) ctx.db.pinned_event.id.delete(pe.id); }
+      ctx.db.event.id.delete(evt.id);
+    }
+    for (const c of ctx.db.championship.iter()) { if (c.org_id === args.org_id) ctx.db.championship.id.delete(c.id); }
+    for (const v of ctx.db.venue.iter()) {
+      if (v.org_id !== args.org_id) continue;
+      for (const t of ctx.db.track.iter()) {
+        if (t.venue_id !== v.id) continue;
+        for (const tv of ctx.db.track_variation.iter()) { if (tv.track_id === t.id) ctx.db.track_variation.id.delete(tv.id); }
+        ctx.db.track.id.delete(t.id);
+      }
+      ctx.db.venue.id.delete(v.id);
+    }
+    for (const r of ctx.db.rider.iter()) { if (r.org_id === args.org_id) ctx.db.rider.id.delete(r.id); }
+    for (const rt of ctx.db.registration_token.iter()) { if (rt.org_id === args.org_id) ctx.db.registration_token.id.delete(rt.id); }
+    for (const m of ctx.db.org_member.iter()) { if (m.org_id === args.org_id) ctx.db.org_member.id.delete(m.id); }
+    ctx.db.organization.id.delete(args.org_id);
+  }
+);
+
 export const transfer_org_ownership = spacetimedb.reducer(
   { org_id: t.u64(), new_owner_user_id: t.u64() },
   (ctx, args) => {
