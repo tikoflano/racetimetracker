@@ -115,9 +115,23 @@ const spacetimedb = schema({
     { public: true },
     {
       id: t.u64().primaryKey().autoInc(),
+      org_id: t.u64().index('btree'),
       first_name: t.string(),
       last_name: t.string(),
+      email: t.string(),
+      phone: t.string(),
       age: t.u32(),
+    }
+  ),
+
+  registration_token: table(
+    { public: true },
+    {
+      id: t.u64().primaryKey().autoInc(),
+      org_id: t.u64().index('btree'),
+      token: t.string().unique(),
+      created_by_user_id: t.u64(),
+      is_active: t.bool(),
     }
   ),
 
@@ -166,9 +180,6 @@ const spacetimedb = schema({
 export default spacetimedb;
 
 // ─── Auth helpers ───────────────────────────────────────────────────────────
-
-type Ctx = Parameters<Parameters<typeof spacetimedb.reducer>[0]>[0] |
-           Parameters<Parameters<typeof spacetimedb.reducer>[1]>[0];
 
 function getUser(ctx: any) {
   for (const u of ctx.db.user.iter()) {
@@ -523,13 +534,82 @@ export const create_track_variation = spacetimedb.reducer(
   }
 );
 
-// ─── Rider (event organizer+) ───────────────────────────────────────────────
+// ─── Rider management (org event manager+) ──────────────────────────────────
 
 export const create_rider = spacetimedb.reducer(
-  { first_name: t.string(), last_name: t.string(), age: t.u32() },
+  { org_id: t.u64(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), age: t.u32() },
   (ctx, args) => {
-    requireUser(ctx);
-    ctx.db.rider.insert({ id: 0n, first_name: args.first_name, last_name: args.last_name, age: args.age });
+    requireOrgEventManager(ctx, args.org_id);
+    ctx.db.rider.insert({ id: 0n, org_id: args.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, age: args.age });
+  }
+);
+
+export const update_rider = spacetimedb.reducer(
+  { rider_id: t.u64(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), age: t.u32() },
+  (ctx, args) => {
+    const rider = ctx.db.rider.id.find(args.rider_id);
+    if (!rider) throw new SenderError('Rider not found');
+    requireOrgEventManager(ctx, rider.org_id);
+    ctx.db.rider.id.update({ ...rider, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, age: args.age });
+  }
+);
+
+export const delete_rider = spacetimedb.reducer(
+  { rider_id: t.u64() },
+  (ctx, args) => {
+    const rider = ctx.db.rider.id.find(args.rider_id);
+    if (!rider) throw new SenderError('Rider not found');
+    requireOrgEventManager(ctx, rider.org_id);
+    // Remove from all events
+    for (const er of ctx.db.event_rider.iter()) {
+      if (er.rider_id === rider.id) ctx.db.event_rider.id.delete(er.id);
+    }
+    ctx.db.rider.id.delete(rider.id);
+  }
+);
+
+// ─── Registration tokens ────────────────────────────────────────────────────
+
+// Simple token generator using timestamp + identity hash
+function generateToken(ctx: any): string {
+  const ts = Date.now().toString(36);
+  const id = ctx.sender.toHexString().slice(0, 8);
+  // Combine parts for a short unique token
+  let counter = 0n;
+  for (const _ of ctx.db.registration_token.iter()) counter++;
+  return `${ts}${id}${counter.toString(36)}`;
+}
+
+export const create_registration_token = spacetimedb.reducer(
+  { org_id: t.u64() },
+  (ctx, args) => {
+    const user = requireOrgEventManager(ctx, args.org_id);
+    const token = generateToken(ctx);
+    ctx.db.registration_token.insert({ id: 0n, org_id: args.org_id, token, created_by_user_id: user.id, is_active: true });
+  }
+);
+
+export const deactivate_registration_token = spacetimedb.reducer(
+  { token_id: t.u64() },
+  (ctx, args) => {
+    const tok = ctx.db.registration_token.id.find(args.token_id);
+    if (!tok) throw new SenderError('Token not found');
+    requireOrgEventManager(ctx, tok.org_id);
+    ctx.db.registration_token.id.update({ ...tok, is_active: false });
+  }
+);
+
+// Public reducer — anyone with a valid token can register as a rider
+export const register_rider_with_token = spacetimedb.reducer(
+  { token: t.string(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), age: t.u32() },
+  (ctx, args) => {
+    // Find active token
+    let tok = null;
+    for (const t of ctx.db.registration_token.iter()) {
+      if (t.token === args.token && t.is_active) { tok = t; break; }
+    }
+    if (!tok) throw new SenderError('Invalid or expired registration link');
+    ctx.db.rider.insert({ id: 0n, org_id: tok.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, age: args.age });
   }
 );
 
@@ -694,14 +774,14 @@ export const seed_demo_data = spacetimedb.reducer(
 
     // Riders
     const ridersData = [
-      { first_name: 'Alex', last_name: 'Morgan', age: 28 },
-      { first_name: 'Sam', last_name: 'Rivera', age: 24 },
-      { first_name: 'Jordan', last_name: 'Chen', age: 31 },
-      { first_name: 'Casey', last_name: 'Brooks', age: 26 },
+      { first_name: 'Alex', last_name: 'Morgan', email: 'alex@example.com', phone: '+1-555-0101', age: 28 },
+      { first_name: 'Sam', last_name: 'Rivera', email: 'sam@example.com', phone: '+1-555-0102', age: 24 },
+      { first_name: 'Jordan', last_name: 'Chen', email: 'jordan@example.com', phone: '+1-555-0103', age: 31 },
+      { first_name: 'Casey', last_name: 'Brooks', email: 'casey@example.com', phone: '+1-555-0104', age: 26 },
     ];
 
     const riders = ridersData.map((r) => {
-      const rider = ctx.db.rider.insert({ id: 0n, first_name: r.first_name, last_name: r.last_name, age: r.age });
+      const rider = ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, age: r.age });
       // Register riders for the first event
       ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id });
       return rider;

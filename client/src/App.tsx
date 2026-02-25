@@ -12,6 +12,9 @@ import OrgMembersView from './views/OrgMembersView';
 import ChampionshipsView from './views/ChampionshipsView';
 import ChampionshipDetailView from './views/ChampionshipDetailView';
 import CalendarView from './views/CalendarView';
+import RacersView from './views/RacersView';
+import RegisterView from './views/RegisterView';
+import QRCodeView from './views/QRCodeView';
 import type { Organization } from './module_bindings/types';
 
 export default function App() {
@@ -126,6 +129,9 @@ export default function App() {
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/org/:orgId/championships" element={<ChampionshipsView />} />
               <Route path="/org/:orgId/championship/:champId" element={<ChampionshipDetailView />} />
+              <Route path="/org/:orgId/racers" element={<RacersView />} />
+              <Route path="/register/:token" element={<RegisterView />} />
+              <Route path="/register/:token/qr" element={<QRCodeView />} />
             </Routes>
           </main>
         </div>

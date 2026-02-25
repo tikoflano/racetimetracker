@@ -327,6 +327,24 @@ body {
   padding-left: 4px;
 }
 
+/* Public registration page */
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+.register-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+}
+
 /* Championship multi-select dropdown */
 .champ-dropdown {
   position: absolute;
