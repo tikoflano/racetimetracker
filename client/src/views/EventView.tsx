@@ -4,6 +4,7 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
+import Modal from '../components/Modal';
 import type { Event, Venue, EventTrack, Rider, EventRider, PinnedEvent, Organization } from '../module_bindings/types';
 import { formatElapsed } from '../utils';
 
@@ -48,8 +49,16 @@ export default function EventView() {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [nameError, setNameError] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
+  const eventOrg = event ? orgs.find((o: Organization) => o.id === event.orgId) : undefined;
+
+  const publicUrl = useMemo(() => {
+    if (!event || !eventOrg) return '';
+    return `${window.location.origin}/${eventOrg.slug}/event/${event.slug}`;
+  }, [event, eventOrg]);
 
   const canEdit = event ? canOrganizeEvent(eid, event.orgId) : false;
 
@@ -184,6 +193,16 @@ export default function EventView() {
               {'\u{1F4CC}'}
             </button>
           )}
+          {publicUrl && (
+            <button
+              className="ghost small"
+              onClick={() => { setCopied(false); setShareOpen(true); }}
+              title="Share"
+              style={{ fontSize: '0.9rem' }}
+            >
+              &#x1F517;
+            </button>
+          )}
         </div>
       )}
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
@@ -253,6 +272,31 @@ export default function EventView() {
           <p className="muted small-text">Sign in to access track timing and event management.</p>
         </div>
       )}
+
+      {/* Share modal */}
+      <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Share Event">
+        <p className="muted small-text" style={{ marginBottom: 12 }}>Anyone with this link can view the event leaderboard.</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="text"
+            readOnly
+            value={publicUrl}
+            className="input"
+            style={{ flex: 1, fontSize: '0.8rem' }}
+            onFocus={e => e.target.select()}
+          />
+          <button
+            className="primary"
+            onClick={() => {
+              navigator.clipboard.writeText(publicUrl);
+              setCopied(true);
+            }}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
