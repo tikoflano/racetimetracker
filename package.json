@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w client",
+    "dev:spacetime": "spacetime dev -y --delete-data=on-conflict racetimetracker-dev",
     "publish": "spacetime publish racetimetracker-dev --server maincloud.spacetimedb.com -p spacetimedb --no-config -y",
     "clear-data": "npm run publish -- --delete-data"
   }

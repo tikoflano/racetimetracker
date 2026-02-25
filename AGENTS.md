@@ -76,7 +76,7 @@ Defined in `spacetime.json`:
 
 | Target | Server | Database |
 |--------|--------|----------|
-| `local` | `localhost:3000` | `bike-race-tracker` |
+| `local` | `localhost:3000` | `racetimetracker-dev` |
 | `dev` | `maincloud.spacetimedb.com` | `racetimetracker-dev` |
 | `prod` | `maincloud.spacetimedb.com` | `racetimetracker-prod` |
 

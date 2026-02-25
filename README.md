@@ -54,15 +54,15 @@ Start a local SpacetimeDB instance and publish the module:
 
 ```bash
 spacetime start
-spacetime publish bike-race-tracker --server local -p spacetimedb
-spacetime call --server local bike-race-tracker seed_demo_data
+spacetime publish racetimetracker-dev --server local -p spacetimedb
+spacetime call --server local racetimetracker-dev seed_demo_data
 ```
 
 Set `client/.env`:
 
 ```
 VITE_STDB_ENV=local
-VITE_STDB_DATABASE=bike-race-tracker
+VITE_STDB_DATABASE=racetimetracker-dev
 ```
 
 Start the dev server:

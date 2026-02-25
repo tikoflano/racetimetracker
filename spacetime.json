@@ -13,7 +13,7 @@
   "databases": {
     "local": {
       "server": "local",
-      "name": "bike-race-tracker"
+      "name": "racetimetracker-dev"
     },
     "dev": {
       "server": "maincloud",
