@@ -153,7 +153,7 @@ export default function OrgMembersView() {
           {renameError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>{renameError}</div>}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
           <h1 style={{ marginBottom: 0 }}>{org.name}</h1>
           <OrgActionMenu
             open={orgMenuOpen}

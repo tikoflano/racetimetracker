@@ -206,7 +206,7 @@ export default function EventView() {
           {nameError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
           <EventActionMenu
             open={eventMenuOpen}

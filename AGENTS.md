@@ -105,6 +105,7 @@ All icons use FontAwesome via `client/src/icons.ts`. Import from `../icons` — 
 Entity-level actions (rename, share, manage, delete, etc.) go in a **dropdown menu** triggered by a vertical dots icon (`faEllipsisVertical`). This is the standard pattern used across the app (events, organizations, member rows).
 
 Implementation pattern:
+- The title row containing the entity name and the trigger button must use `alignItems: 'baseline'` to align the icon with the text.
 - Trigger button: `<FontAwesomeIcon icon={faEllipsisVertical} />` in a `ghost small` button
 - Dropdown: absolutely positioned `div` with `background: var(--surface)`, border, shadow, `zIndex: 50`
 - Each item: flex row with `justifyContent: 'flex-start'`, fixed-width icon span (16px), then label text
