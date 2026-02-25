@@ -1600,23 +1600,27 @@ export const seed_demo_data = spacetimedb.reducer(
       { first_name: 'Sam', last_name: 'Rivera', email: 'sam@example.com', phone: '+1-555-0102', date_of_birth: '2001-07-22' },
       { first_name: 'Jordan', last_name: 'Chen', email: 'jordan@example.com', phone: '+1-555-0103', date_of_birth: '1994-11-05' },
       { first_name: 'Casey', last_name: 'Brooks', email: 'casey@example.com', phone: '+1-555-0104', date_of_birth: '1999-01-30' },
+      { first_name: 'Taylor', last_name: 'Kim', email: 'taylor@example.com', phone: '+1-555-0105', date_of_birth: '1996-08-12' },
+      { first_name: 'Riley', last_name: 'Santos', email: 'riley@example.com', phone: '+1-555-0106', date_of_birth: '2000-02-28' },
     ];
 
     const riders = ridersData.map((r) => {
-      const rider = ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, date_of_birth: r.date_of_birth });
-      // Register riders for the first event
-      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id, category_id: 0n, checked_in: false, assigned_number: 0 });
-      return rider;
+      return ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, date_of_birth: r.date_of_birth });
     });
+
+    // Register first 4 riders for event 1
+    for (let i = 0; i < 4; i++) {
+      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: riders[i].id, category_id: 0n, checked_in: false, assigned_number: 0 });
+    }
 
     // Queue runs for first event's tracks
     for (const etId of [et1.id, et2.id]) {
       let order = 1;
-      for (const rider of riders) {
+      for (let i = 0; i < 4; i++) {
         ctx.db.run.insert({
           id: 0n,
           event_track_id: etId,
-          rider_id: rider.id,
+          rider_id: riders[i].id,
           sort_order: order++,
           status: 'queued',
           start_time: 0n,
@@ -1624,5 +1628,55 @@ export const seed_demo_data = spacetimedb.reducer(
         });
       }
     }
+
+    // ─── Enduro R4 - Pine Mountain: categories, riders, event tracks ─────
+
+    const etR4_1 = ctx.db.event_track.id.find(
+      // already inserted above for evtUpcoming with tv1
+      (() => { for (const et of ctx.db.event_track.iter()) { if (et.event_id === evtUpcoming.id && et.track_variation_id === tv1.id) return et.id; } return 0n; })()
+    )!;
+    const etR4_2 = ctx.db.event_track.insert({ id: 0n, event_id: evtUpcoming.id, track_variation_id: tv2.id, sort_order: 2 });
+
+    // Categories
+    const catElite = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Elite', description: 'Pro and semi-pro riders', number_range_start: 1, number_range_end: 50 });
+    const catSport = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Sport', description: 'Intermediate competitive riders', number_range_start: 51, number_range_end: 100 });
+    const catBeginner = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Beginner', description: 'First-time racers welcome', number_range_start: 101, number_range_end: 150 });
+
+    // Assign tracks to categories
+    ctx.db.category_track.insert({ id: 0n, category_id: catElite.id, event_track_id: etR4_1!.id });
+    ctx.db.category_track.insert({ id: 0n, category_id: catElite.id, event_track_id: etR4_2.id });
+    ctx.db.category_track.insert({ id: 0n, category_id: catSport.id, event_track_id: etR4_1!.id });
+    ctx.db.category_track.insert({ id: 0n, category_id: catSport.id, event_track_id: etR4_2.id });
+    ctx.db.category_track.insert({ id: 0n, category_id: catBeginner.id, event_track_id: etR4_1!.id });
+
+    // Register all 6 riders for R4 with categories and assigned numbers
+    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[0].id, category_id: catElite.id, checked_in: false, assigned_number: 1 });
+    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[1].id, category_id: catElite.id, checked_in: false, assigned_number: 2 });
+    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[2].id, category_id: catSport.id, checked_in: false, assigned_number: 51 });
+    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[3].id, category_id: catSport.id, checked_in: false, assigned_number: 52 });
+    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[4].id, category_id: catBeginner.id, checked_in: false, assigned_number: 101 });
+    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[5].id, category_id: catBeginner.id, checked_in: false, assigned_number: 102 });
+
+    // ─── Pending org members ─────────────────────────────────────────────
+
+    const pendingManager = ctx.db.user.insert({
+      id: 0n,
+      identity: placeholderIdentity('pending-manager@example.com'),
+      google_sub: 'pending:pending-manager@example.com',
+      email: 'pending-manager@example.com',
+      name: 'Pending Manager',
+      is_super_admin: false,
+    });
+    ctx.db.org_member.insert({ id: 0n, org_id: org.id, user_id: pendingManager.id, role: 'manager' });
+
+    const pendingAdmin = ctx.db.user.insert({
+      id: 0n,
+      identity: placeholderIdentity('pending-admin@example.com'),
+      google_sub: 'pending:pending-admin@example.com',
+      email: 'pending-admin@example.com',
+      name: 'Pending Admin',
+      is_super_admin: false,
+    });
+    ctx.db.org_member.insert({ id: 0n, org_id: org.id, user_id: pendingAdmin.id, role: 'admin' });
   }
 );
