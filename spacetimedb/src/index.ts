@@ -155,6 +155,7 @@ const spacetimedb = schema({
       rider_id: t.u64().index('btree'),
       category_id: t.u64(),  // 0 = no category
       checked_in: t.bool(),
+      assigned_number: t.u32().default(0),  // 0 = use default from category
     }
   ),
 
@@ -189,6 +190,16 @@ const spacetimedb = schema({
       description: t.string(),
       number_range_start: t.u32(),
       number_range_end: t.u32(),
+    }
+  ),
+
+  // Tracks that racers in this category will race on (subset of event tracks)
+  category_track: table(
+    { public: true },
+    {
+      id: t.u64().primaryKey().autoInc(),
+      category_id: t.u64().index('btree'),
+      event_track_id: t.u64().index('btree'),
     }
   ),
 
@@ -252,6 +263,14 @@ function requireOrgAdmin(ctx: any, orgId: bigint) {
   if (user.is_super_admin) return user;
   const role = getOrgRole(ctx, user.id, orgId);
   if (role !== 'admin') throw new SenderError('Org admin access required');
+  return user;
+}
+
+// Can the user transfer ownership? (org owner only)
+function requireOrgOwner(ctx: any, orgId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  if (!isOrgOwner(ctx, user.id, orgId)) throw new SenderError('Only the org owner can transfer ownership');
   return user;
 }
 
@@ -424,6 +443,29 @@ export const remove_org_member = spacetimedb.reducer(
     if (!member) throw new SenderError('Member not found');
     requireOrgAdmin(ctx, member.org_id);
     ctx.db.org_member.id.delete(member.id);
+  }
+);
+
+export const transfer_org_ownership = spacetimedb.reducer(
+  { org_id: t.u64(), new_owner_user_id: t.u64() },
+  (ctx, args) => {
+    requireOrgOwner(ctx, args.org_id);
+    const org = ctx.db.organization.id.find(args.org_id);
+    if (!org) throw new SenderError('Organization not found');
+    if (org.owner_user_id === args.new_owner_user_id) throw new SenderError('User is already the owner');
+    const newOwner = ctx.db.user.id.find(args.new_owner_user_id);
+    if (!newOwner) throw new SenderError('New owner user not found');
+    ctx.db.organization.id.update({ ...org, owner_user_id: args.new_owner_user_id });
+    // Ensure new owner has admin role (add or update org_member)
+    let member = null;
+    for (const m of ctx.db.org_member.iter()) {
+      if (m.org_id === args.org_id && m.user_id === args.new_owner_user_id) { member = m; break; }
+    }
+    if (member) {
+      if (member.role !== 'admin') ctx.db.org_member.id.update({ ...member, role: 'admin' });
+    } else {
+      ctx.db.org_member.insert({ id: 0n, org_id: args.org_id, user_id: args.new_owner_user_id, role: 'admin' });
+    }
   }
 );
 
@@ -858,7 +900,40 @@ export const delete_event_category = spacetimedb.reducer(
     const cat = ctx.db.event_category.id.find(args.category_id);
     if (!cat) throw new SenderError('Category not found');
     requireEventOrganizer(ctx, cat.event_id);
+    for (const ct of ctx.db.category_track.iter()) {
+      if (ct.category_id === cat.id) ctx.db.category_track.id.delete(ct.id);
+    }
     ctx.db.event_category.id.delete(cat.id);
+  }
+);
+
+export const add_track_to_category = spacetimedb.reducer(
+  { category_id: t.u64(), event_track_id: t.u64() },
+  (ctx, args) => {
+    const cat = ctx.db.event_category.id.find(args.category_id);
+    if (!cat) throw new SenderError('Category not found');
+    requireEventOrganizer(ctx, cat.event_id);
+    const et = ctx.db.event_track.id.find(args.event_track_id);
+    if (!et) throw new SenderError('Event track not found');
+    if (et.event_id !== cat.event_id) throw new SenderError('Event track must belong to the same event as the category');
+    for (const ct of ctx.db.category_track.iter()) {
+      if (ct.category_id === cat.id && ct.event_track_id === args.event_track_id) {
+        throw new SenderError('Track already assigned to this category');
+      }
+    }
+    ctx.db.category_track.insert({ id: 0n, category_id: cat.id, event_track_id: args.event_track_id });
+  }
+);
+
+export const remove_track_from_category = spacetimedb.reducer(
+  { category_track_id: t.u64() },
+  (ctx, args) => {
+    const ct = ctx.db.category_track.id.find(args.category_track_id);
+    if (!ct) throw new SenderError('Category track not found');
+    const cat = ctx.db.event_category.id.find(ct.category_id);
+    if (!cat) throw new SenderError('Category not found');
+    requireEventOrganizer(ctx, cat.event_id);
+    ctx.db.category_track.id.delete(ct.id);
   }
 );
 
@@ -902,12 +977,12 @@ export const add_rider_to_event = spacetimedb.reducer(
         throw new SenderError('Rider already assigned to this event');
       }
     }
-    ctx.db.event_rider.insert({ id: 0n, event_id: args.event_id, rider_id: args.rider_id, category_id: 0n, checked_in: false });
+    ctx.db.event_rider.insert({ id: 0n, event_id: args.event_id, rider_id: args.rider_id, category_id: 0n, checked_in: false, assigned_number: 0 });
   }
 );
 
 export const update_event_rider = spacetimedb.reducer(
-  { event_rider_id: t.u64(), category_id: t.u64(), checked_in: t.bool() },
+  { event_rider_id: t.u64(), category_id: t.u64(), checked_in: t.bool(), assigned_number: t.u32() },
   (ctx, args) => {
     const er = ctx.db.event_rider.id.find(args.event_rider_id);
     if (!er) throw new SenderError('Event rider not found');
@@ -917,7 +992,7 @@ export const update_event_rider = spacetimedb.reducer(
       const cat = ctx.db.event_category.id.find(args.category_id);
       if (!cat || cat.event_id !== er.event_id) throw new SenderError('Invalid category for this event');
     }
-    ctx.db.event_rider.id.update({ ...er, category_id: args.category_id, checked_in: args.checked_in });
+    ctx.db.event_rider.id.update({ ...er, category_id: args.category_id, checked_in: args.checked_in, assigned_number: args.assigned_number });
   }
 );
 
@@ -931,7 +1006,7 @@ export const import_riders_from_event = spacetimedb.reducer(
     }
     for (const er of ctx.db.event_rider.iter()) {
       if (er.event_id === args.source_event_id && !existing.has(er.rider_id)) {
-        ctx.db.event_rider.insert({ id: 0n, event_id: args.target_event_id, rider_id: er.rider_id, category_id: 0n, checked_in: false });
+        ctx.db.event_rider.insert({ id: 0n, event_id: args.target_event_id, rider_id: er.rider_id, category_id: 0n, checked_in: false, assigned_number: 0 });
         existing.add(er.rider_id);
       }
     }
@@ -1127,6 +1202,7 @@ export const seed_demo_data = spacetimedb.reducer(
     const evt1 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue1.id, name: 'Enduro R1 - Pine Mountain', description: 'Opening round', start_date: '2025-03-15', end_date: '2025-03-16' });
     const evt2 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue2.id, name: 'Enduro R2 - Eagle Rock', description: 'Second round', start_date: '2025-05-10', end_date: '2025-05-11' });
     const evt3 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue3.id, name: 'Enduro R3 - Lakeside', description: 'Season finale', start_date: '2025-07-19', end_date: '2025-07-20' });
+    const evtUpcoming = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue1.id, name: 'Enduro R4 - Pine Mountain', description: 'Upcoming round (not started yet)', start_date: '2029-09-20', end_date: '2029-09-21' });
 
     // Downhill Cup events
     const evt4 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ2.id, venue_id: venue2.id, name: 'DH Cup R1 - Eagle Rock', description: 'Downhill opener', start_date: '2025-04-05', end_date: '2025-04-06' });
@@ -1145,6 +1221,7 @@ export const seed_demo_data = spacetimedb.reducer(
     ctx.db.event_track.insert({ id: 0n, event_id: evt5.id, track_variation_id: tv1.id, sort_order: 1 });
     ctx.db.event_track.insert({ id: 0n, event_id: evt6.id, track_variation_id: tv4.id, sort_order: 1 });
     ctx.db.event_track.insert({ id: 0n, event_id: evt7.id, track_variation_id: tv1.id, sort_order: 1 });
+    ctx.db.event_track.insert({ id: 0n, event_id: evtUpcoming.id, track_variation_id: tv1.id, sort_order: 1 });
 
     // Riders
     const ridersData = [
@@ -1157,7 +1234,7 @@ export const seed_demo_data = spacetimedb.reducer(
     const riders = ridersData.map((r) => {
       const rider = ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, date_of_birth: r.date_of_birth });
       // Register riders for the first event
-      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id, category_id: 0n, checked_in: false });
+      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id, category_id: 0n, checked_in: false, assigned_number: 0 });
       return rider;
     });
 

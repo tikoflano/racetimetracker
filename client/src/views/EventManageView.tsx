@@ -4,7 +4,9 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import AddRacerModal from '../components/AddRacerModal';
-import type { Event, EventCategory, Rider, EventRider } from '../module_bindings/types';
+import AddTrackModal from '../components/AddTrackModal';
+import CheckInModal from '../components/CheckInModal';
+import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack } from '../module_bindings/types';
 
 export default function EventManageView() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -12,11 +14,21 @@ export default function EventManageView() {
   const { isAuthenticated, isReady, canOrganizeEvent } = useAuth();
 
   const [events] = useTable(tables.event);
+  const [venues] = useTable(tables.venue);
+  const [eventTracks] = useTable(tables.event_track);
+  const [trackVariations] = useTable(tables.track_variation);
+  const [tracksData] = useTable(tables.track);
+  const [runs] = useTable(tables.run);
   const [allCategories] = useTable(tables.event_category);
+  const [categoryTracks] = useTable(tables.category_track);
   const [allRiders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
 
   const createCategory = useReducer(reducers.createEventCategory);
+  const addTrackToCategory = useReducer(reducers.addTrackToCategory);
+  const removeTrackFromCategory = useReducer(reducers.removeTrackFromCategory);
+  const addTrackToEvent = useReducer(reducers.addTrackToEvent);
+  const removeTrackFromEvent = useReducer(reducers.removeTrackFromEvent);
   const updateCategory = useReducer(reducers.updateEventCategory);
   const deleteCategory = useReducer(reducers.deleteEventCategory);
   const importCategories = useReducer(reducers.importCategoriesFromEvent);
@@ -25,13 +37,52 @@ export default function EventManageView() {
   const updateEventRider = useReducer(reducers.updateEventRider);
 
   const event = events.find((e: Event) => e.id === eid);
+  const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
   const canEdit = event ? canOrganizeEvent(eid, event.orgId) : false;
+
+  const sortedEventTracks = useMemo(() => {
+    return [...eventTracks]
+      .filter((et: EventTrack) => et.eventId === eid)
+      .sort((a: EventTrack, b: EventTrack) => a.sortOrder - b.sortOrder);
+  }, [eventTracks, eid]);
+
+  const tvMap = useMemo(() => {
+    const m = new Map<bigint, TrackVariation>();
+    for (const tv of trackVariations) m.set(tv.id, tv);
+    return m;
+  }, [trackVariations]);
+
+  const trackMap = useMemo(() => {
+    const m = new Map<bigint, Track>();
+    for (const t of tracksData) m.set(t.id, t);
+    return m;
+  }, [tracksData]);
+
+  const venueTracks = useMemo(() => {
+    if (!venue) return [];
+    return tracksData.filter((t: Track) => t.venueId === venue.id);
+  }, [venue, tracksData]);
+
+  const usedVariationIds = useMemo(() => {
+    return new Set(sortedEventTracks.map((et: EventTrack) => et.trackVariationId));
+  }, [sortedEventTracks]);
 
   const categories = useMemo(() => {
     return allCategories
       .filter((c: EventCategory) => c.eventId === eid)
       .sort((a: EventCategory, b: EventCategory) => a.numberRangeStart - b.numberRangeStart);
   }, [allCategories, eid]);
+
+  // Category → list of event track IDs (for display)
+  const categoryTracksByCategoryId = useMemo(() => {
+    const m = new Map<bigint, CategoryTrack[]>();
+    for (const ct of categoryTracks) {
+      const list = m.get(ct.categoryId) ?? [];
+      list.push(ct);
+      m.set(ct.categoryId, list);
+    }
+    return m;
+  }, [categoryTracks]);
 
   // Other events in the same org (for import)
   const otherEvents = useMemo(() => {
@@ -92,11 +143,33 @@ export default function EventManageView() {
     return m;
   }, [categories]);
 
+  // Assigned number per rider: use er.assignedNumber if set (non-zero), else computed from category
+  const assignedNumberByRiderId = useMemo(() => {
+    const m = new Map<bigint, number | null>();
+    const ridersInEvent = eventRiders.filter((er: EventRider) => er.eventId === eid);
+    // Compute default from category
+    const computed = new Map<bigint, number | null>();
+    for (const cat of categories) {
+      const inCat = ridersInEvent
+        .filter((er: EventRider) => er.categoryId === cat.id)
+        .sort((a: EventRider, b: EventRider) => (a.riderId < b.riderId ? -1 : a.riderId > b.riderId ? 1 : 0));
+      inCat.forEach((er: EventRider, idx: number) => {
+        computed.set(er.riderId, cat.numberRangeStart + idx);
+      });
+    }
+    for (const er of ridersInEvent) {
+      const num = er.assignedNumber !== 0 ? er.assignedNumber : (computed.get(er.riderId) ?? null);
+      m.set(er.riderId, num);
+    }
+    return m;
+  }, [eventRiders, eid, categories]);
+
   // Category form state
   const [showCatForm, setShowCatForm] = useState(false);
   const [editingCatId, setEditingCatId] = useState<bigint | null>(null);
   const [catForm, setCatForm] = useState({ name: '', description: '', rangeStart: '', rangeEnd: '' });
   const [catError, setCatError] = useState('');
+  const [categoryTrackError, setCategoryTrackError] = useState('');
 
   // Import state
   const [showImport, setShowImport] = useState(false);
@@ -108,6 +181,10 @@ export default function EventManageView() {
   const [racerError, setRacerError] = useState('');
   const [importRacerError, setImportRacerError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all'); // 'all' | 'none' | category id as string
+  const [checkInModal, setCheckInModal] = useState<{ rider: Rider; eventRider: EventRider } | null>(null);
+  const [showAddTrackModal, setShowAddTrackModal] = useState(false);
+  const [addTrackError, setAddTrackError] = useState('');
+  const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers'>('tracks');
 
   const resetCatForm = () => {
     setCatForm({ name: '', description: '', rangeStart: '', rangeEnd: '' });
@@ -141,8 +218,16 @@ export default function EventManageView() {
   const handleCatSubmit = async () => {
     setCatError('');
     if (!catForm.name.trim()) { setCatError('Name is required'); return; }
-    const rangeStart = parseInt(catForm.rangeStart) || 0;
-    const rangeEnd = parseInt(catForm.rangeEnd) || 0;
+    if (catForm.rangeStart.trim() === '' || catForm.rangeEnd.trim() === '') {
+      setCatError('Number range is required');
+      return;
+    }
+    const rangeStart = parseInt(catForm.rangeStart, 10);
+    const rangeEnd = parseInt(catForm.rangeEnd, 10);
+    if (isNaN(rangeStart) || isNaN(rangeEnd)) {
+      setCatError('Number range must be valid numbers');
+      return;
+    }
     if (rangeStart > rangeEnd) { setCatError('Range start must be <= range end'); return; }
     const overlap = checkOverlap(rangeStart, rangeEnd, editingCatId);
     if (overlap) { setCatError(overlap); return; }
@@ -161,6 +246,20 @@ export default function EventManageView() {
     try {
       await deleteCategory({ categoryId: cat.id });
     } catch (e: any) { setCatError(e?.message || 'Failed'); }
+  };
+
+  const handleAddTrackToCategory = async (categoryId: bigint, eventTrackId: bigint) => {
+    setCategoryTrackError('');
+    try {
+      await addTrackToCategory({ categoryId, eventTrackId });
+    } catch (e: any) { setCategoryTrackError(e?.message || 'Failed'); }
+  };
+
+  const handleRemoveTrackFromCategory = async (categoryTrackId: bigint) => {
+    setCategoryTrackError('');
+    try {
+      await removeTrackFromCategory({ categoryTrackId });
+    } catch (e: any) { setCategoryTrackError(e?.message || 'Failed'); }
   };
 
   const handleImport = async (sourceEventId: bigint) => {
@@ -189,15 +288,48 @@ export default function EventManageView() {
   const handleToggleCheckIn = async (er: EventRider) => {
     setRacerError('');
     try {
-      await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: !er.checkedIn });
+      await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: !er.checkedIn, assignedNumber: er.assignedNumber });
+    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+  };
+
+  const handleRevertCheckIn = async (er: EventRider, rider: Rider) => {
+    if (!confirm(`Revert check-in for ${rider.firstName} ${rider.lastName}?`)) return;
+    await handleToggleCheckIn(er);
+  };
+
+  const handleCheckIn = async (er: EventRider, assignedNumber: number) => {
+    setRacerError('');
+    try {
+      await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: true, assignedNumber });
     } catch (e: any) { setRacerError(e?.message || 'Failed'); }
   };
 
   const handleChangeCategory = async (er: EventRider, newCategoryId: bigint) => {
     setRacerError('');
     try {
-      await updateEventRider({ eventRiderId: er.id, categoryId: newCategoryId, checkedIn: er.checkedIn });
+      await updateEventRider({ eventRiderId: er.id, categoryId: newCategoryId, checkedIn: er.checkedIn, assignedNumber: er.assignedNumber });
     } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+  };
+
+  const handleAddTrack = async (tvId: bigint) => {
+    setAddTrackError('');
+    try {
+      const nextOrder = sortedEventTracks.length > 0
+        ? Math.max(...sortedEventTracks.map((et: EventTrack) => et.sortOrder)) + 1
+        : 1;
+      await addTrackToEvent({ eventId: eid, trackVariationId: tvId, sortOrder: nextOrder });
+      setShowAddTrackModal(false);
+    } catch (e: any) { setAddTrackError(e?.message || 'Failed'); }
+  };
+
+  const handleRemoveTrack = async (et: EventTrack) => {
+    const tv = tvMap.get(et.trackVariationId);
+    const track = tv ? trackMap.get(tv.trackId) : undefined;
+    const label = track ? `${track.name} — ${tv?.name}` : 'this track';
+    if (!confirm(`Remove "${label}" from this event? Associated runs will be deleted.`)) return;
+    try {
+      await removeTrackFromEvent({ eventTrackId: et.id });
+    } catch (e: any) { setAddTrackError(e?.message || 'Failed'); }
   };
 
   if (!isReady) return null;
@@ -215,9 +347,87 @@ export default function EventManageView() {
     <div>
       <Link to={`/event/${eventId}`} className="back-link">&larr; Back to Event</Link>
       <h1 style={{ marginBottom: 4 }}>Manage: {event.name}</h1>
-      <p className="muted small-text" style={{ marginBottom: 20 }}>{event.description}</p>
+      <p className="muted small-text" style={{ marginBottom: 12 }}>{event.description}</p>
 
-      {/* Categories section */}
+      <div className="tabs">
+        <button
+          className={activeTab === 'tracks' ? 'active' : ''}
+          onClick={() => setActiveTab('tracks')}
+        >
+          Tracks ({sortedEventTracks.length})
+        </button>
+        <button
+          className={activeTab === 'categories' ? 'active' : ''}
+          onClick={() => setActiveTab('categories')}
+        >
+          Categories ({categories.length})
+        </button>
+        <button
+          className={activeTab === 'racers' ? 'active' : ''}
+          onClick={() => setActiveTab('racers')}
+        >
+          Racers ({assignedRiders.length})
+        </button>
+      </div>
+
+      {activeTab === 'tracks' && (
+      <div className="section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div className="section-title" style={{ marginBottom: 0 }}>
+            Tracks <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({sortedEventTracks.length})</span>
+          </div>
+          <button className="primary small" onClick={() => { setShowAddTrackModal(true); setAddTrackError(''); }}>
+            + Add Track
+          </button>
+        </div>
+
+        {addTrackError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{addTrackError}</div>}
+
+        {sortedEventTracks.length === 0 ? (
+          <div className="empty">No tracks assigned to this event.</div>
+        ) : (
+          sortedEventTracks.map((et: EventTrack) => {
+            const tv = tvMap.get(et.trackVariationId);
+            const track = tv ? trackMap.get(tv.trackId) : undefined;
+            const trackRuns = runs.filter((r: Run) => r.eventTrackId === et.id);
+            const runningCount = trackRuns.filter((r: Run) => r.status === 'running').length;
+            const finishedCount = trackRuns.filter((r: Run) => r.status === 'finished').length;
+            const queuedCount = trackRuns.filter((r: Run) => r.status === 'queued').length;
+
+            return (
+              <div key={String(et.id)} className="card" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link
+                  to={`/event/${eventId}/track/${et.id}`}
+                  style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
+                >
+                  <div className="track-card">
+                    <div>
+                      <h3>{track?.name ?? 'Unknown Track'}{tv ? ` — ${tv.name}` : ''}</h3>
+                      {tv && <p className="muted small-text">{tv.description}</p>}
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: '0.8rem' }}>
+                      {runningCount > 0 && <span className="badge running" style={{ marginRight: 4 }}>{runningCount} racing</span>}
+                      {queuedCount > 0 && <span className="badge queued" style={{ marginRight: 4 }}>{queuedCount} queued</span>}
+                      <span className="badge finished">{finishedCount} done</span>
+                    </div>
+                  </div>
+                </Link>
+                <button
+                  className="ghost small"
+                  onClick={() => handleRemoveTrack(et)}
+                  title="Remove track"
+                  style={{ color: 'var(--red)', flexShrink: 0 }}
+                >
+                  &times;
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+      )}
+
+      {activeTab === 'categories' && (
       <div className="section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-title" style={{ marginBottom: 0 }}>
@@ -238,6 +448,7 @@ export default function EventManageView() {
         </div>
 
         {catError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{catError}</div>}
+        {categoryTrackError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{categoryTrackError}</div>}
 
         {/* Import from another event */}
         {showImport && (
@@ -285,12 +496,12 @@ export default function EventManageView() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
-                  <label className="input-label">Number Range Start</label>
-                  <input type="number" min="0" value={catForm.rangeStart} onChange={e => setCatForm(f => ({ ...f, rangeStart: e.target.value }))} className="input" />
+                  <label className="input-label">Number Range Start *</label>
+                  <input type="number" min="0" required value={catForm.rangeStart} onChange={e => setCatForm(f => ({ ...f, rangeStart: e.target.value }))} className="input" />
                 </div>
                 <div>
-                  <label className="input-label">Number Range End</label>
-                  <input type="number" min="0" value={catForm.rangeEnd} onChange={e => setCatForm(f => ({ ...f, rangeEnd: e.target.value }))} className="input" />
+                  <label className="input-label">Number Range End *</label>
+                  <input type="number" min="0" required value={catForm.rangeEnd} onChange={e => setCatForm(f => ({ ...f, rangeEnd: e.target.value }))} className="input" />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -311,30 +522,106 @@ export default function EventManageView() {
                 <th>Name</th>
                 <th>Description</th>
                 <th>Number Range</th>
+                <th>Tracks</th>
                 <th style={{ width: 80 }}></th>
               </tr>
             </thead>
             <tbody>
-              {categories.map((cat: EventCategory) => (
-                <tr key={String(cat.id)}>
-                  <td><strong>{cat.name}</strong></td>
-                  <td className="muted small-text">{cat.description || '—'}</td>
-                  <td className="muted small-text">{cat.numberRangeStart} – {cat.numberRangeEnd}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost small" onClick={() => startEditCat(cat)} title="Edit">&#9998;</button>
-                      <button className="ghost small" onClick={() => handleDeleteCat(cat)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {categories.map((cat: EventCategory) => {
+                const cts = categoryTracksByCategoryId.get(cat.id) ?? [];
+                const eventTrackIdsInCat = new Set(cts.map((ct: CategoryTrack) => ct.eventTrackId));
+                const availableTracks = sortedEventTracks.filter((et: EventTrack) => !eventTrackIdsInCat.has(et.id));
+                return (
+                  <tr key={String(cat.id)}>
+                    <td><strong>{cat.name}</strong></td>
+                    <td className="muted small-text">{cat.description || '—'}</td>
+                    <td className="muted small-text">{cat.numberRangeStart} – {cat.numberRangeEnd}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                        {cts.map((ct: CategoryTrack) => {
+                          const et = sortedEventTracks.find((e: EventTrack) => e.id === ct.eventTrackId);
+                          const tv = et ? tvMap.get(et.trackVariationId) : undefined;
+                          const track = tv ? trackMap.get(tv.trackId) : undefined;
+                          const label = track ? `${track.name}${tv ? ` — ${tv.name}` : ''}` : 'Track';
+                          const trackColor = track?.color ?? '#6b7280';
+                          const bgColor = trackColor.startsWith('#') ? `${trackColor}20` : trackColor;
+                          return (
+                            <span
+                              key={String(ct.id)}
+                              className="badge"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                background: bgColor,
+                                color: trackColor,
+                              }}
+                            >
+                              <Link
+                                to={`/event/${eventId}/track/${ct.eventTrackId}`}
+                                style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                              >
+                                <span className="color-dot" style={{ background: trackColor }} />
+                                {label}
+                              </Link>
+                              <button
+                                type="button"
+                                className="ghost small"
+                                onClick={() => handleRemoveTrackFromCategory(ct.id)}
+                                title="Remove track"
+                                style={{ padding: 0, margin: 0, lineHeight: 1, color: 'var(--red)', fontSize: '0.9em' }}
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          );
+                        })}
+                        {availableTracks.length > 0 && (
+                          <select
+                            className="input"
+                            value=""
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val) {
+                                handleAddTrackToCategory(cat.id, BigInt(val));
+                                e.target.value = '';
+                              }
+                            }}
+                            style={{ width: 'auto', minWidth: 140, padding: '4px 8px', fontSize: '0.8rem' }}
+                          >
+                            <option value="">+ Add track</option>
+                            {availableTracks.map((et: EventTrack) => {
+                              const tv = tvMap.get(et.trackVariationId);
+                              const track = tv ? trackMap.get(tv.trackId) : undefined;
+                              const label = track ? `${track.name}${tv ? ` — ${tv.name}` : ''}` : 'Track';
+                              return (
+                                <option key={String(et.id)} value={String(et.id)}>{label}</option>
+                              );
+                            })}
+                          </select>
+                        )}
+                        {cts.length === 0 && availableTracks.length === 0 && (
+                          <span className="muted small-text">No tracks in event</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button className="ghost small" onClick={() => startEditCat(cat)} title="Edit">&#9998;</button>
+                        <button className="ghost small" onClick={() => handleDeleteCat(cat)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
+      )}
 
-      {/* Racers section */}
-      <div className="section" style={{ marginTop: 24 }}>
+      {activeTab === 'racers' && (
+      <div className="section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-title" style={{ marginBottom: 0 }}>
             Racers <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({assignedRiders.length})</span>
@@ -382,13 +669,6 @@ export default function EventManageView() {
           </div>
         )}
 
-        <AddRacerModal
-          open={showAddRacerModal}
-          onClose={() => setShowAddRacerModal(false)}
-          onAdd={handleAddRider}
-          availableRiders={unassignedRiders}
-        />
-
         {/* Category filter */}
         {assignedRiders.length > 0 && (
           <div style={{ marginBottom: 8 }}>
@@ -423,26 +703,21 @@ export default function EventManageView() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: 40 }}>&#10003;</th>
+                  <th style={{ width: 60 }}>No.</th>
                   <th>Name</th>
                   <th>Category</th>
                   <th>Email</th>
+                  <th style={{ width: 120, minWidth: 120, textAlign: 'right' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRiders.map((r: Rider) => {
                   const er = eventRiderMap.get(r.id);
                   if (!er) return null;
+                  const num = assignedNumberByRiderId.get(r.id);
                   return (
                     <tr key={String(r.id)}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={er.checkedIn}
-                          onChange={() => handleToggleCheckIn(er)}
-                          title={er.checkedIn ? 'Checked in' : 'Not checked in'}
-                        />
-                      </td>
+                      <td className="muted small-text">{num !== null && num !== undefined ? num : '—'}</td>
                       <td>{r.firstName} {r.lastName}</td>
                       <td>
                         <select
@@ -458,6 +733,28 @@ export default function EventManageView() {
                         </select>
                       </td>
                       <td className="muted small-text">{r.email || '—'}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {er.checkedIn ? (
+                          <span className="badge checked-in">
+                            Checked in
+                            <button
+                              type="button"
+                              className="badge-revert"
+                              onClick={() => handleRevertCheckIn(er, r)}
+                              title="Revert check-in"
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            className="primary small"
+                            onClick={() => setCheckInModal({ rider: r, eventRider: er })}
+                          >
+                            Check in
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -466,6 +763,41 @@ export default function EventManageView() {
           );
         })()}
       </div>
+      )}
+
+      {/* Modals - outside tab content so they persist when switching tabs */}
+      <AddTrackModal
+        open={showAddTrackModal}
+        onClose={() => setShowAddTrackModal(false)}
+        onConfirm={handleAddTrack}
+        venueName={venue?.name ?? 'the venue'}
+        venueTracks={venueTracks}
+        allVariations={trackVariations}
+        usedVariationIds={usedVariationIds}
+      />
+      <AddRacerModal
+        open={showAddRacerModal}
+        onClose={() => setShowAddRacerModal(false)}
+        onAdd={handleAddRider}
+        availableRiders={unassignedRiders}
+      />
+      {checkInModal && (
+        <CheckInModal
+          open={!!checkInModal}
+          onClose={() => setCheckInModal(null)}
+          onConfirm={async (assignedNumber) => {
+            await handleCheckIn(checkInModal.eventRider, assignedNumber);
+          }}
+          rider={checkInModal.rider}
+          eventRider={checkInModal.eventRider}
+          defaultNumber={assignedNumberByRiderId.get(checkInModal.rider.id) ?? null}
+          categoryName={
+            checkInModal.eventRider.categoryId
+              ? (categoryMap.get(checkInModal.eventRider.categoryId)?.name ?? null)
+              : null
+          }
+        />
+      )}
     </div>
   );
 }
