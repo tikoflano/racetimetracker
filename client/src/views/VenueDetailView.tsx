@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -7,7 +7,8 @@ import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
-import { FontAwesomeIcon, faPen } from '../icons';
+import { FontAwesomeIcon, faPen, faTrash } from '../icons';
+import ActionMenu from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 
@@ -70,7 +71,9 @@ export default function VenueDetailView() {
   const [allTracks] = useTable(tables.track);
   const [allVariations] = useTable(tables.track_variation);
 
+  const navigate = useNavigate();
   const updateVenue = useReducer(reducers.updateVenue);
+  const deleteVenue = useReducer(reducers.deleteVenue);
   const createTrack = useReducer(reducers.createTrack);
   const updateTrack = useReducer(reducers.updateTrack);
   const deleteTrack = useReducer(reducers.deleteTrack);
@@ -78,6 +81,7 @@ export default function VenueDetailView() {
   const updateVariation = useReducer(reducers.updateTrackVariation);
   const deleteVariation = useReducer(reducers.deleteTrackVariation);
 
+  const [menuOpen, setMenuOpen] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
   const [venueForm, setVenueForm] = useState({ name: '', description: '', latitude: '', longitude: '' });
   const [showTrackForm, setShowTrackForm] = useState(false);
@@ -275,9 +279,22 @@ export default function VenueDetailView() {
           </div>
         ) : (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <h1 style={{ marginBottom: 0 }}>{venue.name}</h1>
-              <button className="ghost small" onClick={startEditVenue} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
+              <ActionMenu
+                open={menuOpen}
+                onToggle={() => setMenuOpen(!menuOpen)}
+                onClose={() => setMenuOpen(false)}
+                items={[
+                  { icon: faPen, label: 'Edit venue', onClick: () => { setMenuOpen(false); startEditVenue(); } },
+                  { icon: faTrash, label: 'Delete venue', danger: true, onClick: () => {
+                    setMenuOpen(false);
+                    if (confirm('Delete this venue and all its tracks? This cannot be undone.')) {
+                      deleteVenue({ venueId: vid }).then(() => navigate('/venues'));
+                    }
+                  }},
+                ]}
+              />
             </div>
             {venue.description && <p className="muted small-text">{venue.description}</p>}
             <p className="muted small-text">{venue.latitude.toFixed(4)}, {venue.longitude.toFixed(4)}</p>

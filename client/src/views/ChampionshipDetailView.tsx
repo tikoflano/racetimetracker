@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faThumbtack } from '../icons';
+import ActionMenu from '../components/ActionMenu';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
 type EventStatus = 'in_progress' | 'not_started' | 'completed';
@@ -46,6 +47,8 @@ export default function ChampionshipDetailView() {
       pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map(f => f.eventId)
     );
   }, [user, pinnedEvents]);
+
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Edit championship state
   const [editing, setEditing] = useState(false);
@@ -229,10 +232,17 @@ export default function ChampionshipDetailView() {
         </div>
       ) : (
         <div style={{ marginBottom: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="color-dot" style={{ background: champ.color, width: 14, height: 14 }} />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span className="color-dot" style={{ background: champ.color, width: 14, height: 14, alignSelf: 'center' }} />
             <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
-            <button className="ghost small" onClick={startEditing} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
+            <ActionMenu
+              open={menuOpen}
+              onToggle={() => setMenuOpen(!menuOpen)}
+              onClose={() => setMenuOpen(false)}
+              items={[
+                { icon: faPen, label: 'Edit championship', onClick: () => { setMenuOpen(false); startEditing(); } },
+              ]}
+            />
           </div>
           {champ.description && <p className="muted small-text">{champ.description}</p>}
         </div>
