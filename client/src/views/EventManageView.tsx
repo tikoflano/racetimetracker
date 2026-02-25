@@ -79,6 +79,10 @@ export default function EventManageView() {
     return tracksData.filter((t: Track) => t.venueId === venue.id);
   }, [venue, tracksData]);
 
+  const usedVariationIds = useMemo(() => {
+    return new Set(sortedEventTracks.map((et: EventTrack) => et.trackVariationId));
+  }, [sortedEventTracks]);
+
   const categories = useMemo(() => {
     return allCategories
       .filter((c: EventCategory) => c.eventId === eid)
@@ -991,6 +995,7 @@ export default function EventManageView() {
         venueName={venue?.name ?? 'the venue'}
         venueTracks={venueTracks}
         allVariations={trackVariations}
+        usedVariationIds={usedVariationIds}
       />
       <AddRacerModal
         open={showAddRacerModal}
