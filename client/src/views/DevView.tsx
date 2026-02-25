@@ -34,10 +34,16 @@ export default function DevView() {
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   const handleSeed = async () => {
-    setSeedStatus(null);
+    setSeedStatus('Wiping data...');
     try {
+      await wipeAllData();
+      setSeedStatus('Seeding demo data...');
       await seedDemoData();
-      setSeedStatus('Demo data loaded successfully.');
+      setSeedStatus('Done! Signing out...');
+      setTimeout(() => {
+        localStorage.clear();
+        window.location.href = '/';
+      }, 1000);
     } catch (e: any) {
       setSeedStatus(`Error: ${e?.message || 'Failed to seed data'}`);
     }
@@ -81,12 +87,12 @@ export default function DevView() {
 
       {/* Seed */}
       <div className="section">
-        <div className="section-title">Seed Demo Data</div>
+        <div className="section-title">Reset &amp; Seed Demo Data</div>
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div className="muted small-text">Creates sample championships, venues, events, riders, and org members. Safe to run multiple times.</div>
+            <div className="muted small-text">Wipes all existing data, then creates sample championships, venues, events, riders, and org members. You will be logged out afterwards.</div>
           </div>
-          <button className="primary" onClick={handleSeed} style={{ whiteSpace: 'nowrap' }}>Seed</button>
+          <button className="primary" onClick={handleSeed} style={{ whiteSpace: 'nowrap' }}>Reset &amp; Seed</button>
         </div>
         <StatusMessage status={seedStatus} />
       </div>
