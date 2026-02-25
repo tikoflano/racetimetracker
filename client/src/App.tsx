@@ -26,7 +26,7 @@ const ACTIVE_ORG_KEY = 'active_org_id';
 
 export default function App() {
   const connState = useSpacetimeDB();
-  const { user, realUser, isAuthenticated, isImpersonating, logout, canManageOrgEvents } = useAuth();
+  const { user, realUser, isAuthenticated, isImpersonating, logout, getOrgRole } = useAuth();
   const [orgs] = useTable(tables.organization);
   const stopImpersonation = useReducer(reducers.stopImpersonation);
 
@@ -57,8 +57,8 @@ export default function App() {
 
   const userOrgs = useMemo(() => {
     if (!isAuthenticated) return [];
-    return orgs.filter((o: Organization) => canManageOrgEvents(o.id));
-  }, [isAuthenticated, orgs, canManageOrgEvents]);
+    return orgs.filter((o: Organization) => getOrgRole(o.id) !== null);
+  }, [isAuthenticated, orgs, getOrgRole]);
 
   // Auto-select org if none selected or current is invalid
   useEffect(() => {

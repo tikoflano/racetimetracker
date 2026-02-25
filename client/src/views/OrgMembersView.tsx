@@ -21,7 +21,7 @@ export default function OrgMembersView() {
   const startImpersonation = useReducer(reducers.startImpersonation);
 
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'admin' | 'manager'>('manager');
+  const [inviteRole, setInviteRole] = useState<'admin' | 'manager' | 'timekeeper'>('manager');
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState<bigint | null>(null);
 
@@ -242,6 +242,7 @@ export default function OrgMembersView() {
                 }}
               >
                 <option value="manager">Manager</option>
+                <option value="timekeeper">Timekeeper</option>
                 <option value="admin">Admin</option>
               </select>
               <button className="primary" onClick={handleInvite}>Invite</button>

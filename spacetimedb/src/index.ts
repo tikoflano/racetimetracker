@@ -30,7 +30,7 @@ const spacetimedb = schema({
     }
   ),
 
-  // role: 'admin' | 'manager'
+  // role: 'admin' | 'manager' | 'timekeeper'
   org_member: table(
     { public: true },
     {
@@ -538,7 +538,7 @@ export const add_org_member = spacetimedb.reducer(
   { org_id: t.u64(), user_id: t.u64(), role: t.string() },
   (ctx, args) => {
     requireOrgAdmin(ctx, args.org_id);
-    if (args.role !== 'admin' && args.role !== 'manager') throw new SenderError('Invalid role');
+    if (args.role !== 'admin' && args.role !== 'manager' && args.role !== 'timekeeper') throw new SenderError('Invalid role');
     // Prevent duplicates
     for (const m of ctx.db.org_member.iter()) {
       if (m.org_id === args.org_id && m.user_id === args.user_id) throw new SenderError('User already a member');
@@ -551,7 +551,7 @@ export const invite_org_member = spacetimedb.reducer(
   { org_id: t.u64(), email: t.string(), role: t.string() },
   (ctx, args) => {
     requireOrgAdmin(ctx, args.org_id);
-    if (args.role !== 'admin' && args.role !== 'manager') throw new SenderError('Invalid role');
+    if (args.role !== 'admin' && args.role !== 'manager' && args.role !== 'timekeeper') throw new SenderError('Invalid role');
 
     const trimmedEmail = args.email.trim().toLowerCase();
     if (!trimmedEmail || !trimmedEmail.includes('@')) throw new SenderError('Valid email is required');
@@ -1711,6 +1711,7 @@ export const seed_demo_data = spacetimedb.reducer(
     const pendingData = [
       { email: 'pending-manager@example.com', name: 'Pending Manager', role: 'manager' },
       { email: 'pending-admin@example.com', name: 'Pending Admin', role: 'admin' },
+      { email: 'pending-timekeeper@example.com', name: 'Pending Timekeeper', role: 'timekeeper' },
     ];
     for (const p of pendingData) {
       let existing = null;
