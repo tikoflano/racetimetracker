@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
@@ -8,7 +8,7 @@ import type { Organization, OrgMember, User, Event } from '../module_bindings/ty
 export default function OrgMembersView() {
   const { orgId } = useParams<{ orgId: string }>();
   const oid = BigInt(orgId ?? '0');
-  const { isAuthenticated, isReady, canManageOrg, isOrgOwner } = useAuth();
+  const { isAuthenticated, isReady, canManageOrg, isOrgOwner, isImpersonating, canImpersonate } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
@@ -20,10 +20,13 @@ export default function OrgMembersView() {
   const removeOrgMember = useReducer(reducers.removeOrgMember);
   const renameOrganization = useReducer(reducers.renameOrganization);
   const seedDemoData = useReducer(reducers.seedDemoData);
+  const startImpersonation = useReducer(reducers.startImpersonation);
+  const stopImpersonation = useReducer(reducers.stopImpersonation);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'manager'>('manager');
   const [error, setError] = useState('');
+  const [openMenuId, setOpenMenuId] = useState<bigint | null>(null);
 
   // Inline rename state
   const [editing, setEditing] = useState(false);
@@ -106,6 +109,27 @@ export default function OrgMembersView() {
 
   return (
     <div>
+      {/* Impersonation banner */}
+      {isImpersonating && (
+        <div style={{
+          background: 'var(--yellow-bg, #fef3c7)',
+          color: 'var(--yellow, #d97706)',
+          padding: '8px 16px',
+          borderRadius: 'var(--radius)',
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+        }}>
+          <span>You are impersonating a user</span>
+          <button className="ghost small" style={{ color: 'var(--yellow, #d97706)', fontWeight: 600 }} onClick={() => stopImpersonation()}>
+            Stop Impersonating
+          </button>
+        </div>
+      )}
+
       {/* Org name — editable */}
       {editing ? (
         <div style={{ marginBottom: 20 }}>
@@ -170,6 +194,8 @@ export default function OrgMembersView() {
         ) : (
           members.map(({ member, user: memberUser }) => {
             const isPending = memberUser?.googleSub?.startsWith('pending:') ?? false;
+            const showImpersonate = canImpersonate && member.role !== 'admin' && memberUser;
+            const menuOpen = openMenuId === member.id;
             return (
               <div
                 key={String(member.id)}
@@ -188,7 +214,14 @@ export default function OrgMembersView() {
                     {member.role}
                   </span>
                   {isOwner && (
-                    <button className="ghost small" onClick={() => handleRemove(member.id)}>Remove</button>
+                    <MemberMenu
+                      open={menuOpen}
+                      onToggle={() => setOpenMenuId(menuOpen ? null : member.id)}
+                      onClose={() => setOpenMenuId(null)}
+                      showImpersonate={!!showImpersonate}
+                      onImpersonate={() => { setOpenMenuId(null); if (memberUser) startImpersonation({ targetUserId: memberUser.id }); }}
+                      onRemove={() => { setOpenMenuId(null); handleRemove(member.id); }}
+                    />
                   )}
                 </div>
               </div>
@@ -241,6 +274,93 @@ export default function OrgMembersView() {
               <button className="primary" onClick={handleInvite}>Invite</button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MemberMenu({ open, onToggle, onClose, showImpersonate, onImpersonate, onRemove }: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  showImpersonate: boolean;
+  onImpersonate: () => void;
+  onRemove: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open, onClose]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        className="ghost small"
+        onClick={onToggle}
+        style={{ fontSize: '1.1rem', lineHeight: 1, padding: '4px 6px' }}
+        title="Actions"
+      >
+        &#8942;
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute',
+          right: 0,
+          top: '100%',
+          marginTop: 4,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          minWidth: 150,
+          zIndex: 50,
+          overflow: 'hidden',
+        }}>
+          {showImpersonate && (
+            <button
+              onClick={onImpersonate}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                color: 'var(--text)',
+                fontSize: '0.85rem',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              Impersonate
+            </button>
+          )}
+          <button
+            onClick={onRemove}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '8px 12px',
+              border: 'none',
+              background: 'none',
+              color: 'var(--red, #ef4444)',
+              fontSize: '0.85rem',
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            Remove
+          </button>
         </div>
       )}
     </div>
