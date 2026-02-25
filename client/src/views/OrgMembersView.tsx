@@ -334,7 +334,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}>✏️</span> Rename organization
+              <span style={iconStyle}>&#9998;</span><span>Rename organization</span>
             </button>
           )}
           {isAdmin && (
@@ -342,14 +342,14 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}>👤</span> Invite member
+              <span style={iconStyle}>+</span><span>Invite member</span>
             </button>
           )}
           <button onClick={onLeave} style={{ ...itemStyle, color: 'var(--red, #ef4444)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
-            <span style={iconStyle}>🚪</span> {willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}
+            <span style={iconStyle}>&times;</span><span>{willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}</span>
           </button>
         </div>
       )}
