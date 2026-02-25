@@ -228,38 +228,40 @@ export default function VenueDetailView() {
 
   return (
     <div>
-      <Link to={`/org/${orgId}/venues`} className="back-link">&larr; Venues</Link>
+      <div className="venue-header">
+        <Link to={`/org/${orgId}/venues`} className="back-link">&larr; Venues</Link>
 
-      {/* Venue header */}
-      {editingVenue ? (
-        <div className="card" style={{ marginBottom: 20 }}>
-          {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input type="text" value={venueForm.name} onChange={e => setVenueForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
-            <input type="text" value={venueForm.description} onChange={e => setVenueForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" className="input" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div><label className="input-label">Latitude</label><input type="number" step="any" value={venueForm.latitude} onChange={e => setVenueForm(f => ({ ...f, latitude: e.target.value }))} className="input" /></div>
-              <div><label className="input-label">Longitude</label><input type="number" step="any" value={venueForm.longitude} onChange={e => setVenueForm(f => ({ ...f, longitude: e.target.value }))} className="input" /></div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={saveVenue}>Save</button>
-              <button className="ghost small" onClick={() => setEditingVenue(false)}>Cancel</button>
+        {/* Venue header */}
+        {editingVenue ? (
+          <div className="card" style={{ marginBottom: 12 }}>
+            {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input type="text" value={venueForm.name} onChange={e => setVenueForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
+              <input type="text" value={venueForm.description} onChange={e => setVenueForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" className="input" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div><label className="input-label">Latitude</label><input type="number" step="any" value={venueForm.latitude} onChange={e => setVenueForm(f => ({ ...f, latitude: e.target.value }))} className="input" /></div>
+                <div><label className="input-label">Longitude</label><input type="number" step="any" value={venueForm.longitude} onChange={e => setVenueForm(f => ({ ...f, longitude: e.target.value }))} className="input" /></div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="primary small" onClick={saveVenue}>Save</button>
+                <button className="ghost small" onClick={() => setEditingVenue(false)}>Cancel</button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h1 style={{ marginBottom: 0 }}>{venue.name}</h1>
-            <button className="ghost small" onClick={startEditVenue} title="Edit">&#9998;</button>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h1 style={{ marginBottom: 0 }}>{venue.name}</h1>
+              <button className="ghost small" onClick={startEditVenue} title="Edit">&#9998;</button>
+            </div>
+            {venue.description && <p className="muted small-text">{venue.description}</p>}
+            <p className="muted small-text">{venue.latitude.toFixed(4)}, {venue.longitude.toFixed(4)}</p>
           </div>
-          {venue.description && <p className="muted small-text">{venue.description}</p>}
-          <p className="muted small-text">{venue.latitude.toFixed(4)}, {venue.longitude.toFixed(4)}</p>
-        </div>
-      )}
+        )}
 
-      {/* Venue images */}
-      <ImageCarousel entityType="venue" entityId={vid} canEdit={hasAccess} />
+        {/* Venue images */}
+        <ImageCarousel entityType="venue" entityId={vid} canEdit={hasAccess} />
+      </div>
 
       {/* Tracks section */}
       <div className="section" style={{ marginTop: 24 }}>

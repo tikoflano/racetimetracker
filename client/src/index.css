@@ -478,6 +478,15 @@ body {
 }
 .img-modal-delete:hover { color: var(--red); }
 
+/* Venue header */
+.venue-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
 /* Venue map */
 .venue-map-container .leaflet-container {
   background: var(--surface);
