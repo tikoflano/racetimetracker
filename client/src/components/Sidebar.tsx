@@ -110,7 +110,7 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
         <div className="sidebar-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
           <button
             className="ghost small"
-            style={{ width: '100%', textAlign: 'left', fontSize: '0.8rem' }}
+            style={{ width: '100%', textAlign: 'left', fontSize: '0.8rem', background: 'var(--border)' }}
             onClick={() => setSwitchModalOpen(true)}
           >
             Switch Organization
