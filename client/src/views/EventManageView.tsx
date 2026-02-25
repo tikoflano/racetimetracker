@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
@@ -42,9 +42,7 @@ export default function EventManageView() {
   const updateEventRider = useReducer(reducers.updateEventRider);
   const generateTrackSchedule = useReducer(reducers.generateTrackSchedule);
   const clearTrackSchedule = useReducer(reducers.clearTrackSchedule);
-  const assignTimekeeper = useReducer(reducers.assignTimekeeper);
-  const removeTimekeeperAssignment = useReducer(reducers.removeTimekeeperAssignment);
-  const updateTimekeeperAssignment = useReducer(reducers.updateTimekeeperAssignment);
+  const setTrackTimekeepers = useReducer(reducers.setTrackTimekeepers);
 
   const event = useMemo(() => {
     if (!eventSlug) return undefined;
@@ -212,12 +210,6 @@ export default function EventManageView() {
 
   // Timekeeper assignment state
   const [tkAssignError, setTkAssignError] = useState('');
-
-  const userMap = useMemo(() => {
-    const m = new Map<bigint, User>();
-    for (const u of users) m.set(u.id, u as User);
-    return m;
-  }, [users]);
 
   const assignableUsers = useMemo(() => {
     if (!event) return [];
@@ -979,21 +971,10 @@ export default function EventManageView() {
                   <TimekeeperSection
                     eventTrackId={et.id}
                     assignments={timekeeperAssignments}
-                    userMap={userMap}
                     assignableUsers={assignableUsers}
-                    onAssign={async (userId, position) => {
+                    onSave={async (startUserId, endUserId) => {
                       setTkAssignError('');
-                      try { await assignTimekeeper({ eventTrackId: et.id, userId, position }); }
-                      catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
-                    }}
-                    onUpdatePosition={async (assignmentId, position) => {
-                      setTkAssignError('');
-                      try { await updateTimekeeperAssignment({ assignmentId, position }); }
-                      catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
-                    }}
-                    onRemove={async (assignmentId) => {
-                      setTkAssignError('');
-                      try { await removeTimekeeperAssignment({ assignmentId }); }
+                      try { await setTrackTimekeepers({ eventTrackId: et.id, startUserId, endUserId }); }
                       catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
                     }}
                     error={tkAssignError}
@@ -1043,107 +1024,158 @@ export default function EventManageView() {
   );
 }
 
-function TimekeeperSection({ eventTrackId, assignments, userMap, assignableUsers, onAssign, onUpdatePosition, onRemove, error }: {
+function TimekeeperSection({ eventTrackId, assignments, assignableUsers, onSave, error }: {
   eventTrackId: bigint;
   assignments: readonly any[];
-  userMap: Map<bigint, User>;
   assignableUsers: User[];
-  onAssign: (userId: bigint, position: string) => void;
-  onUpdatePosition: (assignmentId: bigint, position: string) => void;
-  onRemove: (assignmentId: bigint) => void;
+  onSave: (startUserId: bigint, endUserId: bigint) => void;
   error: string;
 }) {
-  const [addUserId, setAddUserId] = useState('');
-  const [addPosition, setAddPosition] = useState('both');
-
   const trackAssignments = useMemo(() =>
     assignments.filter((a: any) => a.eventTrackId === eventTrackId),
   [assignments, eventTrackId]);
 
-  const assignedUserIds = useMemo(() =>
-    new Set(trackAssignments.map((a: any) => a.userId as bigint)),
-  [trackAssignments]);
+  const currentStart = useMemo(() => {
+    for (const a of trackAssignments) {
+      if (a.position === 'start' || a.position === 'both') return a.userId as bigint;
+    }
+    return 0n;
+  }, [trackAssignments]);
 
-  const available = assignableUsers.filter(u => !assignedUserIds.has(u.id));
+  const currentEnd = useMemo(() => {
+    for (const a of trackAssignments) {
+      if (a.position === 'end' || a.position === 'both') return a.userId as bigint;
+    }
+    return 0n;
+  }, [trackAssignments]);
 
   return (
     <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
       <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 8 }}>
         Timekeepers
       </div>
-
-      {trackAssignments.length > 0 && (
-        <table className="data-table" style={{ marginBottom: 12 }}>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Position</th>
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {trackAssignments.map((a: any) => {
-              const u = userMap.get(a.userId);
-              return (
-                <tr key={String(a.id)}>
-                  <td>{u ? (u.name || u.email) : `User #${a.userId}`}</td>
-                  <td>
-                    <select
-                      className="input"
-                      value={a.position}
-                      onChange={e => onUpdatePosition(a.id, e.target.value)}
-                      style={{ width: 100, padding: '4px 8px', fontSize: '0.8rem' }}
-                    >
-                      <option value="start">Start</option>
-                      <option value="end">End</option>
-                      <option value="both">Both</option>
-                    </select>
-                  </td>
-                  <td>
-                    <button className="ghost small" onClick={() => onRemove(a.id)} style={{ color: 'var(--red, #ef4444)' }}>×</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
       {error && <div style={{ color: 'var(--red)', fontSize: '0.8rem', marginBottom: 8 }}>{error}</div>}
-
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <select
-          className="input"
-          value={addUserId}
-          onChange={e => setAddUserId(e.target.value)}
-          style={{ flex: 1, minWidth: 150, padding: '6px 8px', fontSize: '0.8rem' }}
-        >
-          <option value="">Select user...</option>
-          {available.map(u => (
-            <option key={String(u.id)} value={String(u.id)}>{u.name || u.email}</option>
-          ))}
-        </select>
-        <select
-          className="input"
-          value={addPosition}
-          onChange={e => setAddPosition(e.target.value)}
-          style={{ width: 90, padding: '6px 8px', fontSize: '0.8rem' }}
-        >
-          <option value="start">Start</option>
-          <option value="end">End</option>
-          <option value="both">Both</option>
-        </select>
-        <button
-          className="primary small"
-          onClick={() => {
-            if (!addUserId) return;
-            onAssign(BigInt(addUserId), addPosition);
-            setAddUserId('');
-          }}
-        >
-          Assign
-        </button>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
+          <label className="input-label">Start line</label>
+          <UserSearchSelect
+            users={assignableUsers}
+            value={currentStart}
+            onChange={uid => onSave(uid, currentEnd)}
+            placeholder="Select timekeeper..."
+          />
+        </div>
+        <div>
+          <label className="input-label">Finish line</label>
+          <UserSearchSelect
+            users={assignableUsers}
+            value={currentEnd}
+            onChange={uid => onSave(currentStart, uid)}
+            placeholder="Select timekeeper..."
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function UserSearchSelect({ users, value, onChange, placeholder }: {
+  users: User[];
+  value: bigint;
+  onChange: (userId: bigint) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const list = q ? users.filter(u => (u.name || u.email).toLowerCase().includes(q)) : users;
+    return list.sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
+  }, [users, search]);
+
+  const selected = value !== 0n ? users.find(u => u.id === value) : null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => { setOpen(!open); setSearch(''); }}
+        className="input"
+        style={{
+          width: '100%', textAlign: 'left', cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '6px 8px', fontSize: '0.8rem',
+          color: selected ? 'var(--text)' : 'var(--text-muted)',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected ? (selected.name || selected.email) : placeholder}
+        </span>
+        <span style={{ fontSize: '0.6rem', marginLeft: 4 }}>▼</span>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, top: '100%', marginTop: 2,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 50, maxHeight: 220, display: 'flex', flexDirection: 'column',
+        }}>
+          <input
+            type="text"
+            className="input"
+            placeholder="Search..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            autoFocus
+            style={{ margin: 6, width: 'calc(100% - 12px)', fontSize: '0.8rem' }}
+          />
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {value !== 0n && (
+              <button
+                onClick={() => { onChange(0n); setOpen(false); }}
+                style={{
+                  display: 'block', width: '100%', padding: '6px 12px', border: 'none',
+                  background: 'none', color: 'var(--text-muted)', fontSize: '0.8rem',
+                  textAlign: 'left', cursor: 'pointer', fontStyle: 'italic',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                Unassign
+              </button>
+            )}
+            {filtered.map(u => (
+              <button
+                key={String(u.id)}
+                onClick={() => { onChange(u.id); setOpen(false); }}
+                style={{
+                  display: 'block', width: '100%', padding: '6px 12px', border: 'none',
+                  background: u.id === value ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'none',
+                  color: 'var(--text)', fontSize: '0.8rem', textAlign: 'left', cursor: 'pointer',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+                onMouseLeave={e => (e.currentTarget.style.background = u.id === value ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'none')}
+              >
+                {u.name || u.email}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="muted small-text" style={{ padding: '8px 12px' }}>No users found</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
