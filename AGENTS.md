@@ -96,6 +96,22 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 - `formatElapsed(ms)` in `utils.ts` for time display.
 - `ElapsedTimer` component for live-updating timers (polls every 50ms).
 
+### Icons
+
+All icons use FontAwesome via `client/src/icons.ts`. Import from `../icons` — never use emojis or HTML entities for icons.
+
+### Action menus
+
+Entity-level actions (rename, share, manage, delete, etc.) go in a **dropdown menu** triggered by a vertical dots icon (`faEllipsisVertical`). This is the standard pattern used across the app (events, organizations, member rows).
+
+Implementation pattern:
+- Trigger button: `<FontAwesomeIcon icon={faEllipsisVertical} />` in a `ghost small` button
+- Dropdown: absolutely positioned `div` with `background: var(--surface)`, border, shadow, `zIndex: 50`
+- Each item: flex row with `justifyContent: 'flex-start'`, fixed-width icon span (16px), then label text
+- Destructive actions (delete, leave): `color: 'var(--red, #ef4444)'`
+- Close on outside click via `useRef` + `useEffect` mousedown listener
+- See `EventActionMenu` in `EventView.tsx` as the reference implementation.
+
 ## Common Tasks
 
 **Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.

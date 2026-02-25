@@ -4,7 +4,7 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
-import { FontAwesomeIcon, faPen, faPlus, faRightFromBracket, faGear, faEllipsisVertical } from '../icons';
+import { FontAwesomeIcon, faPen, faPlus, faRightFromBracket, faEllipsisVertical } from '../icons';
 import type { Organization, OrgMember, User } from '../module_bindings/types';
 
 export default function OrgMembersView() {
@@ -322,7 +322,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
         style={{ fontSize: '1rem', padding: '4px 8px' }}
         title="Organization actions"
       >
-        <FontAwesomeIcon icon={faGear} />
+        <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
         <div style={{
