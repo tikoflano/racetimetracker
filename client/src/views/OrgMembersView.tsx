@@ -16,7 +16,7 @@ export default function OrgMembersView() {
 
   const [events] = useTable(tables.event);
 
-  const addOrgMember = useReducer(reducers.addOrgMember);
+  const inviteOrgMember = useReducer(reducers.inviteOrgMember);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
   const renameOrganization = useReducer(reducers.renameOrganization);
   const seedDemoData = useReducer(reducers.seedDemoData);
@@ -83,16 +83,16 @@ export default function OrgMembersView() {
 
   const handleInvite = async () => {
     setError('');
-    const targetUser = users.find((u: User) => u.email === inviteEmail.trim());
-    if (!targetUser) {
-      setError('User not found. They must sign in at least once before being invited.');
+    const trimmed = inviteEmail.trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      setError('Please enter a valid email address.');
       return;
     }
     try {
-      await addOrgMember({ orgId: oid, userId: targetUser.id, role: inviteRole });
+      await inviteOrgMember({ orgId: oid, email: trimmed, role: inviteRole });
       setInviteEmail('');
     } catch (e: any) {
-      setError(e?.message || 'Failed to add member');
+      setError(e?.message || 'Failed to invite member');
     }
   };
 
@@ -168,26 +168,32 @@ export default function OrgMembersView() {
         {members.length === 0 ? (
           <div className="empty">No members yet. Invite someone below.</div>
         ) : (
-          members.map(({ member, user: memberUser }) => (
-            <div
-              key={String(member.id)}
-              className="card"
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            >
-              <div>
-                <span>{memberUser ? `${memberUser.name || memberUser.email}` : `User #${member.userId}`}</span>
-                {memberUser && <span className="muted small-text" style={{ marginLeft: 8 }}>{memberUser.email}</span>}
+          members.map(({ member, user: memberUser }) => {
+            const isPending = memberUser?.googleSub?.startsWith('pending:') ?? false;
+            return (
+              <div
+                key={String(member.id)}
+                className="card"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={isPending ? { opacity: 0.7 } : undefined}>
+                    {memberUser ? `${memberUser.name || memberUser.email}` : `User #${member.userId}`}
+                  </span>
+                  {memberUser && !isPending && <span className="muted small-text">{memberUser.email}</span>}
+                  {isPending && <span className="badge" style={{ background: 'var(--yellow-bg, #fef3c7)', color: 'var(--yellow, #d97706)', fontSize: '0.7rem' }}>Pending</span>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className={`badge ${member.role === 'admin' ? 'running' : 'queued'}`}>
+                    {member.role}
+                  </span>
+                  {isOwner && (
+                    <button className="ghost small" onClick={() => handleRemove(member.id)}>Remove</button>
+                  )}
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className={`badge ${member.role === 'admin' ? 'running' : 'queued'}`}>
-                  {member.role}
-                </span>
-                {isOwner && (
-                  <button className="ghost small" onClick={() => handleRemove(member.id)}>Remove</button>
-                )}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
