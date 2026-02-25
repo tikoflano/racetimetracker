@@ -5,6 +5,22 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
+type EventStatus = 'in_progress' | 'not_started' | 'completed';
+
+function todayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getEventStatus(e: Event, today: string): EventStatus {
+  if (today < e.startDate) return 'not_started';
+  if (today > e.endDate) return 'completed';
+  return 'in_progress';
+}
+
+const STATUS_LABEL: Record<EventStatus, string> = { in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
+const STATUS_BADGE: Record<EventStatus, string> = { in_progress: 'running', not_started: 'queued', completed: 'finished' };
+
 export default function ChampionshipDetailView() {
   const { orgId, champId } = useParams<{ orgId: string; champId: string }>();
   const oid = BigInt(orgId ?? '0');
@@ -19,6 +35,7 @@ export default function ChampionshipDetailView() {
 
   const updateChampionship = useReducer(reducers.updateChampionship);
   const createEvent = useReducer(reducers.createEvent);
+  const updateEvent = useReducer(reducers.updateEvent);
   const togglePin = useReducer(reducers.togglePinEvent);
 
   const pinnedEventIds = useMemo(() => {
@@ -44,15 +61,43 @@ export default function ChampionshipDetailView() {
   const [evtVenueId, setEvtVenueId] = useState('');
   const [evtError, setEvtError] = useState('');
 
+  // Edit event name state
+  const [editingEventId, setEditingEventId] = useState<bigint | null>(null);
+  const [editEventName, setEditEventName] = useState('');
+  const [editEventError, setEditEventError] = useState('');
+
+  // Status filter
+  const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
+
   const org = orgs.find((o: Organization) => o.id === oid);
   const champ = championships.find((c: Championship) => c.id === cid);
   const hasAccess = canManageOrgEvents(oid);
+
+  const today = todayStr();
 
   const champEvents = useMemo(() => {
     return events
       .filter((e: Event) => e.championshipId === cid)
       .sort((a: Event, b: Event) => a.startDate.localeCompare(b.startDate));
   }, [events, cid]);
+
+  const eventRows = useMemo(() => {
+    return champEvents.map((e: Event) => ({
+      event: e,
+      status: getEventStatus(e, today),
+    }));
+  }, [champEvents, today]);
+
+  const filteredEventRows = useMemo(() => {
+    if (statusFilter === 'all') return eventRows;
+    return eventRows.filter(r => r.status === statusFilter);
+  }, [eventRows, statusFilter]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: eventRows.length, in_progress: 0, not_started: 0, completed: 0 };
+    for (const r of eventRows) counts[r.status]++;
+    return counts;
+  }, [eventRows]);
 
   const venueMap = useMemo(() => {
     const m = new Map<bigint, Venue>();
@@ -119,6 +164,30 @@ export default function ChampionshipDetailView() {
     }
   };
 
+  const startEditEvent = (e: Event) => {
+    setEditingEventId(e.id);
+    setEditEventName(e.name);
+    setEditEventError('');
+  };
+
+  const handleSaveEventName = async (e: Event) => {
+    setEditEventError('');
+    const trimmed = editEventName.trim();
+    if (!trimmed) { setEditEventError('Name cannot be empty'); return; }
+    try {
+      await updateEvent({
+        eventId: e.id,
+        name: trimmed,
+        description: e.description,
+        startDate: e.startDate,
+        endDate: e.endDate,
+      });
+      setEditingEventId(null);
+    } catch (err: any) {
+      setEditEventError(err?.message || 'Failed to rename');
+    }
+  };
+
   return (
     <div>
       <Link to={`/org/${orgId}/championships`} className="back-link">&larr; Championships</Link>
@@ -166,7 +235,7 @@ export default function ChampionshipDetailView() {
         </div>
       )}
 
-      {/* Events table */}
+      {/* Events section */}
       <div className="section" style={{ marginTop: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-title" style={{ marginBottom: 0 }}>Events ({champEvents.length})</div>
@@ -174,6 +243,24 @@ export default function ChampionshipDetailView() {
             <button className="primary small" onClick={() => setShowEventForm(true)}>+ Add Event</button>
           )}
         </div>
+
+        {/* Status filter */}
+        {eventRows.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+            {(['all', 'in_progress', 'not_started', 'completed'] as const).map(f => {
+              const labels: Record<string, string> = { all: 'All', in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
+              return (
+                <button
+                  key={f}
+                  className={statusFilter === f ? 'primary small' : 'ghost small'}
+                  onClick={() => setStatusFilter(f)}
+                >
+                  {labels[f]} ({statusCounts[f]})
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {showEventForm && (
           <div className="card" style={{ marginBottom: 12 }}>
@@ -227,19 +314,22 @@ export default function ChampionshipDetailView() {
 
         {champEvents.length === 0 && !showEventForm ? (
           <div className="empty">No events in this championship yet.</div>
+        ) : filteredEventRows.length === 0 ? (
+          <div className="empty">No events match the selected filter.</div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
                 <th style={{ width: 32 }}></th>
                 <th>Name</th>
+                <th>Status</th>
                 <th>Venue</th>
                 <th>Start</th>
                 <th>End</th>
               </tr>
             </thead>
             <tbody>
-              {champEvents.map((e: Event) => (
+              {filteredEventRows.map(({ event: e, status }) => (
                 <tr key={String(e.id)}>
                   <td>
                     {isAuthenticated && (
@@ -253,8 +343,32 @@ export default function ChampionshipDetailView() {
                     )}
                   </td>
                   <td>
-                    <Link to={`/event/${e.id}`} className="table-link">{e.name}</Link>
+                    {editingEventId === e.id ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <input
+                          type="text"
+                          value={editEventName}
+                          onChange={ev => setEditEventName(ev.target.value)}
+                          onKeyDown={ev => {
+                            if (ev.key === 'Enter') handleSaveEventName(e);
+                            if (ev.key === 'Escape') setEditingEventId(null);
+                          }}
+                          autoFocus
+                          className="input"
+                          style={{ padding: '4px 8px', fontSize: '0.875rem' }}
+                        />
+                        <button className="primary small" onClick={() => handleSaveEventName(e)}>Save</button>
+                        <button className="ghost small" onClick={() => setEditingEventId(null)}>Cancel</button>
+                        {editEventError && <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>{editEventError}</span>}
+                      </div>
+                    ) : (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Link to={`/event/${e.id}`} className="table-link">{e.name}</Link>
+                        <button className="ghost small" onClick={() => startEditEvent(e)} title="Rename" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>&#9998;</button>
+                      </span>
+                    )}
                   </td>
+                  <td><span className={`badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span></td>
                   <td>{venueMap.get(e.venueId)?.name ?? '—'}</td>
                   <td>{e.startDate}</td>
                   <td>{e.endDate}</td>

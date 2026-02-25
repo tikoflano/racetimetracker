@@ -83,13 +83,14 @@ export default function ChampionshipsView() {
         .filter((e: Event) => e.endDate >= today)
         .sort((a: Event, b: Event) => a.startDate.localeCompare(b.startDate));
       const nextEvent = upcoming.length > 0 ? upcoming[0] : null;
-      // Status: in_progress if any event spans today, completed if all ended, not_started otherwise
+      // Status based on championship date range (first start to last end)
       let status: ChampStatus = 'not_started';
       if (champEvents.length > 0) {
-        const hasActive = champEvents.some((e: Event) => e.startDate <= today && e.endDate >= today);
-        const allEnded = champEvents.every((e: Event) => e.endDate < today);
-        if (hasActive) status = 'in_progress';
-        else if (allEnded) status = 'completed';
+        const firstStart = champEvents.map((e: Event) => e.startDate).sort()[0];
+        const lastEnd = champEvents.map((e: Event) => e.endDate).sort().pop()!;
+        if (today < firstStart) status = 'not_started';
+        else if (today > lastEnd) status = 'completed';
+        else status = 'in_progress';
       }
       return {
         championship: c,

@@ -513,6 +513,24 @@ export const create_event = spacetimedb.reducer(
   }
 );
 
+export const update_event = spacetimedb.reducer(
+  { event_id: t.u64(), name: t.string(), description: t.string(), start_date: t.string(), end_date: t.string() },
+  (ctx, args) => {
+    const evt = ctx.db.event.id.find(args.event_id);
+    if (!evt) throw new SenderError('Event not found');
+    requireOrgEventManager(ctx, evt.org_id);
+    // Enforce unique name within championship
+    const trimmed = args.name.trim();
+    if (!trimmed) throw new SenderError('Event name cannot be empty');
+    for (const e of ctx.db.event.iter()) {
+      if (e.championship_id === evt.championship_id && e.id !== evt.id && e.name === trimmed) {
+        throw new SenderError('An event with this name already exists in this championship');
+      }
+    }
+    ctx.db.event.id.update({ ...evt, name: trimmed, description: args.description, start_date: args.start_date, end_date: args.end_date });
+  }
+);
+
 // ─── Pinned events ────────────────────────────────────────────────────────
 
 export const toggle_pin_event = spacetimedb.reducer(
