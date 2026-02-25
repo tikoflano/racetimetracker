@@ -13,7 +13,7 @@ export default function RegisterView() {
 
   const registerRider = useReducer(reducers.registerRiderWithToken);
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', age: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -59,7 +59,6 @@ export default function RegisterView() {
       setError('First and last name are required');
       return;
     }
-    const age = parseInt(form.age) || 0;
     try {
       await registerRider({
         token: token ?? '',
@@ -67,7 +66,7 @@ export default function RegisterView() {
         lastName: form.lastName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        age,
+        dateOfBirth: form.dateOfBirth,
       });
       setSubmitted(true);
     } catch (e: any) {
@@ -130,15 +129,13 @@ export default function RegisterView() {
             />
           </div>
           <div>
-            <label className="input-label">Age</label>
+            <label className="input-label">Date of Birth</label>
             <input
-              type="number"
-              placeholder="0"
-              value={form.age}
-              onChange={(e) => setForm(f => ({ ...f, age: e.target.value }))}
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(e) => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="input"
-              min={0}
             />
           </div>
           <button className="primary" onClick={handleSubmit} style={{ marginTop: 4 }}>Register</button>

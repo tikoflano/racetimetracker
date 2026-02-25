@@ -23,7 +23,7 @@ export default function RacersView() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<bigint | null>(null);
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', age: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [expandedQR, setExpandedQR] = useState<bigint | null>(null);
@@ -58,14 +58,14 @@ export default function RacersView() {
   if (!hasAccess) return <div className="empty">You don't have access to manage racers.</div>;
 
   const resetForm = () => {
-    setForm({ firstName: '', lastName: '', email: '', phone: '', age: '' });
+    setForm({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
     setError('');
     setEditingId(null);
     setShowForm(false);
   };
 
   const startEdit = (r: Rider) => {
-    setForm({ firstName: r.firstName, lastName: r.lastName, email: r.email, phone: r.phone, age: String(r.age) });
+    setForm({ firstName: r.firstName, lastName: r.lastName, email: r.email, phone: r.phone, dateOfBirth: r.dateOfBirth });
     setEditingId(r.id);
     setShowForm(true);
     setError('');
@@ -77,7 +77,6 @@ export default function RacersView() {
       setError('First and last name are required');
       return;
     }
-    const age = parseInt(form.age) || 0;
     try {
       if (editingId !== null) {
         await updateRider({
@@ -86,7 +85,7 @@ export default function RacersView() {
           lastName: form.lastName.trim(),
           email: form.email.trim(),
           phone: form.phone.trim(),
-          age,
+          dateOfBirth: form.dateOfBirth,
         });
       } else {
         await createRider({
@@ -95,7 +94,7 @@ export default function RacersView() {
           lastName: form.lastName.trim(),
           email: form.email.trim(),
           phone: form.phone.trim(),
-          age,
+          dateOfBirth: form.dateOfBirth,
         });
       }
       resetForm();
@@ -196,15 +195,13 @@ export default function RacersView() {
               />
             </div>
             <div>
-              <label className="input-label">Age</label>
+              <label className="input-label">Date of Birth</label>
               <input
-                type="number"
-                placeholder="0"
-                value={form.age}
-                onChange={(e) => setForm(f => ({ ...f, age: e.target.value }))}
+                type="date"
+                value={form.dateOfBirth}
+                onChange={(e) => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="input"
-                min={0}
               />
             </div>
           </div>
@@ -239,7 +236,7 @@ export default function RacersView() {
               <th>Name</th>
               <th>Email</th>
               <th>Phone</th>
-              <th>Age</th>
+              <th>DOB</th>
               <th style={{ width: 100 }}></th>
             </tr>
           </thead>
@@ -249,7 +246,7 @@ export default function RacersView() {
                 <td>{r.firstName} {r.lastName}</td>
                 <td className="muted">{r.email || '—'}</td>
                 <td className="muted">{r.phone || '—'}</td>
-                <td>{r.age || '—'}</td>
+                <td>{r.dateOfBirth || '—'}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button className="ghost small" onClick={() => startEdit(r)} title="Edit">&#9998;</button>

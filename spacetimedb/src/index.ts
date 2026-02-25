@@ -120,7 +120,7 @@ const spacetimedb = schema({
       last_name: t.string(),
       email: t.string(),
       phone: t.string(),
-      age: t.u32(),
+      date_of_birth: t.string(),
     }
   ),
 
@@ -537,20 +537,20 @@ export const create_track_variation = spacetimedb.reducer(
 // ─── Rider management (org event manager+) ──────────────────────────────────
 
 export const create_rider = spacetimedb.reducer(
-  { org_id: t.u64(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), age: t.u32() },
+  { org_id: t.u64(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), date_of_birth: t.string() },
   (ctx, args) => {
     requireOrgEventManager(ctx, args.org_id);
-    ctx.db.rider.insert({ id: 0n, org_id: args.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, age: args.age });
+    ctx.db.rider.insert({ id: 0n, org_id: args.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, date_of_birth: args.date_of_birth });
   }
 );
 
 export const update_rider = spacetimedb.reducer(
-  { rider_id: t.u64(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), age: t.u32() },
+  { rider_id: t.u64(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), date_of_birth: t.string() },
   (ctx, args) => {
     const rider = ctx.db.rider.id.find(args.rider_id);
     if (!rider) throw new SenderError('Rider not found');
     requireOrgEventManager(ctx, rider.org_id);
-    ctx.db.rider.id.update({ ...rider, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, age: args.age });
+    ctx.db.rider.id.update({ ...rider, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, date_of_birth: args.date_of_birth });
   }
 );
 
@@ -601,7 +601,7 @@ export const deactivate_registration_token = spacetimedb.reducer(
 
 // Public reducer — anyone with a valid token can register as a rider
 export const register_rider_with_token = spacetimedb.reducer(
-  { token: t.string(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), age: t.u32() },
+  { token: t.string(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), date_of_birth: t.string() },
   (ctx, args) => {
     // Find active token
     let tok = null;
@@ -609,7 +609,7 @@ export const register_rider_with_token = spacetimedb.reducer(
       if (t.token === args.token && t.is_active) { tok = t; break; }
     }
     if (!tok) throw new SenderError('Invalid or expired registration link');
-    ctx.db.rider.insert({ id: 0n, org_id: tok.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, age: args.age });
+    ctx.db.rider.insert({ id: 0n, org_id: tok.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, date_of_birth: args.date_of_birth });
   }
 );
 
@@ -774,14 +774,14 @@ export const seed_demo_data = spacetimedb.reducer(
 
     // Riders
     const ridersData = [
-      { first_name: 'Alex', last_name: 'Morgan', email: 'alex@example.com', phone: '+1-555-0101', age: 28 },
-      { first_name: 'Sam', last_name: 'Rivera', email: 'sam@example.com', phone: '+1-555-0102', age: 24 },
-      { first_name: 'Jordan', last_name: 'Chen', email: 'jordan@example.com', phone: '+1-555-0103', age: 31 },
-      { first_name: 'Casey', last_name: 'Brooks', email: 'casey@example.com', phone: '+1-555-0104', age: 26 },
+      { first_name: 'Alex', last_name: 'Morgan', email: 'alex@example.com', phone: '+1-555-0101', date_of_birth: '1997-03-14' },
+      { first_name: 'Sam', last_name: 'Rivera', email: 'sam@example.com', phone: '+1-555-0102', date_of_birth: '2001-07-22' },
+      { first_name: 'Jordan', last_name: 'Chen', email: 'jordan@example.com', phone: '+1-555-0103', date_of_birth: '1994-11-05' },
+      { first_name: 'Casey', last_name: 'Brooks', email: 'casey@example.com', phone: '+1-555-0104', date_of_birth: '1999-01-30' },
     ];
 
     const riders = ridersData.map((r) => {
-      const rider = ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, age: r.age });
+      const rider = ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, date_of_birth: r.date_of_birth });
       // Register riders for the first event
       ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id });
       return rider;
