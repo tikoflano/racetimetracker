@@ -482,6 +482,7 @@ body {
 .venue-map-container .leaflet-container {
   background: var(--surface);
   font-family: inherit;
+  z-index: 1;
 }
 .venue-map-container .leaflet-popup-content-wrapper {
   background: var(--surface);
