@@ -327,6 +327,96 @@ body {
   padding-left: 4px;
 }
 
+/* Image carousel */
+.img-carousel {
+  margin-bottom: 16px;
+}
+.img-carousel-main {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.img-carousel-img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background: #000;
+}
+.img-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  font-size: 1.6rem;
+  padding: 8px 12px;
+  cursor: pointer;
+  line-height: 1;
+  z-index: 2;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.img-carousel-arrow:hover { background: rgba(0, 0, 0, 0.75); }
+.img-carousel-arrow.left { left: 6px; }
+.img-carousel-arrow.right { right: 6px; }
+.img-carousel-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(220, 38, 38, 0.8);
+  color: white;
+  border: none;
+  font-size: 1.1rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: background 0.15s;
+}
+.img-carousel-delete:hover { background: rgba(220, 38, 38, 1); }
+.img-carousel-caption {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4px;
+}
+.img-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.img-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+.img-carousel-dot.active { background: var(--accent); }
+.img-carousel-empty {
+  text-align: center;
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.img-carousel-upload {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+}
+
 /* Venue map */
 .venue-map-container .leaflet-container {
   background: var(--surface);

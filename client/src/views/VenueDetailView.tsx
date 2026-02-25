@@ -6,6 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 
 // Colored circle marker icon
@@ -86,6 +87,7 @@ export default function VenueDetailView() {
   const [varForm, setVarForm] = useState({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' });
   const [editingVarId, setEditingVarId] = useState<bigint | null>(null);
   const [placingPin, setPlacingPin] = useState<'start' | 'end' | null>(null);
+  const [expandedVarImages, setExpandedVarImages] = useState<bigint | null>(null);
   const [error, setError] = useState('');
 
   const org = orgs.find((o: Organization) => o.id === oid);
@@ -256,6 +258,9 @@ export default function VenueDetailView() {
         </div>
       )}
 
+      {/* Venue images */}
+      <ImageCarousel entityType="venue" entityId={vid} canEdit={hasAccess} />
+
       {/* View toggle + add track */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -362,9 +367,11 @@ export default function VenueDetailView() {
                   </div>
                 </div>
 
-                {/* Expanded: variations */}
+                {/* Expanded: images + variations */}
                 {isExpanded && (
                   <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px' }}>
+                    <ImageCarousel entityType="track" entityId={track.id} canEdit={hasAccess} />
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <div className="section-title" style={{ marginBottom: 0 }}>Variations</div>
                       <button className="primary small" onClick={() => startAddVar(track.id)}>+ Add</button>
@@ -479,13 +486,13 @@ export default function VenueDetailView() {
                       </thead>
                       <tbody>
                         {vars.map((tv: TrackVariation) => (
-                          <tr key={String(tv.id)}>
+                          <tr key={String(tv.id)} style={{ cursor: 'pointer' }} onClick={() => setExpandedVarImages(expandedVarImages === tv.id ? null : tv.id)}>
                             <td>{tv.name}</td>
                             <td className="muted small-text">{tv.description || '—'}</td>
                             <td className="muted small-text">{tv.startLatitude.toFixed(4)}, {tv.startLongitude.toFixed(4)}</td>
                             <td className="muted small-text">{tv.endLatitude.toFixed(4)}, {tv.endLongitude.toFixed(4)}</td>
                             <td>
-                              <div style={{ display: 'flex', gap: 4 }}>
+                              <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
                                 <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit">&#9998;</button>
                                 {vars.length > 1 && (
                                   <button className="ghost small" onClick={() => handleDeleteVar(tv)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
@@ -494,6 +501,13 @@ export default function VenueDetailView() {
                             </td>
                           </tr>
                         ))}
+                        {expandedVarImages && vars.some(v => v.id === expandedVarImages) && (
+                          <tr>
+                            <td colSpan={5} style={{ padding: 12 }}>
+                              <ImageCarousel entityType="track_variation" entityId={expandedVarImages} canEdit={hasAccess} />
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

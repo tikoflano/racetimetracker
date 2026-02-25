@@ -177,6 +177,18 @@ const spacetimedb = schema({
       event_id: t.u64().index('btree'),
     }
   ),
+
+  image: table(
+    { public: true },
+    {
+      id: t.u64().primaryKey().autoInc(),
+      entity_type: t.string(), // 'venue' | 'track' | 'track_variation'
+      entity_id: t.u64().index('btree'),
+      data: t.string(), // base64 data URI
+      caption: t.string(),
+      sort_order: t.u32(),
+    }
+  ),
 });
 
 export default spacetimedb;
@@ -846,6 +858,72 @@ export const dnf_run = spacetimedb.reducer(
       start_time: run.start_time,
       end_time: 0n,
     });
+  }
+);
+
+// ─── Images ─────────────────────────────────────────────────────────────────
+
+// Resolve entity to its venue's org_id for permission checks
+function getEntityOrgId(ctx: any, entityType: string, entityId: bigint): bigint {
+  if (entityType === 'venue') {
+    const venue = ctx.db.venue.id.find(entityId);
+    if (!venue) throw new SenderError('Venue not found');
+    return venue.org_id;
+  }
+  if (entityType === 'track') {
+    const track = ctx.db.track.id.find(entityId);
+    if (!track) throw new SenderError('Track not found');
+    const venue = ctx.db.venue.id.find(track.venue_id);
+    if (!venue) throw new SenderError('Venue not found');
+    return venue.org_id;
+  }
+  if (entityType === 'track_variation') {
+    const tv = ctx.db.track_variation.id.find(entityId);
+    if (!tv) throw new SenderError('Track variation not found');
+    const track = ctx.db.track.id.find(tv.track_id);
+    if (!track) throw new SenderError('Track not found');
+    const venue = ctx.db.venue.id.find(track.venue_id);
+    if (!venue) throw new SenderError('Venue not found');
+    return venue.org_id;
+  }
+  throw new SenderError('Invalid entity type');
+}
+
+export const add_image = spacetimedb.reducer(
+  { entity_type: t.string(), entity_id: t.u64(), data: t.string(), caption: t.string() },
+  (ctx, args) => {
+    const orgId = getEntityOrgId(ctx, args.entity_type, args.entity_id);
+    requireOrgEventManager(ctx, orgId);
+    // Determine sort_order
+    let maxOrder = 0;
+    for (const img of ctx.db.image.iter()) {
+      if (img.entity_type === args.entity_type && img.entity_id === args.entity_id) {
+        if (img.sort_order >= maxOrder) maxOrder = img.sort_order + 1;
+      }
+    }
+    ctx.db.image.insert({ id: 0n, entity_type: args.entity_type, entity_id: args.entity_id, data: args.data, caption: args.caption, sort_order: maxOrder });
+  }
+);
+
+export const delete_image = spacetimedb.reducer(
+  { image_id: t.u64() },
+  (ctx, args) => {
+    const img = ctx.db.image.id.find(args.image_id);
+    if (!img) throw new SenderError('Image not found');
+    const orgId = getEntityOrgId(ctx, img.entity_type, img.entity_id);
+    requireOrgEventManager(ctx, orgId);
+    ctx.db.image.id.delete(img.id);
+  }
+);
+
+export const update_image_caption = spacetimedb.reducer(
+  { image_id: t.u64(), caption: t.string() },
+  (ctx, args) => {
+    const img = ctx.db.image.id.find(args.image_id);
+    if (!img) throw new SenderError('Image not found');
+    const orgId = getEntityOrgId(ctx, img.entity_type, img.entity_id);
+    requireOrgEventManager(ctx, orgId);
+    ctx.db.image.id.update({ ...img, caption: args.caption });
   }
 );
 
