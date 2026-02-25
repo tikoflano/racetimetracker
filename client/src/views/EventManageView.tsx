@@ -7,7 +7,7 @@ import { useActiveOrgMaybe } from '../OrgContext';
 import AddRacerModal from '../components/AddRacerModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
-import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule } from '../module_bindings/types';
+import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule, User, OrgMember } from '../module_bindings/types';
 
 export default function EventManageView() {
   const { eventSlug } = useParams<{ eventSlug: string }>();
@@ -25,6 +25,9 @@ export default function EventManageView() {
   const [categoryTracks] = useTable(tables.category_track);
   const [allRiders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
+  const [timekeeperAssignments] = useTable(tables.timekeeper_assignment);
+  const [users] = useTable(tables.user);
+  const [orgMembers] = useTable(tables.org_member);
 
   const createCategory = useReducer(reducers.createEventCategory);
   const addTrackToCategory = useReducer(reducers.addTrackToCategory);
@@ -39,6 +42,9 @@ export default function EventManageView() {
   const updateEventRider = useReducer(reducers.updateEventRider);
   const generateTrackSchedule = useReducer(reducers.generateTrackSchedule);
   const clearTrackSchedule = useReducer(reducers.clearTrackSchedule);
+  const assignTimekeeper = useReducer(reducers.assignTimekeeper);
+  const removeTimekeeperAssignment = useReducer(reducers.removeTimekeeperAssignment);
+  const updateTimekeeperAssignment = useReducer(reducers.updateTimekeeperAssignment);
 
   const event = useMemo(() => {
     if (!eventSlug) return undefined;
@@ -203,6 +209,24 @@ export default function EventManageView() {
   const [checkInModal, setCheckInModal] = useState<{ rider: Rider; eventRider: EventRider } | null>(null);
   const [showAddTrackModal, setShowAddTrackModal] = useState(false);
   const [addTrackError, setAddTrackError] = useState('');
+
+  // Timekeeper assignment state
+  const [tkAssignError, setTkAssignError] = useState('');
+
+  const userMap = useMemo(() => {
+    const m = new Map<bigint, User>();
+    for (const u of users) m.set(u.id, u as User);
+    return m;
+  }, [users]);
+
+  const assignableUsers = useMemo(() => {
+    if (!event) return [];
+    const memberIds = new Set<bigint>();
+    for (const m of orgMembers) {
+      if ((m as OrgMember).orgId === event.orgId) memberIds.add((m as OrgMember).userId);
+    }
+    return users.filter((u: any) => memberIds.has(u.id)).sort((a: any, b: any) => (a.name || a.email).localeCompare(b.name || b.email)) as User[];
+  }, [event, orgMembers, users]);
   const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers' | 'runs'>('tracks');
   const [scheduleError, setScheduleError] = useState('');
   const [scheduleFormByTrack, setScheduleFormByTrack] = useState<Record<string, { startDateTime: string; intervalValue: string; intervalUnit: 'minutes' | 'seconds' }>>({});
@@ -950,6 +974,30 @@ export default function EventManageView() {
                       )}
                     </div>
                   </div>
+
+                  {/* Timekeeper assignments */}
+                  <TimekeeperSection
+                    eventTrackId={et.id}
+                    assignments={timekeeperAssignments}
+                    userMap={userMap}
+                    assignableUsers={assignableUsers}
+                    onAssign={async (userId, position) => {
+                      setTkAssignError('');
+                      try { await assignTimekeeper({ eventTrackId: et.id, userId, position }); }
+                      catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
+                    }}
+                    onUpdatePosition={async (assignmentId, position) => {
+                      setTkAssignError('');
+                      try { await updateTimekeeperAssignment({ assignmentId, position }); }
+                      catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
+                    }}
+                    onRemove={async (assignmentId) => {
+                      setTkAssignError('');
+                      try { await removeTimekeeperAssignment({ assignmentId }); }
+                      catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
+                    }}
+                    error={tkAssignError}
+                  />
                 </div>
               );
             })}
@@ -991,6 +1039,111 @@ export default function EventManageView() {
           }
         />
       )}
+    </div>
+  );
+}
+
+function TimekeeperSection({ eventTrackId, assignments, userMap, assignableUsers, onAssign, onUpdatePosition, onRemove, error }: {
+  eventTrackId: bigint;
+  assignments: readonly any[];
+  userMap: Map<bigint, User>;
+  assignableUsers: User[];
+  onAssign: (userId: bigint, position: string) => void;
+  onUpdatePosition: (assignmentId: bigint, position: string) => void;
+  onRemove: (assignmentId: bigint) => void;
+  error: string;
+}) {
+  const [addUserId, setAddUserId] = useState('');
+  const [addPosition, setAddPosition] = useState('both');
+
+  const trackAssignments = useMemo(() =>
+    assignments.filter((a: any) => a.eventTrackId === eventTrackId),
+  [assignments, eventTrackId]);
+
+  const assignedUserIds = useMemo(() =>
+    new Set(trackAssignments.map((a: any) => a.userId as bigint)),
+  [trackAssignments]);
+
+  const available = assignableUsers.filter(u => !assignedUserIds.has(u.id));
+
+  return (
+    <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+      <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 8 }}>
+        Timekeepers
+      </div>
+
+      {trackAssignments.length > 0 && (
+        <table className="data-table" style={{ marginBottom: 12 }}>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Position</th>
+              <th style={{ width: 40 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {trackAssignments.map((a: any) => {
+              const u = userMap.get(a.userId);
+              return (
+                <tr key={String(a.id)}>
+                  <td>{u ? (u.name || u.email) : `User #${a.userId}`}</td>
+                  <td>
+                    <select
+                      className="input"
+                      value={a.position}
+                      onChange={e => onUpdatePosition(a.id, e.target.value)}
+                      style={{ width: 100, padding: '4px 8px', fontSize: '0.8rem' }}
+                    >
+                      <option value="start">Start</option>
+                      <option value="end">End</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </td>
+                  <td>
+                    <button className="ghost small" onClick={() => onRemove(a.id)} style={{ color: 'var(--red, #ef4444)' }}>×</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+
+      {error && <div style={{ color: 'var(--red)', fontSize: '0.8rem', marginBottom: 8 }}>{error}</div>}
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select
+          className="input"
+          value={addUserId}
+          onChange={e => setAddUserId(e.target.value)}
+          style={{ flex: 1, minWidth: 150, padding: '6px 8px', fontSize: '0.8rem' }}
+        >
+          <option value="">Select user...</option>
+          {available.map(u => (
+            <option key={String(u.id)} value={String(u.id)}>{u.name || u.email}</option>
+          ))}
+        </select>
+        <select
+          className="input"
+          value={addPosition}
+          onChange={e => setAddPosition(e.target.value)}
+          style={{ width: 90, padding: '6px 8px', fontSize: '0.8rem' }}
+        >
+          <option value="start">Start</option>
+          <option value="end">End</option>
+          <option value="both">Both</option>
+        </select>
+        <button
+          className="primary small"
+          onClick={() => {
+            if (!addUserId) return;
+            onAssign(BigInt(addUserId), addPosition);
+            setAddUserId('');
+          }}
+        >
+          Assign
+        </button>
+      </div>
     </div>
   );
 }
