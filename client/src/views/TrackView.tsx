@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useClockSync } from '../hooks/useClockSync';
 import type { Event, EventTrack, TrackVariation, Track, Run, Rider } from '../module_bindings/types';
 import ElapsedTimer from '../components/ElapsedTimer';
 import { formatElapsed } from '../utils';
@@ -18,6 +19,7 @@ export default function TrackView() {
   const startRun = useReducer(reducers.startRun);
   const finishRun = useReducer(reducers.finishRun);
   const dnfRun = useReducer(reducers.dnfRun);
+  const { getCorrectedTime, synced } = useClockSync();
 
   const [events] = useTable(tables.event);
   const [eventTracks] = useTable(tables.event_track);
@@ -65,8 +67,8 @@ export default function TrackView() {
     return <Navigate to={`/event/${eventId}`} replace />;
   }
 
-  const handleStart = (runId: bigint) => startRun({ runId });
-  const handleFinish = (runId: bigint) => finishRun({ runId });
+  const handleStart = (runId: bigint) => startRun({ runId, clientTime: getCorrectedTime() });
+  const handleFinish = (runId: bigint) => finishRun({ runId, clientTime: getCorrectedTime() });
   const handleDnf = (runId: bigint) => dnfRun({ runId });
 
   if (!eventTrack) {
@@ -81,6 +83,11 @@ export default function TrackView() {
       <div className="connection-bar">
         <span className={`dot ${isConnected ? 'on' : ''}`} />
         {isConnected ? 'Connected' : 'Disconnected'}
+        {isConnected && (
+          <span className="muted small-text" style={{ marginLeft: 12 }}>
+            {synced ? '⏱ Synced' : '⏱ Syncing...'}
+          </span>
+        )}
       </div>
 
       <h1>{track?.name ?? 'Track'}{tv ? ` — ${tv.name}` : ''}</h1>

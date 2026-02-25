@@ -22,7 +22,7 @@ import type { Organization } from './module_bindings/types';
 
 export default function App() {
   const connState = useSpacetimeDB();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, realUser, isAuthenticated, isImpersonating, logout } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
 
@@ -94,6 +94,13 @@ export default function App() {
           )}
         </div>
       </header>
+
+      {isImpersonating && user && realUser && (
+        <div className="impersonation-banner">
+          Viewing as: <strong>{user.name || user.email}</strong>
+          <span className="muted" style={{ marginLeft: 4 }}>(ID: {String(user.id)})</span>
+        </div>
+      )}
 
       {!isConnected ? (
         <div className="app-body">

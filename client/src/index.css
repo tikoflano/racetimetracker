@@ -555,6 +555,18 @@ body {
   flex: 1;
 }
 
+/* Impersonation banner */
+.impersonation-banner {
+  background: #b45309;
+  color: white;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 /* Venue header */
 .venue-header {
   background: var(--surface);

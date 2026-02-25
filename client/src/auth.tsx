@@ -1,15 +1,22 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { useTable, useSpacetimeDB } from 'spacetimedb/react';
 import { tables } from './module_bindings';
-import type { User, OrgMember, EventMember, Organization } from './module_bindings/types';
+import type { User, OrgMember, EventMember, Organization, ImpersonationStatus } from './module_bindings/types';
 
 interface AuthState {
   token: string | null;
   login: (idToken: string) => void;
   logout: () => void;
+  /** The effective user (impersonated if active, otherwise real) */
   user: User | null;
+  /** The real authenticated user (never impersonated) */
+  realUser: User | null;
   isAuthenticated: boolean;
   isReady: boolean;
+  isImpersonating: boolean;
+  isSuperAdmin: boolean;
+  canImpersonate: boolean;
+  allUsers: readonly User[];
   // Permission helpers
   isOrgOwner: (orgId: bigint) => boolean;
   getOrgRole: (orgId: bigint) => string | null;
@@ -29,12 +36,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
   const [eventMembers] = useTable(tables.event_member);
+  const [impersonationStatuses] = useTable(tables.impersonation_status);
 
   const isReady = users.length > 0 || !token;
 
-  const user = (token && identity)
+  // Real user: always resolved from connection identity
+  const realUser = (token && identity)
     ? users.find((u: User) => u.identity.isEqual(identity)) ?? null
     : null;
+
+  // Check for active impersonation via the public status table
+  const impersonation = useMemo(() => {
+    if (!identity || !realUser) return null;
+    return impersonationStatuses.find((s: ImpersonationStatus) => s.adminIdentity.isEqual(identity)) ?? null;
+  }, [identity, realUser, impersonationStatuses]);
+
+  // Effective user: impersonated target or real user
+  const user = useMemo(() => {
+    if (impersonation) {
+      return users.find((u: User) => u.id === impersonation.targetUserId) ?? realUser;
+    }
+    return realUser;
+  }, [impersonation, users, realUser]);
+
+  const isImpersonating = impersonation !== null;
+  const isSuperAdmin = realUser?.isSuperAdmin ?? false;
+
+  // Check if real user is an org admin (owner or admin role) for any org
+  const canImpersonate = useMemo(() => {
+    if (!realUser) return false;
+    if (realUser.isSuperAdmin) return true;
+    // Check if org owner
+    for (const o of orgs) {
+      if (o.ownerUserId === realUser.id) return true;
+    }
+    // Check if org admin member
+    for (const m of orgMembers) {
+      if (m.userId === realUser.id && m.role === 'admin') return true;
+    }
+    return false;
+  }, [realUser, orgs, orgMembers]);
 
   const login = useCallback((idToken: string) => {
     localStorage.setItem('auth_token', idToken);
@@ -105,8 +146,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         user,
+        realUser,
         isAuthenticated: !!token && !!user,
         isReady,
+        isImpersonating,
+        isSuperAdmin,
+        canImpersonate,
+        allUsers: users,
         isOrgOwner,
         getOrgRole,
         getEventRole,
