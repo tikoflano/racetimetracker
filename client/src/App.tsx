@@ -50,10 +50,8 @@ export default function App() {
     return (
       <div className="app-shell">
         <header className="app-header">
-          <div className="connection-bar" style={{ marginBottom: 0 }}>
-            <span className="dot" />
-            Connecting...
-          </div>
+          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
+          <span className="muted small-text">Connecting...</span>
         </header>
         <div className="app-body">
           <main className="app-main">
@@ -77,10 +75,7 @@ export default function App() {
               {sidebarOpen ? '\u2715' : '\u2630'}
             </button>
           )}
-          <div className="connection-bar" style={{ marginBottom: 0 }}>
-            <span className={`dot ${isConnected ? 'on' : ''}`} />
-            {isConnected ? 'Connected' : 'Connection failed'}
-          </div>
+          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated ? (

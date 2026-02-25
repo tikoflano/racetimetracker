@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { useTable, useReducer } from 'spacetimedb/react';
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import type { Event, EventTrack, TrackVariation, Track, Run, Rider } from '../module_bindings/types';
@@ -11,6 +11,8 @@ export default function TrackView() {
   const { eventId, eventTrackId } = useParams<{ eventId: string; eventTrackId: string }>();
   const etId = BigInt(eventTrackId ?? '0');
   const eid = BigInt(eventId ?? '0');
+  const connState = useSpacetimeDB();
+  const isConnected = connState.isActive;
   const { isAuthenticated, canTimekeep } = useAuth();
 
   const startRun = useReducer(reducers.startRun);
@@ -75,6 +77,11 @@ export default function TrackView() {
   return (
     <div>
       <Link to={`/event/${eventId}`} className="back-link">&larr; Back to Event</Link>
+
+      <div className="connection-bar">
+        <span className={`dot ${isConnected ? 'on' : ''}`} />
+        {isConnected ? 'Connected' : 'Disconnected'}
+      </div>
 
       <h1>{track?.name ?? 'Track'}{tv ? ` — ${tv.name}` : ''}</h1>
       {tv && <p className="muted small-text" style={{ marginBottom: 20 }}>{tv.description}</p>}
