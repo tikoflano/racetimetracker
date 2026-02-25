@@ -9,10 +9,9 @@ interface AddTrackModalProps {
   venueName: string;
   venueTracks: readonly Track[];
   allVariations: readonly TrackVariation[];
-  usedVariationIds: Set<bigint>;
 }
 
-export default function AddTrackModal({ open, onClose, onConfirm, venueName, venueTracks, allVariations, usedVariationIds }: AddTrackModalProps) {
+export default function AddTrackModal({ open, onClose, onConfirm, venueName, venueTracks, allVariations }: AddTrackModalProps) {
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<TrackVariation | null>(null);
   const [trackSearch, setTrackSearch] = useState('');
@@ -27,12 +26,11 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
 
   const handleClose = () => { reset(); onClose(); };
 
-  // Tracks that have at least one unused variation
   const availableTracks = useMemo(() => {
     return venueTracks.filter(track => {
-      return allVariations.some(tv => tv.trackId === track.id && !usedVariationIds.has(tv.id));
+      return allVariations.some(tv => tv.trackId === track.id);
     });
-  }, [venueTracks, allVariations, usedVariationIds]);
+  }, [venueTracks, allVariations]);
 
   const filteredTracks = useMemo(() => {
     const q = trackSearch.toLowerCase().trim();
@@ -40,12 +38,10 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
     return availableTracks.filter(t => t.name.toLowerCase().includes(q));
   }, [availableTracks, trackSearch]);
 
-  // Variations for the selected track (excluding already used)
   const availableVariations = useMemo(() => {
     if (!selectedTrack) return [];
-    return allVariations
-      .filter(tv => tv.trackId === selectedTrack.id && !usedVariationIds.has(tv.id));
-  }, [selectedTrack, allVariations, usedVariationIds]);
+    return allVariations.filter(tv => tv.trackId === selectedTrack.id);
+  }, [selectedTrack, allVariations]);
 
   const filteredVariations = useMemo(() => {
     const q = varSearch.toLowerCase().trim();
