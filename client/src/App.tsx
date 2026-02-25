@@ -21,6 +21,7 @@ import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
 import TimekeepView from './views/TimekeepView';
 import DevView from './views/DevView';
+import { FontAwesomeIcon, faBars, faXmark } from './icons';
 import type { Organization } from './module_bindings/types';
 
 const ACTIVE_ORG_KEY = 'active_org_id';
@@ -102,7 +103,7 @@ export default function App() {
               onClick={() => setSidebarOpen(o => !o)}
               aria-label="Toggle menu"
             >
-              {sidebarOpen ? '\u2715' : '\u2630'}
+              <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
             </button>
           )}
           <span className="header-title" style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>

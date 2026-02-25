@@ -7,6 +7,7 @@ import { useActiveOrgMaybe } from '../OrgContext';
 import AddRacerModal from '../components/AddRacerModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
+import { FontAwesomeIcon, faPen } from '../icons';
 import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule, User, OrgMember } from '../module_bindings/types';
 
 export default function EventManageView() {
@@ -717,7 +718,7 @@ export default function EventManageView() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="ghost small" onClick={() => startEditCat(cat)} title="Edit">&#9998;</button>
+                        <button className="ghost small" onClick={() => startEditCat(cat)} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
                         <button className="ghost small" onClick={() => handleDeleteCat(cat)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
                       </div>
                     </td>

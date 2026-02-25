@@ -5,6 +5,7 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { IS_DEV } from '../env';
 import Modal from './Modal';
+import { FontAwesomeIcon, faThumbtack } from '../icons';
 import type { Event, Organization, PinnedEvent, OrgMember } from '../module_bindings/types';
 
 interface SidebarProps {
@@ -59,7 +60,7 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
                 onClick={() => togglePin({ eventId: e.id })}
                 title="Unpin event"
               >
-                {'\u{1F4CC}'}
+                <FontAwesomeIcon icon={faThumbtack} />
               </button>
             </div>
           ))

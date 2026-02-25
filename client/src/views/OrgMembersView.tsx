@@ -4,6 +4,7 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
+import { FontAwesomeIcon, faPen, faPlus, faRightFromBracket, faGear, faEllipsisVertical } from '../icons';
 import type { Organization, OrgMember, User } from '../module_bindings/types';
 
 export default function OrgMembersView() {
@@ -320,7 +321,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
         style={{ fontSize: '1rem', padding: '4px 8px' }}
         title="Organization actions"
       >
-        ⚙
+        <FontAwesomeIcon icon={faGear} />
       </button>
       {open && (
         <div style={{
@@ -334,7 +335,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}>&#9998;</span><span>Rename organization</span>
+              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename organization</span>
             </button>
           )}
           {isAdmin && (
@@ -342,14 +343,14 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}>+</span><span>Invite member</span>
+              <span style={iconStyle}><FontAwesomeIcon icon={faPlus} /></span><span>Invite member</span>
             </button>
           )}
           <button onClick={onLeave} style={{ ...itemStyle, color: 'var(--red, #ef4444)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
-            <span style={iconStyle}>&times;</span><span>{willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}</span>
+            <span style={iconStyle}><FontAwesomeIcon icon={faRightFromBracket} /></span><span>{willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}</span>
           </button>
         </div>
       )}
@@ -384,7 +385,7 @@ function MemberMenu({ open, onToggle, onClose, showImpersonate, onImpersonate, o
         style={{ fontSize: '1.1rem', lineHeight: 1, padding: '4px 6px' }}
         title="Actions"
       >
-        &#8942;
+        <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
         <div style={{

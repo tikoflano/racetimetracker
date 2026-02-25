@@ -6,6 +6,7 @@ import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
 import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization } from '../module_bindings/types';
+import { FontAwesomeIcon, faPen, faThumbtack, faLink } from '../icons';
 import { formatElapsed } from '../utils';
 
 export default function EventView() {
@@ -208,26 +209,26 @@ export default function EventView() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
             {canEdit && (
-              <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename">&#9998;</button>
+              <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename"><FontAwesomeIcon icon={faPen} /></button>
             )}
             {isAuthenticated && (
               <button
                 className={`pin-btn${isPinned ? ' pinned' : ''}`}
                 onClick={() => togglePin({ eventId: eid })}
                 title={isPinned ? 'Unpin event' : 'Pin event'}
-              >
-                {'\u{1F4CC}'}
-              </button>
-            )}
-            {publicUrl && (
-              <button
-                className="ghost small"
-                onClick={() => { setCopied(false); setShareOpen(true); }}
-                title="Share"
-                style={{ fontSize: '0.9rem' }}
-              >
-                &#x1F517;
-              </button>
+            >
+              <FontAwesomeIcon icon={faThumbtack} />
+            </button>
+          )}
+          {publicUrl && (
+            <button
+              className="ghost small"
+              onClick={() => { setCopied(false); setShareOpen(true); }}
+              title="Share"
+              style={{ fontSize: '0.9rem' }}
+            >
+              <FontAwesomeIcon icon={faLink} />
+            </button>
             )}
           </div>
           {canEdit && (

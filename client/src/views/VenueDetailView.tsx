@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
+import { FontAwesomeIcon, faPen } from '../icons';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 
@@ -276,7 +277,7 @@ export default function VenueDetailView() {
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <h1 style={{ marginBottom: 0 }}>{venue.name}</h1>
-              <button className="ghost small" onClick={startEditVenue} title="Edit">&#9998;</button>
+              <button className="ghost small" onClick={startEditVenue} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
             </div>
             {venue.description && <p className="muted small-text">{venue.description}</p>}
             <p className="muted small-text">{venue.latitude.toFixed(4)}, {venue.longitude.toFixed(4)}</p>
@@ -393,7 +394,7 @@ export default function VenueDetailView() {
                   </div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost small" onClick={() => startEditTrack(track)} title="Edit">&#9998;</button>
+                      <button className="ghost small" onClick={() => startEditTrack(track)} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
                       <button className="ghost small" onClick={() => handleDeleteTrack(track)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
                     </div>
                     <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
@@ -536,7 +537,7 @@ export default function VenueDetailView() {
                             <td>
                               {tv.name !== 'Default' ? (
                                 <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                                  <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit">&#9998;</button>
+                                  <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
                                   {vars.length > 1 && (
                                     <button className="ghost small" onClick={() => handleDeleteVar(tv)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
                                   )}

@@ -4,6 +4,7 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
+import { FontAwesomeIcon, faPen, faThumbtack } from '../icons';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
 type EventStatus = 'in_progress' | 'not_started' | 'completed';
@@ -231,7 +232,7 @@ export default function ChampionshipDetailView() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="color-dot" style={{ background: champ.color, width: 14, height: 14 }} />
             <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
-            <button className="ghost small" onClick={startEditing} title="Edit">&#9998;</button>
+            <button className="ghost small" onClick={startEditing} title="Edit"><FontAwesomeIcon icon={faPen} /></button>
           </div>
           {champ.description && <p className="muted small-text">{champ.description}</p>}
         </div>
@@ -340,7 +341,7 @@ export default function ChampionshipDetailView() {
                         onClick={() => togglePin({ eventId: e.id })}
                         title={pinnedEventIds.has(e.id) ? 'Unpin event' : 'Pin event'}
                       >
-                        {'\u{1F4CC}'}
+                        <FontAwesomeIcon icon={faThumbtack} />
                       </button>
                     )}
                   </td>
@@ -366,7 +367,7 @@ export default function ChampionshipDetailView() {
                     ) : (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Link to={`/event/${e.slug}`} className="table-link">{e.name}</Link>
-                        <button className="ghost small" onClick={() => startEditEvent(e)} title="Rename" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>&#9998;</button>
+                        <button className="ghost small" onClick={() => startEditEvent(e)} title="Rename" style={{ padding: '2px 6px', fontSize: '0.75rem' }}><FontAwesomeIcon icon={faPen} /></button>
                       </span>
                     )}
                   </td>
