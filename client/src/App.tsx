@@ -26,7 +26,6 @@ const ACTIVE_ORG_KEY = 'active_org_id';
 export default function App() {
   const connState = useSpacetimeDB();
   const { user, realUser, isAuthenticated, isImpersonating, logout, canManageOrgEvents } = useAuth();
-  const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
   const stopImpersonation = useReducer(reducers.stopImpersonation);
 
@@ -73,16 +72,7 @@ export default function App() {
   }, [activeOrgId, userOrgs]);
 
   const isConnected = connState.isActive;
-  const hasEvents = events.length > 0;
   const showSkeleton = !timedOut && !isConnected;
-
-  const defaultEventId = hasEvents ? events[0].id : null;
-
-  // Find the user's own org (for redirect when they have no events)
-  const userOrg = useMemo(() => {
-    if (!user) return null;
-    return orgs.find((o: Organization) => o.ownerUserId === user.id) ?? null;
-  }, [user, orgs]);
 
   if (showSkeleton) {
     return (
@@ -178,18 +168,7 @@ export default function App() {
           <main className="app-main">
             <OrgProvider value={{ activeOrgId: activeOrgId }}>
               <Routes>
-                <Route
-                  path="/"
-                  element={
-                    defaultEventId !== null ? (
-                      <Navigate to={`/event/${defaultEventId}`} replace />
-                    ) : userOrg ? (
-                      <Navigate to="/members" replace />
-                    ) : (
-                      <div className="empty">No events found. Sign in to get started.</div>
-                    )
-                  }
-                />
+                <Route path="/" element={<Navigate to="/championships" replace />} />
                 <Route path="/event/:eventId" element={<EventView />} />
                 <Route path="/event/:eventId/manage" element={<EventManageView />} />
                 <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
