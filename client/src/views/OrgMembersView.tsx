@@ -304,9 +304,12 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
   }, [open, onClose]);
 
   const itemStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-    padding: '8px 12px', border: 'none', background: 'none',
+    display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+    padding: '9px 14px', border: 'none', background: 'none',
     color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+  };
+  const iconStyle: React.CSSProperties = {
+    width: 20, textAlign: 'center', flexShrink: 0, fontSize: '0.95rem',
   };
 
   return (
@@ -331,7 +334,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span>✏️</span> Rename organization
+              <span style={iconStyle}>✏️</span> Rename organization
             </button>
           )}
           {isAdmin && (
@@ -339,14 +342,14 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span>👤</span> Invite member
+              <span style={iconStyle}>👤</span> Invite member
             </button>
           )}
           <button onClick={onLeave} style={{ ...itemStyle, color: 'var(--red, #ef4444)' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
-            <span>🚪</span> {willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}
+            <span style={iconStyle}>🚪</span> {willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}
           </button>
         </div>
       )}
