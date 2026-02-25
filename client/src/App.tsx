@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from './module_bindings';
@@ -21,24 +21,38 @@ import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
 import TimekeepView from './views/TimekeepView';
 import DevView from './views/DevView';
-import { FontAwesomeIcon, faBars, faXmark } from './icons';
+import { FontAwesomeIcon, faBars, faXmark, faUser, faRightFromBracket, faArrowRightArrowLeft } from './icons';
+import Modal from './components/Modal';
 import type { Organization } from './module_bindings/types';
 
 const ACTIVE_ORG_KEY = 'active_org_id';
 
 export default function App() {
   const connState = useSpacetimeDB();
-  const { user, realUser, isAuthenticated, isImpersonating, logout, getOrgRole } = useAuth();
+  const { user, realUser, isAuthenticated, isImpersonating, logout, getOrgRole, isOrgOwner } = useAuth();
   const [orgs] = useTable(tables.organization);
   const stopImpersonation = useReducer(reducers.stopImpersonation);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [switchOrgOpen, setSwitchOrgOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   // Close sidebar on navigation (mobile)
   useEffect(() => {
     setSidebarOpen(false);
+    setAvatarMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const handle = (e: MouseEvent) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) setAvatarMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [avatarMenuOpen]);
 
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
@@ -114,17 +128,78 @@ export default function App() {
             </>
           )}
         </div>
-        <div className="header-user" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated ? (
-            <>
-              <span className="small-text">{user?.name || user?.email || 'User'}</span>
-              <button className="ghost small" onClick={logout}>Sign out</button>
-            </>
+            <div ref={avatarRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
+                title={user?.name || user?.email || 'User'}
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'var(--accent)', color: 'white', border: 'none',
+                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+              </button>
+              {avatarMenuOpen && (
+                <div style={{
+                  position: 'absolute', right: 0, top: '100%', marginTop: 6,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  minWidth: 220, zIndex: 50, overflow: 'hidden',
+                }}>
+                  <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{user?.name || 'User'}</div>
+                    {user?.email && <div className="muted small-text">{user.email}</div>}
+                  </div>
+                  {userOrgs.length > 1 && (
+                    <AvatarMenuItem icon={faArrowRightArrowLeft} label="Switch organization" onClick={() => { setAvatarMenuOpen(false); setSwitchOrgOpen(true); }} />
+                  )}
+                  <AvatarMenuItem icon={faRightFromBracket} label="Sign out" danger onClick={() => { setAvatarMenuOpen(false); logout(); }} />
+                </div>
+              )}
+            </div>
           ) : (
             <LoginButton />
           )}
         </div>
       </header>
+
+      {/* Switch org modal */}
+      <Modal open={switchOrgOpen} onClose={() => setSwitchOrgOpen(false)} title="Switch Organization">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {userOrgs.map((o: Organization) => {
+            const isActive = activeOrg?.id === o.id;
+            const role = isOrgOwner(o.id) ? 'owner' : getOrgRole(o.id);
+            return (
+              <button
+                key={String(o.id)}
+                onClick={() => { setActiveOrgId(o.id); setSwitchOrgOpen(false); }}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 12px', borderRadius: 'var(--radius)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  background: isActive ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'var(--surface)',
+                  color: 'var(--text)', cursor: 'pointer', fontSize: '0.85rem', textAlign: 'left',
+                }}
+              >
+                <span style={{ fontWeight: isActive ? 600 : 400 }}>{o.name}</span>
+                {role && (
+                  <span className="badge" style={{
+                    fontSize: '0.7rem',
+                    background: role === 'owner' || role === 'admin' ? 'var(--green-bg)' : undefined,
+                    color: role === 'owner' || role === 'admin' ? 'var(--green)' : undefined,
+                  }}>
+                    {role}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
 
       {isImpersonating && user && realUser && (
         <div className="impersonation-banner">
@@ -163,10 +238,6 @@ export default function App() {
               <Sidebar
                 className={sidebarOpen ? 'open' : ''}
                 activeOrg={activeOrg}
-                userOrgs={userOrgs}
-                onSwitchOrg={setActiveOrgId}
-                userName={user?.name || user?.email || 'User'}
-                onLogout={logout}
               />
             </>
           )}
@@ -211,6 +282,26 @@ function HomePage() {
       </div>
       <p className="muted small-text">Sign in with Google to create events, manage riders, and run races.</p>
     </div>
+  );
+}
+
+function AvatarMenuItem({ icon, label, onClick, danger }: { icon: any; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+        gap: 10, width: '100%',
+        padding: '9px 14px', border: 'none', background: 'none',
+        color: danger ? 'var(--red, #ef4444)' : 'var(--text)',
+        fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+    >
+      <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}><FontAwesomeIcon icon={icon} /></span>
+      <span>{label}</span>
+    </button>
   );
 }
 

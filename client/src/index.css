@@ -670,11 +670,6 @@ body {
   padding: 4px 8px;
 }
 
-/* User section in sidebar - hidden on desktop, shown on mobile */
-.sidebar-user-section {
-  display: none;
-}
-
 /* Sidebar overlay backdrop */
 .sidebar-overlay {
   display: none;
@@ -686,12 +681,6 @@ body {
   }
   .header-title {
     display: none;
-  }
-  .header-user {
-    display: none !important;
-  }
-  .sidebar-user-section {
-    display: block;
   }
   .sidebar {
     display: none;
