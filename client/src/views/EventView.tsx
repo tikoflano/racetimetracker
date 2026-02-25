@@ -3,13 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Event, Venue, EventTrack, TrackVariation, Track, Run, Rider, EventRider } from '../module_bindings/types';
+import type { Event, Venue, EventTrack, TrackVariation, Track, Run, Rider, EventRider, PinnedEvent } from '../module_bindings/types';
 import { formatElapsed } from '../utils';
 
 export default function EventView() {
   const { eventId } = useParams<{ eventId: string }>();
   const eid = BigInt(eventId ?? '0');
-  const { isAuthenticated, canTimekeep, canOrganizeEvent } = useAuth();
+  const { user, isAuthenticated, canTimekeep, canOrganizeEvent } = useAuth();
 
   const [events] = useTable(tables.event);
   const [venues] = useTable(tables.venue);
@@ -19,8 +19,15 @@ export default function EventView() {
   const [runs] = useTable(tables.run);
   const [riders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
+  const [pinnedEvents] = useTable(tables.pinned_event);
 
   const updateEvent = useReducer(reducers.updateEvent);
+  const togglePin = useReducer(reducers.togglePinEvent);
+
+  const isPinned = useMemo(() => {
+    if (!user) return false;
+    return pinnedEvents.some((p: PinnedEvent) => p.userId === user.id && p.eventId === eid);
+  }, [user, pinnedEvents, eid]);
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -153,6 +160,15 @@ export default function EventView() {
           <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
           {canEdit && (
             <button className="ghost small" onClick={() => { setNameValue(event.name); setNameError(''); setEditingName(true); }} title="Rename">&#9998;</button>
+          )}
+          {isAuthenticated && (
+            <button
+              className={`pin-btn${isPinned ? ' pinned' : ''}`}
+              onClick={() => togglePin({ eventId: eid })}
+              title={isPinned ? 'Unpin event' : 'Pin event'}
+            >
+              {'\u{1F4CC}'}
+            </button>
           )}
         </div>
       )}
