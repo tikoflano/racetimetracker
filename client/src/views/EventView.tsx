@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import AddTrackModal from '../components/AddTrackModal';
 import type { Event, Venue, EventTrack, TrackVariation, Track, Run, Rider, EventRider, PinnedEvent } from '../module_bindings/types';
 import { formatElapsed } from '../utils';
 
@@ -23,6 +24,8 @@ export default function EventView() {
 
   const updateEvent = useReducer(reducers.updateEvent);
   const togglePin = useReducer(reducers.togglePinEvent);
+  const addTrackToEvent = useReducer(reducers.addTrackToEvent);
+  const removeTrackFromEvent = useReducer(reducers.removeTrackFromEvent);
 
   const isPinned = useMemo(() => {
     if (!user) return false;
@@ -32,6 +35,8 @@ export default function EventView() {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [nameError, setNameError] = useState('');
+  const [showAddTrackModal, setShowAddTrackModal] = useState(false);
+  const [addTrackError, setAddTrackError] = useState('');
 
   const event = events.find((e: Event) => e.id === eid);
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
@@ -70,6 +75,16 @@ export default function EventView() {
     for (const t of tracksData) m.set(t.id, t);
     return m;
   }, [tracksData]);
+
+  // Venue tracks and used variation IDs for the add-track modal
+  const venueTracks = useMemo(() => {
+    if (!venue) return [];
+    return tracksData.filter((t: Track) => t.venueId === venue.id);
+  }, [venue, tracksData]);
+
+  const usedVariationIds = useMemo(() => {
+    return new Set(sortedEventTracks.map((et: EventTrack) => et.trackVariationId));
+  }, [sortedEventTracks]);
 
   const leaderboard = useMemo(() => {
     const etIds = new Set(sortedEventTracks.map((et: EventTrack) => et.id));
@@ -112,6 +127,27 @@ export default function EventView() {
         return a.total - b.total;
       });
   }, [runs, sortedEventTracks, eventRiderIds, riderMap]);
+
+  const handleAddTrack = async (tvId: bigint) => {
+    setAddTrackError('');
+    try {
+      const nextOrder = sortedEventTracks.length > 0
+        ? Math.max(...sortedEventTracks.map((et: EventTrack) => et.sortOrder)) + 1
+        : 1;
+      await addTrackToEvent({ eventId: eid, trackVariationId: tvId, sortOrder: nextOrder });
+      setShowAddTrackModal(false);
+    } catch (e: any) { setAddTrackError(e?.message || 'Failed'); }
+  };
+
+  const handleRemoveTrack = async (et: EventTrack) => {
+    const tv = tvMap.get(et.trackVariationId);
+    const track = tv ? trackMap.get(tv.trackId) : undefined;
+    const label = track ? `${track.name} — ${tv?.name}` : 'this track';
+    if (!confirm(`Remove "${label}" from this event? Associated runs will be deleted.`)) return;
+    try {
+      await removeTrackFromEvent({ eventTrackId: et.id });
+    } catch (e: any) { setAddTrackError(e?.message || 'Failed'); }
+  };
 
   // Don't show "not found" until the events subscription has delivered data
   if (!event) {
@@ -174,15 +210,45 @@ export default function EventView() {
       )}
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
       {venue && (
-        <p className="muted small-text" style={{ marginBottom: 20 }}>
-          {venue.name} &middot; {event.startDate} &ndash; {event.endDate}
+        <p className="muted small-text" style={{ marginBottom: 4 }}>
+          <Link to={`/org/${event.orgId}/venue/${venue.id}`} style={{ color: 'inherit' }}>{venue.name}</Link>
+          {' '}&middot; {event.startDate} &ndash; {event.endDate}
         </p>
+      )}
+
+      {/* Manage event link */}
+      {canEdit && (
+        <div style={{ marginBottom: 20 }}>
+          <Link to={`/event/${eventId}/manage`} className="primary small" style={{ textDecoration: 'none', display: 'inline-block', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem' }}>
+            Manage Event
+          </Link>
+        </div>
       )}
 
       {/* Tracks — only visible to authenticated users with access */}
       {isAuthenticated && hasAccess && (
         <div className="section">
-          <div className="section-title">Tracks</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>Tracks</div>
+            {canEdit && (
+              <button className="primary small" onClick={() => { setShowAddTrackModal(true); setAddTrackError(''); }}>
+                + Add Track
+              </button>
+            )}
+          </div>
+
+          {addTrackError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{addTrackError}</div>}
+
+          <AddTrackModal
+            open={showAddTrackModal}
+            onClose={() => setShowAddTrackModal(false)}
+            onConfirm={handleAddTrack}
+            venueName={venue?.name ?? 'the venue'}
+            venueTracks={venueTracks}
+            allVariations={trackVariations}
+            usedVariationIds={usedVariationIds}
+          />
+
           {sortedEventTracks.length === 0 ? (
             <div className="empty">No tracks assigned to this event.</div>
           ) : (
@@ -195,12 +261,11 @@ export default function EventView() {
               const queuedCount = trackRuns.filter((r: Run) => r.status === 'queued').length;
 
               return (
-                <Link
-                  key={String(et.id)}
-                  to={`/event/${eventId}/track/${et.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div className="card">
+                <div key={String(et.id)} className="card" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Link
+                    to={`/event/${eventId}/track/${et.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
+                  >
                     <div className="track-card">
                       <div>
                         <h3>{track?.name ?? 'Unknown Track'}{tv ? ` — ${tv.name}` : ''}</h3>
@@ -212,8 +277,18 @@ export default function EventView() {
                         <span className="badge finished">{finishedCount} done</span>
                       </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {canEdit && (
+                    <button
+                      className="ghost small"
+                      onClick={() => handleRemoveTrack(et)}
+                      title="Remove track"
+                      style={{ color: 'var(--red)', flexShrink: 0 }}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
               );
             })
           )}

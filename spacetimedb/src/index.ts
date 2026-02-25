@@ -153,6 +153,8 @@ const spacetimedb = schema({
       id: t.u64().primaryKey().autoInc(),
       event_id: t.u64().index('btree'),
       rider_id: t.u64().index('btree'),
+      category_id: t.u64(),  // 0 = no category
+      checked_in: t.bool(),
     }
   ),
 
@@ -175,6 +177,18 @@ const spacetimedb = schema({
       id: t.u64().primaryKey().autoInc(),
       user_id: t.u64().index('btree'),
       event_id: t.u64().index('btree'),
+    }
+  ),
+
+  event_category: table(
+    { public: true },
+    {
+      id: t.u64().primaryKey().autoInc(),
+      event_id: t.u64().index('btree'),
+      name: t.string(),
+      description: t.string(),
+      number_range_start: t.u32(),
+      number_range_end: t.u32(),
     }
   ),
 
@@ -773,13 +787,154 @@ export const add_track_to_event = spacetimedb.reducer(
   }
 );
 
+export const remove_track_from_event = spacetimedb.reducer(
+  { event_track_id: t.u64() },
+  (ctx, args) => {
+    const et = ctx.db.event_track.id.find(args.event_track_id);
+    if (!et) throw new SenderError('Event track not found');
+    requireEventOrganizer(ctx, et.event_id);
+    // Delete associated runs
+    for (const run of ctx.db.run.iter()) {
+      if (run.event_track_id === et.id) ctx.db.run.id.delete(run.id);
+    }
+    ctx.db.event_track.id.delete(et.id);
+  }
+);
+
+// ─── Event categories (event organizer+) ────────────────────────────────────
+
+// Check if a number range overlaps with any existing category in the event.
+// excludeId allows skipping the category being updated.
+function checkCategoryRangeOverlap(ctx: any, eventId: bigint, rangeStart: number, rangeEnd: number, excludeId: bigint | null) {
+  for (const cat of ctx.db.event_category.iter()) {
+    if (cat.event_id !== eventId) continue;
+    if (excludeId !== null && cat.id === excludeId) continue;
+    if (rangeStart <= cat.number_range_end && rangeEnd >= cat.number_range_start) {
+      throw new SenderError(`Number range ${rangeStart}–${rangeEnd} overlaps with category "${cat.name}" (${cat.number_range_start}–${cat.number_range_end})`);
+    }
+  }
+}
+
+export const create_event_category = spacetimedb.reducer(
+  { event_id: t.u64(), name: t.string(), description: t.string(), number_range_start: t.u32(), number_range_end: t.u32() },
+  (ctx, args) => {
+    requireEventOrganizer(ctx, args.event_id);
+    if (!args.name.trim()) throw new SenderError('Category name is required');
+    if (args.number_range_start > args.number_range_end) throw new SenderError('Range start must be <= range end');
+    checkCategoryRangeOverlap(ctx, args.event_id, args.number_range_start, args.number_range_end, null);
+    ctx.db.event_category.insert({
+      id: 0n,
+      event_id: args.event_id,
+      name: args.name.trim(),
+      description: args.description.trim(),
+      number_range_start: args.number_range_start,
+      number_range_end: args.number_range_end,
+    });
+  }
+);
+
+export const update_event_category = spacetimedb.reducer(
+  { category_id: t.u64(), name: t.string(), description: t.string(), number_range_start: t.u32(), number_range_end: t.u32() },
+  (ctx, args) => {
+    const cat = ctx.db.event_category.id.find(args.category_id);
+    if (!cat) throw new SenderError('Category not found');
+    requireEventOrganizer(ctx, cat.event_id);
+    if (!args.name.trim()) throw new SenderError('Category name is required');
+    if (args.number_range_start > args.number_range_end) throw new SenderError('Range start must be <= range end');
+    checkCategoryRangeOverlap(ctx, cat.event_id, args.number_range_start, args.number_range_end, cat.id);
+    ctx.db.event_category.id.update({
+      ...cat,
+      name: args.name.trim(),
+      description: args.description.trim(),
+      number_range_start: args.number_range_start,
+      number_range_end: args.number_range_end,
+    });
+  }
+);
+
+export const delete_event_category = spacetimedb.reducer(
+  { category_id: t.u64() },
+  (ctx, args) => {
+    const cat = ctx.db.event_category.id.find(args.category_id);
+    if (!cat) throw new SenderError('Category not found');
+    requireEventOrganizer(ctx, cat.event_id);
+    ctx.db.event_category.id.delete(cat.id);
+  }
+);
+
+export const import_categories_from_event = spacetimedb.reducer(
+  { target_event_id: t.u64(), source_event_id: t.u64() },
+  (ctx, args) => {
+    requireEventOrganizer(ctx, args.target_event_id);
+    // Collect source categories first, then validate all ranges before inserting
+    const toImport: { name: string; description: string; number_range_start: number; number_range_end: number }[] = [];
+    for (const cat of ctx.db.event_category.iter()) {
+      if (cat.event_id === args.source_event_id) {
+        toImport.push({ name: cat.name, description: cat.description, number_range_start: cat.number_range_start, number_range_end: cat.number_range_end });
+      }
+    }
+    // Check each imported category against existing ones in the target event
+    for (const imp of toImport) {
+      checkCategoryRangeOverlap(ctx, args.target_event_id, imp.number_range_start, imp.number_range_end, null);
+    }
+    for (const imp of toImport) {
+      ctx.db.event_category.insert({
+        id: 0n,
+        event_id: args.target_event_id,
+        name: imp.name,
+        description: imp.description,
+        number_range_start: imp.number_range_start,
+        number_range_end: imp.number_range_end,
+      });
+    }
+  }
+);
+
 // ─── Event-Rider linking (event organizer+) ─────────────────────────────────
 
 export const add_rider_to_event = spacetimedb.reducer(
   { event_id: t.u64(), rider_id: t.u64() },
   (ctx, args) => {
     requireEventOrganizer(ctx, args.event_id);
-    ctx.db.event_rider.insert({ id: 0n, event_id: args.event_id, rider_id: args.rider_id });
+    // Prevent duplicates
+    for (const er of ctx.db.event_rider.iter()) {
+      if (er.event_id === args.event_id && er.rider_id === args.rider_id) {
+        throw new SenderError('Rider already assigned to this event');
+      }
+    }
+    ctx.db.event_rider.insert({ id: 0n, event_id: args.event_id, rider_id: args.rider_id, category_id: 0n, checked_in: false });
+  }
+);
+
+export const update_event_rider = spacetimedb.reducer(
+  { event_rider_id: t.u64(), category_id: t.u64(), checked_in: t.bool() },
+  (ctx, args) => {
+    const er = ctx.db.event_rider.id.find(args.event_rider_id);
+    if (!er) throw new SenderError('Event rider not found');
+    requireEventOrganizer(ctx, er.event_id);
+    // Validate category belongs to this event (0 = no category)
+    if (args.category_id !== 0n) {
+      const cat = ctx.db.event_category.id.find(args.category_id);
+      if (!cat || cat.event_id !== er.event_id) throw new SenderError('Invalid category for this event');
+    }
+    ctx.db.event_rider.id.update({ ...er, category_id: args.category_id, checked_in: args.checked_in });
+  }
+);
+
+export const import_riders_from_event = spacetimedb.reducer(
+  { target_event_id: t.u64(), source_event_id: t.u64() },
+  (ctx, args) => {
+    requireEventOrganizer(ctx, args.target_event_id);
+    const existing = new Set<bigint>();
+    for (const er of ctx.db.event_rider.iter()) {
+      if (er.event_id === args.target_event_id) existing.add(er.rider_id);
+    }
+    for (const er of ctx.db.event_rider.iter()) {
+      if (er.event_id === args.source_event_id && !existing.has(er.rider_id)) {
+        ctx.db.event_rider.insert({ id: 0n, event_id: args.target_event_id, rider_id: er.rider_id, category_id: 0n, checked_in: false });
+        existing.add(er.rider_id);
+      }
+    }
   }
 );
 
@@ -1002,7 +1157,7 @@ export const seed_demo_data = spacetimedb.reducer(
     const riders = ridersData.map((r) => {
       const rider = ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, date_of_birth: r.date_of_birth });
       // Register riders for the first event
-      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id });
+      ctx.db.event_rider.insert({ id: 0n, event_id: evt1.id, rider_id: rider.id, category_id: 0n, checked_in: false });
       return rider;
     });
 

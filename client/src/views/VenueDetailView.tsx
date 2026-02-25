@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
@@ -76,7 +76,6 @@ export default function VenueDetailView() {
   const updateVariation = useReducer(reducers.updateTrackVariation);
   const deleteVariation = useReducer(reducers.deleteTrackVariation);
 
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [editingVenue, setEditingVenue] = useState(false);
   const [venueForm, setVenueForm] = useState({ name: '', description: '', latitude: '', longitude: '' });
   const [showTrackForm, setShowTrackForm] = useState(false);
@@ -88,7 +87,31 @@ export default function VenueDetailView() {
   const [editingVarId, setEditingVarId] = useState<bigint | null>(null);
   const [placingPin, setPlacingPin] = useState<'start' | 'end' | null>(null);
   const [expandedVarImages, setExpandedVarImages] = useState<bigint | null>(null);
+  const [showTrackImages, setShowTrackImages] = useState<Set<bigint>>(new Set());
   const [error, setError] = useState('');
+  const trackRefs = useRef(new Map<bigint, HTMLDivElement>());
+
+  const scrollToTrack = useCallback((trackId: bigint) => {
+    const el = trackRefs.current.get(trackId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
+
+  const toggleExpand = useCallback((trackId: bigint) => {
+    setExpandedTrack(prev => {
+      const next = prev === trackId ? null : trackId;
+      if (next !== null) setTimeout(() => scrollToTrack(next), 50);
+      return next;
+    });
+  }, [scrollToTrack]);
+
+  const toggleTrackImages = useCallback((trackId: bigint) => {
+    setShowTrackImages(prev => {
+      const next = new Set(prev);
+      if (next.has(trackId)) next.delete(trackId);
+      else next.add(trackId);
+      return next;
+    });
+  }, []);
 
   const org = orgs.find((o: Organization) => o.id === oid);
   const venue = venues.find((v: Venue) => v.id === vid);
@@ -270,10 +293,6 @@ export default function VenueDetailView() {
             Tracks <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({tracks.length})</span>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button className={viewMode === 'map' ? 'primary small' : 'ghost small'} onClick={() => setViewMode('map')}>Map</button>
-              <button className={viewMode === 'list' ? 'primary small' : 'ghost small'} onClick={() => setViewMode('list')}>List</button>
-            </div>
             {!showTrackForm && (
               <button className="primary small" onClick={() => { setEditingTrackId(null); setTrackForm({ name: '', color: '#3b82f6' }); setShowTrackForm(true); setError(''); }}>+ Add Track</button>
             )}
@@ -302,50 +321,54 @@ export default function VenueDetailView() {
         </div>
       )}
 
-      {/* Map view */}
-      {viewMode === 'map' && (
-        <div className="venue-map-container" style={{ marginBottom: 20 }}>
-          <MapContainer
-            center={[venue.latitude, venue.longitude]}
-            zoom={14}
-            style={{ height: 400, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <FitBounds positions={mapPositions} />
-            {tracks.map((track: Track) => {
-              const tv = defaultVariations.get(track.id);
-              if (!tv) return null;
-              const start: [number, number] = [tv.startLatitude, tv.startLongitude];
-              const end: [number, number] = [tv.endLatitude, tv.endLongitude];
-              const hasCoords = (tv.startLatitude !== 0 || tv.startLongitude !== 0);
-              if (!hasCoords) return null;
-              return (
-                <span key={String(track.id)}>
-                  <Marker position={start} icon={circleIcon(track.color, 14)}>
-                    <Popup><strong>{track.name}</strong><br />Start — {tv.name}</Popup>
-                  </Marker>
-                  <Marker position={end} icon={circleIcon(track.color, 10)}>
-                    <Popup><strong>{track.name}</strong><br />End — {tv.name}</Popup>
-                  </Marker>
-                  <Polyline positions={[start, end]} pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }} />
-                </span>
-              );
-            })}
-          </MapContainer>
-          {/* Map legend */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-            {tracks.map((t: Track) => (
-              <div key={String(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
-                <span className="color-dot" style={{ background: t.color }} />
-                <span className="muted">{t.name}</span>
-              </div>
-            ))}
-          </div>
+      {/* Map */}
+      <div className="venue-map-container" style={{ marginBottom: 20 }}>
+        <MapContainer
+          center={[venue.latitude, venue.longitude]}
+          zoom={14}
+          style={{ height: 400, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <FitBounds positions={mapPositions} />
+          {tracks.map((track: Track) => {
+            const tv = defaultVariations.get(track.id);
+            if (!tv) return null;
+            const start: [number, number] = [tv.startLatitude, tv.startLongitude];
+            const end: [number, number] = [tv.endLatitude, tv.endLongitude];
+            const hasCoords = (tv.startLatitude !== 0 || tv.startLongitude !== 0);
+            if (!hasCoords) return null;
+            return (
+              <span key={String(track.id)}>
+                <Marker position={start} icon={START_ICON}>
+                  <Popup>
+                    <div style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 700, marginBottom: 2 }}>Start</div>
+                    <a href="#" onClick={(e) => { e.preventDefault(); toggleExpand(track.id); }} style={{ fontWeight: 600 }}>{track.name}</a>
+                  </Popup>
+                </Marker>
+                <Marker position={end} icon={END_ICON}>
+                  <Popup>
+                    <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 700, marginBottom: 2 }}>End</div>
+                    <a href="#" onClick={(e) => { e.preventDefault(); toggleExpand(track.id); }} style={{ fontWeight: 600 }}>{track.name}</a>
+                  </Popup>
+                </Marker>
+                <Polyline positions={[start, end]} pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }} />
+              </span>
+            );
+          })}
+        </MapContainer>
+        {/* Map legend */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+          {tracks.map((t: Track) => (
+            <div key={String(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
+              <span className="color-dot" style={{ background: t.color }} />
+              <span className="muted">{t.name}</span>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* List view / Tracks */}
       {tracks.length === 0 && !showTrackForm ? (
@@ -356,11 +379,11 @@ export default function VenueDetailView() {
             const vars = variationsByTrack.get(track.id) ?? [];
             const isExpanded = expandedTrack === track.id;
             return (
-              <div key={String(track.id)} className="card" style={{ padding: 0 }}>
+              <div key={String(track.id)} id={`track-${track.id}`} ref={el => { if (el) trackRefs.current.set(track.id, el); else trackRefs.current.delete(track.id); }} className="card" style={{ padding: 0 }}>
                 {/* Track header */}
                 <div
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', cursor: 'pointer' }}
-                  onClick={() => setExpandedTrack(isExpanded ? null : track.id)}
+                  onClick={() => toggleExpand(track.id)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="color-dot" style={{ background: track.color }} />
@@ -379,11 +402,20 @@ export default function VenueDetailView() {
                 {/* Expanded: images + variations */}
                 {isExpanded && (
                   <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px' }}>
-                    <ImageCarousel entityType="track" entityId={track.id} canEdit={hasAccess} />
+                    {showTrackImages.has(track.id) && (
+                      <div style={{ marginBottom: 8 }}>
+                        <ImageCarousel entityType="track" entityId={track.id} canEdit={hasAccess} />
+                      </div>
+                    )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <div className="section-title" style={{ marginBottom: 0 }}>Variations</div>
-                      <button className="primary small" onClick={() => startAddVar(track.id)}>+ Add</button>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="ghost small" onClick={() => toggleTrackImages(track.id)}>
+                          {showTrackImages.has(track.id) ? 'Hide Images' : 'Show Images'}
+                        </button>
+                        <button className="primary small" onClick={() => startAddVar(track.id)}>+ Add</button>
+                      </div>
                     </div>
 
                     {/* Variation form */}
@@ -410,9 +442,13 @@ export default function VenueDetailView() {
                       return (
                         <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: 12, marginBottom: 8 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                              <div><label className="input-label">Name *</label><input type="text" value={varForm.name} onChange={e => setVarForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus /></div>
-                              <div><label className="input-label">Description</label><input type="text" value={varForm.description} onChange={e => setVarForm(f => ({ ...f, description: e.target.value }))} className="input" /></div>
+                            <div>
+                              <label className="input-label">Name *</label>
+                              <input type="text" value={varForm.name} onChange={e => setVarForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
+                            </div>
+                            <div>
+                              <label className="input-label">Description</label>
+                              <textarea value={varForm.description} onChange={e => setVarForm(f => ({ ...f, description: e.target.value }))} className="input" rows={3} style={{ resize: 'vertical' }} />
                             </div>
 
                             {/* Pin placement map */}
@@ -488,8 +524,6 @@ export default function VenueDetailView() {
                         <tr>
                           <th>Name</th>
                           <th>Description</th>
-                          <th>Start</th>
-                          <th>End</th>
                           <th style={{ width: 80 }}></th>
                         </tr>
                       </thead>
@@ -498,21 +532,23 @@ export default function VenueDetailView() {
                           <tr key={String(tv.id)} style={{ cursor: 'pointer' }} onClick={() => setExpandedVarImages(expandedVarImages === tv.id ? null : tv.id)}>
                             <td>{tv.name}</td>
                             <td className="muted small-text">{tv.description || '—'}</td>
-                            <td className="muted small-text">{tv.startLatitude.toFixed(4)}, {tv.startLongitude.toFixed(4)}</td>
-                            <td className="muted small-text">{tv.endLatitude.toFixed(4)}, {tv.endLongitude.toFixed(4)}</td>
                             <td>
-                              <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                                <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit">&#9998;</button>
-                                {vars.length > 1 && (
-                                  <button className="ghost small" onClick={() => handleDeleteVar(tv)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                                )}
-                              </div>
+                              {tv.name !== 'Default' ? (
+                                <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                                  <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit">&#9998;</button>
+                                  {vars.length > 1 && (
+                                    <button className="ghost small" onClick={() => handleDeleteVar(tv)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="muted small-text">Default</span>
+                              )}
                             </td>
                           </tr>
                         ))}
                         {expandedVarImages && vars.some(v => v.id === expandedVarImages) && (
                           <tr>
-                            <td colSpan={5} style={{ padding: 12 }}>
+                            <td colSpan={3} style={{ padding: 12 }}>
                               <ImageCarousel entityType="track_variation" entityId={expandedVarImages} canEdit={hasAccess} />
                             </td>
                           </tr>

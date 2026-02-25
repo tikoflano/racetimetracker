@@ -15,6 +15,7 @@ import CalendarView from './views/CalendarView';
 import RacersView from './views/RacersView';
 import VenuesView from './views/VenuesView';
 import VenueDetailView from './views/VenueDetailView';
+import EventManageView from './views/EventManageView';
 import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
 import type { Organization } from './module_bindings/types';
@@ -126,6 +127,7 @@ export default function App() {
                 }
               />
               <Route path="/event/:eventId" element={<EventView />} />
+              <Route path="/event/:eventId/manage" element={<EventManageView />} />
               <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
               <Route path="/org/:orgId/members" element={<OrgMembersView />} />
               <Route path="/calendar" element={<CalendarView />} />
