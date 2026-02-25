@@ -261,15 +261,22 @@ export default function VenueDetailView() {
       {/* Venue images */}
       <ImageCarousel entityType="venue" entityId={vid} canEdit={hasAccess} />
 
-      {/* View toggle + add track */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <button className={viewMode === 'map' ? 'primary small' : 'ghost small'} onClick={() => setViewMode('map')}>Map</button>
-          <button className={viewMode === 'list' ? 'primary small' : 'ghost small'} onClick={() => setViewMode('list')}>List</button>
+      {/* Tracks section */}
+      <div className="section" style={{ marginTop: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div className="section-title" style={{ marginBottom: 0 }}>
+            Tracks <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({tracks.length})</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className={viewMode === 'map' ? 'primary small' : 'ghost small'} onClick={() => setViewMode('map')}>Map</button>
+              <button className={viewMode === 'list' ? 'primary small' : 'ghost small'} onClick={() => setViewMode('list')}>List</button>
+            </div>
+            {!showTrackForm && (
+              <button className="primary small" onClick={() => { setEditingTrackId(null); setTrackForm({ name: '', color: '#3b82f6' }); setShowTrackForm(true); setError(''); }}>+ Add Track</button>
+            )}
+          </div>
         </div>
-        {!showTrackForm && (
-          <button className="primary small" onClick={() => { setEditingTrackId(null); setTrackForm({ name: '', color: '#3b82f6' }); setShowTrackForm(true); setError(''); }}>+ Add Track</button>
-        )}
       </div>
 
       {error && !editingVenue && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}
