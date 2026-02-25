@@ -353,10 +353,12 @@ export default function VenueDetailView() {
                     <strong>{track.name}</strong>
                     <span className="muted small-text">({vars.length} variation{vars.length !== 1 ? 's' : ''})</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                    <button className="ghost small" onClick={() => startEditTrack(track)} title="Edit">&#9998;</button>
-                    <button className="ghost small" onClick={() => handleDeleteTrack(track)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                    <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4 }}>
+                      <button className="ghost small" onClick={() => startEditTrack(track)} title="Edit">&#9998;</button>
+                      <button className="ghost small" onClick={() => handleDeleteTrack(track)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
+                    </div>
+                    <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
                   </div>
                 </div>
 
