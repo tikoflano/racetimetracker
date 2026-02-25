@@ -3,15 +3,17 @@ import { useParams, Link } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Event, Venue, EventTrack, Rider, EventRider, PinnedEvent } from '../module_bindings/types';
+import { useActiveOrgMaybe } from '../OrgContext';
+import type { Event, Venue, EventTrack, Rider, EventRider, PinnedEvent, Organization } from '../module_bindings/types';
 import { formatElapsed } from '../utils';
 
 export default function EventView() {
-  const { eventId } = useParams<{ eventId: string }>();
-  const eid = BigInt(eventId ?? '0');
+  const { eventSlug, orgSlug } = useParams<{ eventSlug: string; orgSlug?: string }>();
+  const activeOrgId = useActiveOrgMaybe();
   const { user, isAuthenticated, canOrganizeEvent } = useAuth();
 
   const [events] = useTable(tables.event);
+  const [orgs] = useTable(tables.organization);
   const [venues] = useTable(tables.venue);
   const [eventTracks] = useTable(tables.event_track);
   const [runs] = useTable(tables.run);
@@ -22,16 +24,31 @@ export default function EventView() {
   const updateEvent = useReducer(reducers.updateEvent);
   const togglePin = useReducer(reducers.togglePinEvent);
 
+  const event = useMemo(() => {
+    if (!eventSlug) return null;
+    if (orgSlug) {
+      const org = orgs.find((o: Organization) => o.slug === orgSlug);
+      if (!org) return null;
+      return events.find((e: Event) => e.slug === eventSlug && e.orgId === org.id) ?? null;
+    }
+    if (activeOrgId) {
+      const inOrg = events.find((e: Event) => e.slug === eventSlug && e.orgId === activeOrgId);
+      if (inOrg) return inOrg;
+    }
+    return events.find((e: Event) => e.slug === eventSlug) ?? null;
+  }, [eventSlug, orgSlug, activeOrgId, events, orgs]);
+
+  const eid = event?.id ?? 0n;
+
   const isPinned = useMemo(() => {
-    if (!user) return false;
+    if (!user || !event) return false;
     return pinnedEvents.some((p: PinnedEvent) => p.userId === user.id && p.eventId === eid);
-  }, [user, pinnedEvents, eid]);
+  }, [user, pinnedEvents, eid, event]);
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [nameError, setNameError] = useState('');
 
-  const event = events.find((e: Event) => e.id === eid);
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
 
   const canEdit = event ? canOrganizeEvent(eid, event.orgId) : false;
@@ -98,10 +115,22 @@ export default function EventView() {
       });
   }, [runs, sortedEventTracks, eventRiderIds, riderMap]);
 
-  // Don't show "not found" until the events subscription has delivered data
   if (!event) {
     if (events.length === 0) return null;
-    return <div className="empty">Event not found.</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+        <div style={{ fontSize: '4rem', fontWeight: 700, opacity: 0.2, marginBottom: 8 }}>404</div>
+        <h2 style={{ marginBottom: 8 }}>Event not found</h2>
+        <p className="muted" style={{ marginBottom: 20 }}>
+          {orgSlug
+            ? `No event "${eventSlug}" exists in organization "${orgSlug}".`
+            : `No event "${eventSlug}" exists in the current organization.`}
+        </p>
+        <a href="/" className="primary" style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 'var(--radius)', textDecoration: 'none' }}>
+          Go home
+        </a>
+      </div>
+    );
   }
 
   return (
@@ -168,7 +197,7 @@ export default function EventView() {
       {/* Manage event link */}
       {canEdit && (
         <div style={{ marginBottom: 20 }}>
-          <Link to={`/event/${eventId}/manage`} className="primary small" style={{ textDecoration: 'none', display: 'inline-block', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem' }}>
+          <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', display: 'inline-block', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem' }}>
             Manage Event
           </Link>
         </div>

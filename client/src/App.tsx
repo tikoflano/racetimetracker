@@ -169,9 +169,10 @@ export default function App() {
             <OrgProvider value={{ activeOrgId: activeOrgId }}>
               <Routes>
                 <Route path="/" element={<Navigate to="/championships" replace />} />
-                <Route path="/event/:eventId" element={<EventView />} />
-                <Route path="/event/:eventId/manage" element={<EventManageView />} />
-                <Route path="/event/:eventId/track/:eventTrackId" element={<TrackView />} />
+                <Route path="/event/:eventSlug" element={<EventView />} />
+                <Route path="/event/:eventSlug/manage" element={<EventManageView />} />
+                <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
+                <Route path="/:orgSlug/event/:eventSlug" element={<EventView />} />
                 <Route path="/members" element={<OrgMembersView />} />
                 <Route path="/calendar" element={<CalendarView />} />
                 <Route path="/championships" element={<ChampionshipsView />} />

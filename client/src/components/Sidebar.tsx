@@ -46,7 +46,7 @@ export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchO
           pinnedList.map((e: Event) => (
             <div key={String(e.id)} className="sidebar-event-row">
               <NavLink
-                to={`/event/${e.id}`}
+                to={`/event/${e.slug}`}
                 className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               >
                 {e.name}

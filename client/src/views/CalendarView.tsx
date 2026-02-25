@@ -231,7 +231,7 @@ export default function CalendarView() {
                   return (
                     <Link
                       key={String(evt.id)}
-                      to={`/event/${evt.id}`}
+                      to={`/event/${evt.slug}`}
                       className="cal-event"
                       style={{ borderLeftColor: champ?.color ?? 'var(--accent)' }}
                       title={evt.name}

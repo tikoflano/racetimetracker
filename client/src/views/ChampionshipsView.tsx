@@ -250,7 +250,7 @@ export default function ChampionshipsView() {
                 <td>
                   {nextEvent ? (
                     <span>
-                      <Link to={`/event/${nextEvent.id}`} className="table-link">{nextEvent.name}</Link>
+                      <Link to={`/event/${nextEvent.slug}`} className="table-link">{nextEvent.name}</Link>
                       <div className="muted small-text">{nextEvent.startDate}</div>
                     </span>
                   ) : (

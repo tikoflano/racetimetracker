@@ -25,6 +25,7 @@ const spacetimedb = schema({
     {
       id: t.u64().primaryKey().autoInc(),
       name: t.string().unique(),
+      slug: t.string().unique(),
       owner_user_id: t.u64().index('btree'),
     }
   ),
@@ -84,6 +85,7 @@ const spacetimedb = schema({
       championship_id: t.u64().index('btree'),
       venue_id: t.u64().index('btree'),
       name: t.string(),
+      slug: t.string(),
       description: t.string(),
       start_date: t.string(),
       end_date: t.string(),
@@ -270,6 +272,40 @@ function placeholderIdentity(email: string): Identity {
     hash = hash * 31n + BigInt(email.charCodeAt(i));
   }
   return new Identity(hash);
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    || 'untitled';
+}
+
+function uniqueOrgSlug(ctx: any, base: string): string {
+  let candidate = base;
+  let n = 1;
+  while (true) {
+    let taken = false;
+    for (const o of ctx.db.organization.iter()) {
+      if (o.slug === candidate) { taken = true; break; }
+    }
+    if (!taken) return candidate;
+    candidate = `${base}-${++n}`;
+  }
+}
+
+function uniqueEventSlug(ctx: any, orgId: bigint, base: string, excludeId?: bigint): string {
+  let candidate = base;
+  let n = 1;
+  while (true) {
+    let taken = false;
+    for (const e of ctx.db.event.iter()) {
+      if (e.org_id === orgId && e.slug === candidate && e.id !== excludeId) { taken = true; break; }
+    }
+    if (!taken) return candidate;
+    candidate = `${base}-${++n}`;
+  }
 }
 
 // ─── Auth helpers ───────────────────────────────────────────────────────────
@@ -463,7 +499,7 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
   if (!hasOrg) {
     const displayName = name || email.split('@')[0] || 'User';
     const orgName = generateUniqueOrgName(ctx, `${displayName}'s Organization`);
-    ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: userId });
+    ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: userId });
   }
 });
 
@@ -473,7 +509,7 @@ export const create_organization = spacetimedb.reducer(
   { name: t.string() },
   (ctx, args) => {
     const user = requireUser(ctx);
-    const org = ctx.db.organization.insert({ id: 0n, name: args.name, owner_user_id: user.id });
+    const org = ctx.db.organization.insert({ id: 0n, name: args.name, slug: uniqueOrgSlug(ctx, slugify(args.name)), owner_user_id: user.id });
     // Creator becomes admin
     ctx.db.org_member.insert({ id: 0n, org_id: org.id, user_id: user.id, role: 'admin' });
   }
@@ -493,7 +529,8 @@ export const rename_organization = spacetimedb.reducer(
     }
     const org = ctx.db.organization.id.find(args.org_id);
     if (!org) throw new SenderError('Organization not found');
-    ctx.db.organization.id.update({ ...org, name: trimmed });
+    const newSlug = uniqueOrgSlug(ctx, slugify(trimmed));
+    ctx.db.organization.id.update({ ...org, name: trimmed, slug: newSlug });
   }
 );
 
@@ -676,12 +713,20 @@ export const create_event = spacetimedb.reducer(
   },
   (ctx, args) => {
     requireOrgEventManager(ctx, args.org_id);
+    const trimmed = args.name.trim();
+    if (!trimmed) throw new SenderError('Event name cannot be empty');
+    for (const e of ctx.db.event.iter()) {
+      if (e.championship_id === args.championship_id && e.name === trimmed) {
+        throw new SenderError('An event with this name already exists in this championship');
+      }
+    }
     ctx.db.event.insert({
       id: 0n,
       org_id: args.org_id,
       championship_id: args.championship_id,
       venue_id: args.venue_id,
-      name: args.name,
+      name: trimmed,
+      slug: uniqueEventSlug(ctx, args.org_id, slugify(trimmed)),
       description: args.description,
       start_date: args.start_date,
       end_date: args.end_date,
@@ -703,7 +748,8 @@ export const update_event = spacetimedb.reducer(
         throw new SenderError('An event with this name already exists in this championship');
       }
     }
-    ctx.db.event.id.update({ ...evt, name: trimmed, description: args.description, start_date: args.start_date, end_date: args.end_date });
+    const newSlug = trimmed !== evt.name ? uniqueEventSlug(ctx, evt.org_id, slugify(trimmed), evt.id) : evt.slug;
+    ctx.db.event.id.update({ ...evt, name: trimmed, slug: newSlug, description: args.description, start_date: args.start_date, end_date: args.end_date });
   }
 );
 
@@ -1543,7 +1589,7 @@ export const seed_demo_data = spacetimedb.reducer(
     }
     if (!org) {
       const orgName = generateUniqueOrgName(ctx, 'Demo Racing Org');
-      org = ctx.db.organization.insert({ id: 0n, name: orgName, owner_user_id: ownerId });
+      org = ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: ownerId });
     }
 
     // Championships
@@ -1569,19 +1615,22 @@ export const seed_demo_data = spacetimedb.reducer(
     const tv4 = ctx.db.track_variation.insert({ id: 0n, track_id: track4.id, name: 'Full Loop', description: '25km singletrack loop', start_latitude: 35.598, start_longitude: -82.554, end_latitude: 35.595, end_longitude: -82.551 });
     ctx.db.track_variation.insert({ id: 0n, track_id: track4.id, name: 'Default', description: 'Standard route', start_latitude: 35.5951, start_longitude: -82.5515, end_latitude: 35.595, end_longitude: -82.551 });
 
+    const insertEvent = (champId: bigint, venueId: bigint, name: string, desc: string, start: string, end: string) =>
+      ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champId, venue_id: venueId, name, slug: uniqueEventSlug(ctx, org.id, slugify(name)), description: desc, start_date: start, end_date: end });
+
     // Enduro Series events
-    const evt1 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue1.id, name: 'Enduro R1 - Pine Mountain', description: 'Opening round', start_date: '2025-03-15', end_date: '2025-03-16' });
-    const evt2 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue2.id, name: 'Enduro R2 - Eagle Rock', description: 'Second round', start_date: '2025-05-10', end_date: '2025-05-11' });
-    const evt3 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue3.id, name: 'Enduro R3 - Lakeside', description: 'Season finale', start_date: '2025-07-19', end_date: '2025-07-20' });
-    const evtUpcoming = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue1.id, name: 'Enduro R4 - Pine Mountain', description: 'Upcoming round (not started yet)', start_date: '2029-09-20', end_date: '2029-09-21' });
+    const evt1 = insertEvent(champ1.id, venue1.id, 'Enduro R1 - Pine Mountain', 'Opening round', '2025-03-15', '2025-03-16');
+    const evt2 = insertEvent(champ1.id, venue2.id, 'Enduro R2 - Eagle Rock', 'Second round', '2025-05-10', '2025-05-11');
+    const evt3 = insertEvent(champ1.id, venue3.id, 'Enduro R3 - Lakeside', 'Season finale', '2025-07-19', '2025-07-20');
+    const evtUpcoming = insertEvent(champ1.id, venue1.id, 'Enduro R4 - Pine Mountain', 'Upcoming round (not started yet)', '2029-09-20', '2029-09-21');
 
     // Downhill Cup events
-    const evt4 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ2.id, venue_id: venue2.id, name: 'DH Cup R1 - Eagle Rock', description: 'Downhill opener', start_date: '2025-04-05', end_date: '2025-04-06' });
-    const evt5 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ2.id, venue_id: venue1.id, name: 'DH Cup R2 - Pine Mountain', description: 'Mid-season round', start_date: '2025-06-14', end_date: '2025-06-15' });
+    const evt4 = insertEvent(champ2.id, venue2.id, 'DH Cup R1 - Eagle Rock', 'Downhill opener', '2025-04-05', '2025-04-06');
+    const evt5 = insertEvent(champ2.id, venue1.id, 'DH Cup R2 - Pine Mountain', 'Mid-season round', '2025-06-14', '2025-06-15');
 
     // XC Marathon events
-    const evt6 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ3.id, venue_id: venue3.id, name: 'XC Marathon R1 - Lakeside', description: 'Endurance opener', start_date: '2025-04-26', end_date: '2025-04-27' });
-    const evt7 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ3.id, venue_id: venue1.id, name: 'XC Marathon R2 - Pine Mountain', description: 'Mountain stage', start_date: '2025-08-09', end_date: '2025-08-10' });
+    const evt6 = insertEvent(champ3.id, venue3.id, 'XC Marathon R1 - Lakeside', 'Endurance opener', '2025-04-26', '2025-04-27');
+    const evt7 = insertEvent(champ3.id, venue1.id, 'XC Marathon R2 - Pine Mountain', 'Mountain stage', '2025-08-09', '2025-08-10');
 
     // Event tracks
     const et1 = ctx.db.event_track.insert({ id: 0n, event_id: evt1.id, track_variation_id: tv1.id, sort_order: 1 });

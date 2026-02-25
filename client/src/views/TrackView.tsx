@@ -3,15 +3,16 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrgMaybe } from '../OrgContext';
 import { useClockSync } from '../hooks/useClockSync';
 import type { Event, EventTrack, TrackVariation, Track, Run, Rider } from '../module_bindings/types';
 import ElapsedTimer from '../components/ElapsedTimer';
 import { formatElapsed } from '../utils';
 
 export default function TrackView() {
-  const { eventId, eventTrackId } = useParams<{ eventId: string; eventTrackId: string }>();
+  const { eventSlug, eventTrackId } = useParams<{ eventSlug: string; eventTrackId: string }>();
   const etId = BigInt(eventTrackId ?? '0');
-  const eid = BigInt(eventId ?? '0');
+  const activeOrgId = useActiveOrgMaybe();
   const connState = useSpacetimeDB();
   const isConnected = connState.isActive;
   const { isAuthenticated, canTimekeep } = useAuth();
@@ -28,7 +29,15 @@ export default function TrackView() {
   const [runs] = useTable(tables.run);
   const [riders] = useTable(tables.rider);
 
-  const event = events.find((e: Event) => e.id === eid);
+  const event = useMemo(() => {
+    if (!eventSlug) return undefined;
+    if (activeOrgId) {
+      const inOrg = events.find((e: Event) => e.slug === eventSlug && e.orgId === activeOrgId);
+      if (inOrg) return inOrg;
+    }
+    return events.find((e: Event) => e.slug === eventSlug);
+  }, [eventSlug, activeOrgId, events]);
+  const eid = event?.id ?? 0n;
   const eventTrack = eventTracks.find((et: EventTrack) => et.id === etId);
   const tv = eventTrack ? trackVariations.find((v: TrackVariation) => v.id === eventTrack.trackVariationId) : undefined;
   const track = tv ? tracksData.find((t: Track) => t.id === tv.trackId) : undefined;
@@ -64,7 +73,7 @@ export default function TrackView() {
 
   // Redirect if not authenticated or no access
   if (!isAuthenticated || !hasTimekeepAccess) {
-    return <Navigate to={`/event/${eventId}`} replace />;
+    return <Navigate to={`/event/${eventSlug}`} replace />;
   }
 
   const handleStart = (runId: bigint) => startRun({ runId, clientTime: getCorrectedTime() });
@@ -78,7 +87,7 @@ export default function TrackView() {
 
   return (
     <div>
-      <Link to={`/event/${eventId}`} className="back-link">&larr; Back to Event</Link>
+      <Link to={`/event/${eventSlug}`} className="back-link">&larr; Back to Event</Link>
 
       <div className="connection-bar">
         <span className={`dot ${isConnected ? 'on' : ''}`} />

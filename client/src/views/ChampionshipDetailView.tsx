@@ -365,7 +365,7 @@ export default function ChampionshipDetailView() {
                       </div>
                     ) : (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Link to={`/event/${e.id}`} className="table-link">{e.name}</Link>
+                        <Link to={`/event/${e.slug}`} className="table-link">{e.name}</Link>
                         <button className="ghost small" onClick={() => startEditEvent(e)} title="Rename" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>&#9998;</button>
                       </span>
                     )}

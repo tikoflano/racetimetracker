@@ -3,14 +3,15 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrgMaybe } from '../OrgContext';
 import AddRacerModal from '../components/AddRacerModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
 import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule } from '../module_bindings/types';
 
 export default function EventManageView() {
-  const { eventId } = useParams<{ eventId: string }>();
-  const eid = BigInt(eventId ?? '0');
+  const { eventSlug } = useParams<{ eventSlug: string }>();
+  const activeOrgId = useActiveOrgMaybe();
   const { isAuthenticated, isReady, canOrganizeEvent } = useAuth();
 
   const [events] = useTable(tables.event);
@@ -39,7 +40,15 @@ export default function EventManageView() {
   const generateTrackSchedule = useReducer(reducers.generateTrackSchedule);
   const clearTrackSchedule = useReducer(reducers.clearTrackSchedule);
 
-  const event = events.find((e: Event) => e.id === eid);
+  const event = useMemo(() => {
+    if (!eventSlug) return undefined;
+    if (activeOrgId) {
+      const inOrg = events.find((e: Event) => e.slug === eventSlug && e.orgId === activeOrgId);
+      if (inOrg) return inOrg;
+    }
+    return events.find((e: Event) => e.slug === eventSlug);
+  }, [eventSlug, activeOrgId, events]);
+  const eid = event?.id ?? 0n;
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
   const canEdit = event ? canOrganizeEvent(eid, event.orgId) : false;
 
@@ -424,7 +433,7 @@ export default function EventManageView() {
 
   return (
     <div>
-      <Link to={`/event/${eventId}`} className="back-link">&larr; Back to Event</Link>
+      <Link to={`/event/${event.slug}`} className="back-link">&larr; Back to Event</Link>
       <h1 style={{ marginBottom: 4 }}>Manage: {event.name}</h1>
       <p className="muted small-text" style={{ marginBottom: 12 }}>{event.description}</p>
 
@@ -482,7 +491,7 @@ export default function EventManageView() {
             return (
               <div key={String(et.id)} className="card" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Link
-                  to={`/event/${eventId}/track/${et.id}`}
+                  to={`/event/${event.slug}/track/${et.id}`}
                   style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
                 >
                   <div className="track-card">
@@ -643,7 +652,7 @@ export default function EventManageView() {
                               }}
                             >
                               <Link
-                                to={`/event/${eventId}/track/${ct.eventTrackId}`}
+                                to={`/event/${event.slug}/track/${ct.eventTrackId}`}
                                 style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                               >
                                 <span className="color-dot" style={{ background: trackColor }} />
@@ -882,7 +891,7 @@ export default function EventManageView() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
                       <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>{trackLabel}</h3>
-                      <Link to={`/event/${eventId}/track/${et.id}`} className="small-text" style={{ color: 'var(--accent)' }}>
+                      <Link to={`/event/${event.slug}/track/${et.id}`} className="small-text" style={{ color: 'var(--accent)' }}>
                         Track timing →
                       </Link>
                     </div>
