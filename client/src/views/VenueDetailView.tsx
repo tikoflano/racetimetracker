@@ -367,7 +367,7 @@ export default function VenueDetailView() {
                   <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <div className="section-title" style={{ marginBottom: 0 }}>Variations</div>
-                      <button className="ghost small" onClick={() => startAddVar(track.id)}>+ Add</button>
+                      <button className="primary small" onClick={() => startAddVar(track.id)}>+ Add</button>
                     </div>
 
                     {/* Variation form */}
