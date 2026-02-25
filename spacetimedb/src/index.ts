@@ -67,6 +67,7 @@ const spacetimedb = schema({
     { public: true },
     {
       id: t.u64().primaryKey().autoInc(),
+      org_id: t.u64().index('btree'),
       name: t.string(),
       description: t.string(),
       latitude: t.f64(),
@@ -94,6 +95,7 @@ const spacetimedb = schema({
       id: t.u64().primaryKey().autoInc(),
       venue_id: t.u64().index('btree'),
       name: t.string(),
+      color: t.string(),
     }
   ),
 
@@ -445,13 +447,42 @@ export const update_championship = spacetimedb.reducer(
   }
 );
 
-// ─── Venue (any authenticated user can create) ──────────────────────────────
+// ─── Venue (org event manager+) ─────────────────────────────────────────────
 
 export const create_venue = spacetimedb.reducer(
-  { name: t.string(), description: t.string(), latitude: t.f64(), longitude: t.f64() },
+  { org_id: t.u64(), name: t.string(), description: t.string(), latitude: t.f64(), longitude: t.f64() },
   (ctx, args) => {
-    requireUser(ctx);
-    ctx.db.venue.insert({ id: 0n, name: args.name, description: args.description, latitude: args.latitude, longitude: args.longitude });
+    requireOrgEventManager(ctx, args.org_id);
+    ctx.db.venue.insert({ id: 0n, org_id: args.org_id, name: args.name, description: args.description, latitude: args.latitude, longitude: args.longitude });
+  }
+);
+
+export const update_venue = spacetimedb.reducer(
+  { venue_id: t.u64(), name: t.string(), description: t.string(), latitude: t.f64(), longitude: t.f64() },
+  (ctx, args) => {
+    const venue = ctx.db.venue.id.find(args.venue_id);
+    if (!venue) throw new SenderError('Venue not found');
+    requireOrgEventManager(ctx, venue.org_id);
+    ctx.db.venue.id.update({ ...venue, name: args.name, description: args.description, latitude: args.latitude, longitude: args.longitude });
+  }
+);
+
+export const delete_venue = spacetimedb.reducer(
+  { venue_id: t.u64() },
+  (ctx, args) => {
+    const venue = ctx.db.venue.id.find(args.venue_id);
+    if (!venue) throw new SenderError('Venue not found');
+    requireOrgEventManager(ctx, venue.org_id);
+    // Delete all tracks and their variations
+    for (const track of ctx.db.track.iter()) {
+      if (track.venue_id === venue.id) {
+        for (const tv of ctx.db.track_variation.iter()) {
+          if (tv.track_id === track.id) ctx.db.track_variation.id.delete(tv.id);
+        }
+        ctx.db.track.id.delete(track.id);
+      }
+    }
+    ctx.db.venue.id.delete(venue.id);
   }
 );
 
@@ -499,13 +530,54 @@ export const toggle_pin_event = spacetimedb.reducer(
   }
 );
 
-// ─── Track (any authenticated user) ─────────────────────────────────────────
+// ─── Track (org event manager+ via venue) ───────────────────────────────────
+
+function requireVenueManager(ctx: any, venueId: bigint) {
+  const venue = ctx.db.venue.id.find(venueId);
+  if (!venue) throw new SenderError('Venue not found');
+  return requireOrgEventManager(ctx, venue.org_id);
+}
 
 export const create_track = spacetimedb.reducer(
-  { venue_id: t.u64(), name: t.string() },
+  { venue_id: t.u64(), name: t.string(), color: t.string() },
   (ctx, args) => {
-    requireUser(ctx);
-    ctx.db.track.insert({ id: 0n, venue_id: args.venue_id, name: args.name });
+    requireVenueManager(ctx, args.venue_id);
+    const track = ctx.db.track.insert({ id: 0n, venue_id: args.venue_id, name: args.name, color: args.color });
+    // Auto-create a default variation using the venue's coordinates
+    const venue = ctx.db.venue.id.find(args.venue_id)!;
+    ctx.db.track_variation.insert({
+      id: 0n,
+      track_id: track.id,
+      name: 'Default',
+      description: '',
+      start_latitude: venue.latitude,
+      start_longitude: venue.longitude,
+      end_latitude: venue.latitude,
+      end_longitude: venue.longitude,
+    });
+  }
+);
+
+export const update_track = spacetimedb.reducer(
+  { track_id: t.u64(), name: t.string(), color: t.string() },
+  (ctx, args) => {
+    const track = ctx.db.track.id.find(args.track_id);
+    if (!track) throw new SenderError('Track not found');
+    requireVenueManager(ctx, track.venue_id);
+    ctx.db.track.id.update({ ...track, name: args.name, color: args.color });
+  }
+);
+
+export const delete_track = spacetimedb.reducer(
+  { track_id: t.u64() },
+  (ctx, args) => {
+    const track = ctx.db.track.id.find(args.track_id);
+    if (!track) throw new SenderError('Track not found');
+    requireVenueManager(ctx, track.venue_id);
+    for (const tv of ctx.db.track_variation.iter()) {
+      if (tv.track_id === track.id) ctx.db.track_variation.id.delete(tv.id);
+    }
+    ctx.db.track.id.delete(track.id);
   }
 );
 
@@ -520,7 +592,9 @@ export const create_track_variation = spacetimedb.reducer(
     end_longitude: t.f64(),
   },
   (ctx, args) => {
-    requireUser(ctx);
+    const track = ctx.db.track.id.find(args.track_id);
+    if (!track) throw new SenderError('Track not found');
+    requireVenueManager(ctx, track.venue_id);
     ctx.db.track_variation.insert({
       id: 0n,
       track_id: args.track_id,
@@ -531,6 +605,52 @@ export const create_track_variation = spacetimedb.reducer(
       end_latitude: args.end_latitude,
       end_longitude: args.end_longitude,
     });
+  }
+);
+
+export const update_track_variation = spacetimedb.reducer(
+  {
+    variation_id: t.u64(),
+    name: t.string(),
+    description: t.string(),
+    start_latitude: t.f64(),
+    start_longitude: t.f64(),
+    end_latitude: t.f64(),
+    end_longitude: t.f64(),
+  },
+  (ctx, args) => {
+    const tv = ctx.db.track_variation.id.find(args.variation_id);
+    if (!tv) throw new SenderError('Track variation not found');
+    const track = ctx.db.track.id.find(tv.track_id);
+    if (!track) throw new SenderError('Track not found');
+    requireVenueManager(ctx, track.venue_id);
+    ctx.db.track_variation.id.update({
+      ...tv,
+      name: args.name,
+      description: args.description,
+      start_latitude: args.start_latitude,
+      start_longitude: args.start_longitude,
+      end_latitude: args.end_latitude,
+      end_longitude: args.end_longitude,
+    });
+  }
+);
+
+export const delete_track_variation = spacetimedb.reducer(
+  { variation_id: t.u64() },
+  (ctx, args) => {
+    const tv = ctx.db.track_variation.id.find(args.variation_id);
+    if (!tv) throw new SenderError('Track variation not found');
+    const track = ctx.db.track.id.find(tv.track_id);
+    if (!track) throw new SenderError('Track not found');
+    requireVenueManager(ctx, track.venue_id);
+    // Don't allow deleting the last variation
+    let count = 0;
+    for (const v of ctx.db.track_variation.iter()) {
+      if (v.track_id === track.id) count++;
+    }
+    if (count <= 1) throw new SenderError('Cannot delete the last variation. Delete the track instead.');
+    ctx.db.track_variation.id.delete(tv.id);
   }
 );
 
@@ -735,19 +855,22 @@ export const seed_demo_data = spacetimedb.reducer(
     const champ3 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'XC Marathon Series', description: 'Cross-country endurance events', color: '#22c55e' });
 
     // Venues
-    const venue1 = ctx.db.venue.insert({ id: 0n, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', latitude: 38.8977, longitude: -77.0365 });
-    const venue2 = ctx.db.venue.insert({ id: 0n, name: 'Eagle Rock Resort', description: 'Steep downhill runs with jumps', latitude: 40.9176, longitude: -76.0452 });
-    const venue3 = ctx.db.venue.insert({ id: 0n, name: 'Lakeside Trails', description: 'Rolling singletrack around the lake', latitude: 35.5951, longitude: -82.5515 });
+    const venue1 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', latitude: 38.8977, longitude: -77.0365 });
+    const venue2 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Eagle Rock Resort', description: 'Steep downhill runs with jumps', latitude: 40.9176, longitude: -76.0452 });
+    const venue3 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Lakeside Trails', description: 'Rolling singletrack around the lake', latitude: 35.5951, longitude: -82.5515 });
 
     // Tracks & variations
-    const track1 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Widow Maker' });
+    const track1 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Widow Maker', color: '#ef4444' });
     const tv1 = ctx.db.track_variation.insert({ id: 0n, track_id: track1.id, name: 'Full Send', description: 'Top-to-bottom with rock gardens and drops', start_latitude: 38.900, start_longitude: -77.040, end_latitude: 38.895, end_longitude: -77.035 });
-    const track2 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Rock Garden' });
+    ctx.db.track_variation.insert({ id: 0n, track_id: track1.id, name: 'Default', description: 'Standard route', start_latitude: 38.8977, start_longitude: -77.0365, end_latitude: 38.895, end_longitude: -77.035 });
+    const track2 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Rock Garden', color: '#22c55e' });
     const tv2 = ctx.db.track_variation.insert({ id: 0n, track_id: track2.id, name: 'Default', description: 'Technical rock garden descent', start_latitude: 38.899, start_longitude: -77.038, end_latitude: 38.894, end_longitude: -77.033 });
-    const track3 = ctx.db.track.insert({ id: 0n, venue_id: venue2.id, name: 'Thunderbolt' });
+    const track3 = ctx.db.track.insert({ id: 0n, venue_id: venue2.id, name: 'Thunderbolt', color: '#3b82f6' });
     const tv3 = ctx.db.track_variation.insert({ id: 0n, track_id: track3.id, name: 'Race Line', description: 'Fast downhill with gap jumps', start_latitude: 40.920, start_longitude: -76.048, end_latitude: 40.915, end_longitude: -76.043 });
-    const track4 = ctx.db.track.insert({ id: 0n, venue_id: venue3.id, name: 'Lakeshore Loop' });
+    ctx.db.track_variation.insert({ id: 0n, track_id: track3.id, name: 'Default', description: 'Standard route', start_latitude: 40.9176, start_longitude: -76.0452, end_latitude: 40.915, end_longitude: -76.043 });
+    const track4 = ctx.db.track.insert({ id: 0n, venue_id: venue3.id, name: 'Lakeshore Loop', color: '#eab308' });
     const tv4 = ctx.db.track_variation.insert({ id: 0n, track_id: track4.id, name: 'Full Loop', description: '25km singletrack loop', start_latitude: 35.598, start_longitude: -82.554, end_latitude: 35.595, end_longitude: -82.551 });
+    ctx.db.track_variation.insert({ id: 0n, track_id: track4.id, name: 'Default', description: 'Standard route', start_latitude: 35.5951, start_longitude: -82.5515, end_latitude: 35.595, end_longitude: -82.551 });
 
     // Enduro Series events
     const evt1 = ctx.db.event.insert({ id: 0n, org_id: org.id, championship_id: champ1.id, venue_id: venue1.id, name: 'Enduro R1 - Pine Mountain', description: 'Opening round', start_date: '2025-03-15', end_date: '2025-03-16' });

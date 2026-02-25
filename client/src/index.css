@@ -327,6 +327,25 @@ body {
   padding-left: 4px;
 }
 
+/* Venue map */
+.venue-map-container .leaflet-container {
+  background: var(--surface);
+  font-family: inherit;
+}
+.venue-map-container .leaflet-popup-content-wrapper {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.venue-map-container .leaflet-popup-tip {
+  background: var(--surface);
+}
+.venue-map-container .leaflet-popup-close-button {
+  color: var(--text-muted);
+}
+
 /* Public registration page */
 .register-page {
   min-height: 100vh;

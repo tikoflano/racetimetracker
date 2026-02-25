@@ -82,6 +82,12 @@ export default function Sidebar({ className = '' }: { className?: string }) {
                 Championships
               </NavLink>
               <NavLink
+                to={`/org/${o.id}/venues`}
+                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+              >
+                Venues
+              </NavLink>
+              <NavLink
                 to={`/org/${o.id}/racers`}
                 className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
               >
