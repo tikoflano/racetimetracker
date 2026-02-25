@@ -5,7 +5,8 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import type { Championship, Event, Organization } from '../module_bindings/types';
 
-type SortKey = 'name' | 'events' | 'start' | 'end' | 'next';
+type ChampStatus = 'in_progress' | 'not_started' | 'completed';
+type SortKey = 'name' | 'events' | 'start' | 'end' | 'next' | 'status';
 type SortDir = 'asc' | 'desc';
 const SORT_STORAGE_KEY = 'champ_sort';
 
@@ -52,6 +53,7 @@ export default function ChampionshipsView() {
   const [newColor, setNewColor] = useState('#3b82f6');
   const [error, setError] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>(loadSort);
+  const [statusFilter, setStatusFilter] = useState<ChampStatus | 'all'>('all');
 
   const toggleSort = (key: SortKey) => {
     setSort(prev => {
@@ -81,6 +83,14 @@ export default function ChampionshipsView() {
         .filter((e: Event) => e.endDate >= today)
         .sort((a: Event, b: Event) => a.startDate.localeCompare(b.startDate));
       const nextEvent = upcoming.length > 0 ? upcoming[0] : null;
+      // Status: in_progress if any event spans today, completed if all ended, not_started otherwise
+      let status: ChampStatus = 'not_started';
+      if (champEvents.length > 0) {
+        const hasActive = champEvents.some((e: Event) => e.startDate <= today && e.endDate >= today);
+        const allEnded = champEvents.every((e: Event) => e.endDate < today);
+        if (hasActive) status = 'in_progress';
+        else if (allEnded) status = 'completed';
+      }
       return {
         championship: c,
         eventCount: champEvents.length,
@@ -88,12 +98,20 @@ export default function ChampionshipsView() {
         endDate: dates[dates.length - 1] ?? '—',
         nextEvent,
         nextEventSort: nextEvent?.startDate ?? '\uffff',
+        status,
       };
     });
   }, [championships, events, oid, today]);
 
+  const filteredRows = useMemo(() => {
+    if (statusFilter === 'all') return champRows;
+    return champRows.filter(r => r.status === statusFilter);
+  }, [champRows, statusFilter]);
+
+  const STATUS_ORDER: Record<ChampStatus, number> = { in_progress: 0, not_started: 1, completed: 2 };
+
   const sortedRows = useMemo(() => {
-    const rows = [...champRows];
+    const rows = [...filteredRows];
     const dir = sort.dir === 'asc' ? 1 : -1;
     rows.sort((a, b) => {
       switch (sort.key) {
@@ -102,11 +120,12 @@ export default function ChampionshipsView() {
         case 'start': return dir * a.startDate.localeCompare(b.startDate);
         case 'end': return dir * a.endDate.localeCompare(b.endDate);
         case 'next': return dir * a.nextEventSort.localeCompare(b.nextEventSort);
+        case 'status': return dir * (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
         default: return 0;
       }
     });
     return rows;
-  }, [champRows, sort]);
+  }, [filteredRows, sort]);
 
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!org) {
@@ -138,6 +157,30 @@ export default function ChampionshipsView() {
           <button className="primary small" onClick={() => setShowForm(true)}>+ New Championship</button>
         )}
       </div>
+
+      {/* Status filter */}
+      {champRows.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+          {(['all', 'in_progress', 'not_started', 'completed'] as const).map(f => {
+            const labels: Record<string, string> = { all: 'All', in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
+            const counts: Record<string, number> = {
+              all: champRows.length,
+              in_progress: champRows.filter(r => r.status === 'in_progress').length,
+              not_started: champRows.filter(r => r.status === 'not_started').length,
+              completed: champRows.filter(r => r.status === 'completed').length,
+            };
+            return (
+              <button
+                key={f}
+                className={statusFilter === f ? 'primary small' : 'ghost small'}
+                onClick={() => setStatusFilter(f)}
+              >
+                {labels[f]} ({counts[f]})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
@@ -181,6 +224,7 @@ export default function ChampionshipsView() {
             <tr>
               <th style={{ width: 12 }}></th>
               <SortTh label="Name" sortKey="name" current={sort} onSort={toggleSort} />
+              <SortTh label="Status" sortKey="status" current={sort} onSort={toggleSort} />
               <SortTh label="Events" sortKey="events" current={sort} onSort={toggleSort} />
               <SortTh label="Next Event" sortKey="next" current={sort} onSort={toggleSort} />
               <SortTh label="Start" sortKey="start" current={sort} onSort={toggleSort} />
@@ -188,7 +232,10 @@ export default function ChampionshipsView() {
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map(({ championship: c, eventCount, startDate, endDate, nextEvent }) => (
+            {sortedRows.map(({ championship: c, eventCount, startDate, endDate, nextEvent, status }) => {
+              const statusLabel: Record<ChampStatus, string> = { in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
+              const statusBadge: Record<ChampStatus, string> = { in_progress: 'running', not_started: 'queued', completed: 'finished' };
+              return (
               <tr key={String(c.id)}>
                 <td><span className="color-dot" style={{ background: c.color }} /></td>
                 <td>
@@ -196,6 +243,7 @@ export default function ChampionshipsView() {
                     {c.name}
                   </Link>
                 </td>
+                <td><span className={`badge ${statusBadge[status]}`}>{statusLabel[status]}</span></td>
                 <td>{eventCount}</td>
                 <td>
                   {nextEvent ? (
@@ -210,7 +258,8 @@ export default function ChampionshipsView() {
                 <td>{startDate}</td>
                 <td>{endDate}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}
