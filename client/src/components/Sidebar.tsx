@@ -6,16 +6,15 @@ import { useAuth } from '../auth';
 import type { Event, Organization, PinnedEvent } from '../module_bindings/types';
 
 export default function Sidebar({ className = '' }: { className?: string }) {
-  const { user, isAuthenticated, canManageOrg } = useAuth();
+  const { user, isAuthenticated, canManageOrg, canManageOrgEvents } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
   const [pinnedEvents] = useTable(tables.pinned_event);
 
   const togglePin = useReducer(reducers.togglePinEvent);
 
-  // Orgs the user can manage (owner or admin/manager)
   const managedOrgs = isAuthenticated
-    ? orgs.filter((o: Organization) => canManageOrg(o.id))
+    ? orgs.filter((o: Organization) => canManageOrgEvents(o.id))
     : [];
 
   // User's pinned event IDs
@@ -93,12 +92,14 @@ export default function Sidebar({ className = '' }: { className?: string }) {
               >
                 Racers
               </NavLink>
-              <NavLink
-                to={`/org/${o.id}/members`}
-                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-              >
-                Members
-              </NavLink>
+              {canManageOrg(o.id) && (
+                <NavLink
+                  to={`/org/${o.id}/members`}
+                  className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+                >
+                  Members
+                </NavLink>
+              )}
             </div>
           ))}
         </div>
