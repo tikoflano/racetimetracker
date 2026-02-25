@@ -19,6 +19,7 @@ import VenueDetailView from './views/VenueDetailView';
 import EventManageView from './views/EventManageView';
 import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
+import TimekeepView from './views/TimekeepView';
 import DevView from './views/DevView';
 import type { Organization } from './module_bindings/types';
 
@@ -183,6 +184,7 @@ export default function App() {
                 <Route path="/racers" element={<RacersView />} />
                 <Route path="/venues" element={<VenuesView />} />
                 <Route path="/venue/:venueId" element={<VenueDetailView />} />
+                <Route path="/timekeep" element={<TimekeepView />} />
                 <Route path="/register/:token" element={<RegisterView />} />
                 <Route path="/register/:token/qr" element={<QRCodeView />} />
                 <Route path="/dev" element={<DevView />} />

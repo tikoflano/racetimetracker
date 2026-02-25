@@ -262,6 +262,17 @@ const spacetimedb = schema({
       sort_order: t.u32(),
     }
   ),
+
+  // position: 'start' | 'end' | 'both'
+  timekeeper_assignment: table(
+    { public: true },
+    {
+      id: t.u64().primaryKey().autoInc(),
+      event_track_id: t.u64().index('btree'),
+      user_id: t.u64().index('btree'),
+      position: t.string(),
+    }
+  ),
 });
 
 export default spacetimedb;
@@ -1439,6 +1450,50 @@ export const stop_impersonation = spacetimedb.reducer(
   }
 );
 
+// ─── Timekeeper assignments (event organizer+) ─────────────────────────────
+
+export const assign_timekeeper = spacetimedb.reducer(
+  { event_track_id: t.u64(), user_id: t.u64(), position: t.string() },
+  (ctx, args) => {
+    const eventId = getEventIdFromEventTrack(ctx, args.event_track_id);
+    requireEventOrganizer(ctx, eventId);
+    if (args.position !== 'start' && args.position !== 'end' && args.position !== 'both') {
+      throw new SenderError('Position must be start, end, or both');
+    }
+    for (const a of ctx.db.timekeeper_assignment.iter()) {
+      if (a.event_track_id === args.event_track_id && a.user_id === args.user_id) {
+        throw new SenderError('User already assigned to this track');
+      }
+    }
+    ctx.db.timekeeper_assignment.insert({ id: 0n, event_track_id: args.event_track_id, user_id: args.user_id, position: args.position });
+  }
+);
+
+export const update_timekeeper_assignment = spacetimedb.reducer(
+  { assignment_id: t.u64(), position: t.string() },
+  (ctx, args) => {
+    const assignment = ctx.db.timekeeper_assignment.id.find(args.assignment_id);
+    if (!assignment) throw new SenderError('Assignment not found');
+    const eventId = getEventIdFromEventTrack(ctx, assignment.event_track_id);
+    requireEventOrganizer(ctx, eventId);
+    if (args.position !== 'start' && args.position !== 'end' && args.position !== 'both') {
+      throw new SenderError('Position must be start, end, or both');
+    }
+    ctx.db.timekeeper_assignment.id.update({ ...assignment, position: args.position });
+  }
+);
+
+export const remove_timekeeper_assignment = spacetimedb.reducer(
+  { assignment_id: t.u64() },
+  (ctx, args) => {
+    const assignment = ctx.db.timekeeper_assignment.id.find(args.assignment_id);
+    if (!assignment) throw new SenderError('Assignment not found');
+    const eventId = getEventIdFromEventTrack(ctx, assignment.event_track_id);
+    requireEventOrganizer(ctx, eventId);
+    ctx.db.timekeeper_assignment.id.delete(assignment.id);
+  }
+);
+
 // ─── Timekeeping (timekeeper+) ──────────────────────────────────────────────
 
 // Validates a client-supplied timestamp: must be within 10s of server time.
@@ -1733,6 +1788,11 @@ export const seed_demo_data = spacetimedb.reducer(
       if (!alreadyMember) {
         ctx.db.org_member.insert({ id: 0n, org_id: org.id, user_id: userId, role: p.role });
       }
+      // Assign timekeeper to R4 tracks
+      if (p.role === 'timekeeper') {
+        ctx.db.timekeeper_assignment.insert({ id: 0n, event_track_id: etR4_1!.id, user_id: userId, position: 'start' });
+        ctx.db.timekeeper_assignment.insert({ id: 0n, event_track_id: etR4_2.id, user_id: userId, position: 'end' });
+      }
     }
   }
 );
@@ -1743,6 +1803,7 @@ export const wipe_all_data = spacetimedb.reducer((ctx) => {
   const tables = [
     ctx.db.run, ctx.db.event_track_schedule, ctx.db.category_track,
     ctx.db.event_category, ctx.db.event_rider, ctx.db.event_track,
+    ctx.db.timekeeper_assignment,
     ctx.db.event, ctx.db.championship, ctx.db.track_variation,
     ctx.db.track, ctx.db.venue, ctx.db.rider, ctx.db.registration_token,
     ctx.db.pinned_event, ctx.db.event_member, ctx.db.org_member,
