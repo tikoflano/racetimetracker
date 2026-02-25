@@ -1,23 +1,28 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import type { Event, Organization, PinnedEvent } from '../module_bindings/types';
+import Modal from './Modal';
+import type { Event, Organization, PinnedEvent, OrgMember } from '../module_bindings/types';
 
-export default function Sidebar({ className = '' }: { className?: string }) {
-  const { user, isAuthenticated, canManageOrg, canManageOrgEvents } = useAuth();
+interface SidebarProps {
+  className?: string;
+  activeOrg: Organization | null;
+  userOrgs: readonly Organization[];
+  onSwitchOrg: (orgId: bigint) => void;
+}
+
+export default function Sidebar({ className = '', activeOrg, userOrgs, onSwitchOrg }: SidebarProps) {
+  const { user, isAuthenticated, canManageOrg, getOrgRole, isOrgOwner } = useAuth();
   const [events] = useTable(tables.event);
-  const [orgs] = useTable(tables.organization);
   const [pinnedEvents] = useTable(tables.pinned_event);
+  const [orgMembers] = useTable(tables.org_member);
 
   const togglePin = useReducer(reducers.togglePinEvent);
 
-  const managedOrgs = isAuthenticated
-    ? orgs.filter((o: Organization) => canManageOrgEvents(o.id))
-    : [];
+  const [switchModalOpen, setSwitchModalOpen] = useState(false);
 
-  // User's pinned event IDs
   const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(
@@ -25,10 +30,11 @@ export default function Sidebar({ className = '' }: { className?: string }) {
     );
   }, [user, pinnedEvents]);
 
-  // Pinned events resolved to full Event objects
   const pinnedList = useMemo(() => {
     return events.filter((e: Event) => pinnedEventIds.has(e.id));
   }, [events, pinnedEventIds]);
+
+  const hasMultipleOrgs = userOrgs.length > 1;
 
   return (
     <nav className={`sidebar ${className}`.trim()}>
@@ -68,43 +74,88 @@ export default function Sidebar({ className = '' }: { className?: string }) {
         </div>
       )}
 
-      {managedOrgs.length > 0 && (
+      {activeOrg && (
         <div className="sidebar-section">
           <div className="sidebar-label">Manage</div>
-          {managedOrgs.map((o: Organization) => (
-            <div key={String(o.id)}>
-              <div className="sidebar-org-name">{o.name}</div>
-              <NavLink
-                to={`/org/${o.id}/championships`}
-                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-              >
-                Championships
-              </NavLink>
-              <NavLink
-                to={`/org/${o.id}/venues`}
-                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-              >
-                Venues
-              </NavLink>
-              <NavLink
-                to={`/org/${o.id}/racers`}
-                className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-              >
-                Racers
-              </NavLink>
-              {canManageOrg(o.id) && (
-                <NavLink
-                  to={`/org/${o.id}/members`}
-                  className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-                >
-                  Members
-                </NavLink>
-              )}
-            </div>
-          ))}
+          <NavLink
+            to={`/org/${activeOrg.id}/championships`}
+            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+          >
+            Championships
+          </NavLink>
+          <NavLink
+            to={`/org/${activeOrg.id}/venues`}
+            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+          >
+            Venues
+          </NavLink>
+          <NavLink
+            to={`/org/${activeOrg.id}/racers`}
+            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+          >
+            Racers
+          </NavLink>
+          {canManageOrg(activeOrg.id) && (
+            <NavLink
+              to={`/org/${activeOrg.id}/members`}
+              className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
+            >
+              Members
+            </NavLink>
+          )}
         </div>
       )}
 
+      {hasMultipleOrgs && (
+        <div className="sidebar-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+          <button
+            className="ghost small"
+            style={{ width: '100%', textAlign: 'left', fontSize: '0.8rem' }}
+            onClick={() => setSwitchModalOpen(true)}
+          >
+            Switch Organization
+          </button>
+        </div>
+      )}
+
+      <Modal open={switchModalOpen} onClose={() => setSwitchModalOpen(false)} title="Switch Organization">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {userOrgs.map((o: Organization) => {
+            const isActive = activeOrg?.id === o.id;
+            const role = isOrgOwner(o.id) ? 'owner' : getOrgRole(o.id);
+            return (
+              <button
+                key={String(o.id)}
+                onClick={() => { onSwitchOrg(o.id); setSwitchModalOpen(false); }}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  background: isActive ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'var(--surface)',
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  textAlign: 'left',
+                }}
+              >
+                <span style={{ fontWeight: isActive ? 600 : 400 }}>{o.name}</span>
+                {role && (
+                  <span className="badge" style={{
+                    fontSize: '0.7rem',
+                    background: role === 'owner' || role === 'admin' ? 'var(--green-bg)' : undefined,
+                    color: role === 'owner' || role === 'admin' ? 'var(--green)' : undefined,
+                  }}>
+                    {role}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
     </nav>
   );
 }

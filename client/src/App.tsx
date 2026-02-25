@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from './module_bindings';
@@ -20,9 +20,11 @@ import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
 import type { Organization } from './module_bindings/types';
 
+const ACTIVE_ORG_KEY = 'active_org_id';
+
 export default function App() {
   const connState = useSpacetimeDB();
-  const { user, realUser, isAuthenticated, isImpersonating, logout } = useAuth();
+  const { user, realUser, isAuthenticated, isImpersonating, logout, canManageOrgEvents } = useAuth();
   const [events] = useTable(tables.event);
   const [orgs] = useTable(tables.organization);
   const stopImpersonation = useReducer(reducers.stopImpersonation);
@@ -40,6 +42,34 @@ export default function App() {
     const t = setTimeout(() => setTimedOut(true), 8000);
     return () => clearTimeout(t);
   }, []);
+
+  // Active org state (persisted to localStorage)
+  const [activeOrgId, setActiveOrgIdRaw] = useState<bigint | null>(() => {
+    const stored = localStorage.getItem(ACTIVE_ORG_KEY);
+    return stored ? BigInt(stored) : null;
+  });
+
+  const setActiveOrgId = useCallback((id: bigint) => {
+    localStorage.setItem(ACTIVE_ORG_KEY, String(id));
+    setActiveOrgIdRaw(id);
+  }, []);
+
+  const userOrgs = useMemo(() => {
+    if (!isAuthenticated) return [];
+    return orgs.filter((o: Organization) => canManageOrgEvents(o.id));
+  }, [isAuthenticated, orgs, canManageOrgEvents]);
+
+  // Auto-select org if none selected or current is invalid
+  useEffect(() => {
+    if (userOrgs.length === 0) return;
+    if (activeOrgId && userOrgs.some((o: Organization) => o.id === activeOrgId)) return;
+    setActiveOrgId(userOrgs[0].id);
+  }, [userOrgs, activeOrgId, setActiveOrgId]);
+
+  const activeOrg = useMemo(() => {
+    if (!activeOrgId) return null;
+    return userOrgs.find((o: Organization) => o.id === activeOrgId) ?? null;
+  }, [activeOrgId, userOrgs]);
 
   const isConnected = connState.isActive;
   const hasEvents = events.length > 0;
@@ -83,6 +113,12 @@ export default function App() {
             </button>
           )}
           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
+          {activeOrg && (
+            <>
+              <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>/</span>
+              <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>{activeOrg.name}</span>
+            </>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated ? (
@@ -130,7 +166,12 @@ export default function App() {
           {isAuthenticated && (
             <>
               {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-              <Sidebar className={sidebarOpen ? 'open' : ''} />
+              <Sidebar
+                className={sidebarOpen ? 'open' : ''}
+                activeOrg={activeOrg}
+                userOrgs={userOrgs}
+                onSwitchOrg={setActiveOrgId}
+              />
             </>
           )}
           <main className="app-main">
