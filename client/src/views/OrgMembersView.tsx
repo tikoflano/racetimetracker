@@ -305,12 +305,13 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
   }, [open, onClose]);
 
   const itemStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+    display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+    gap: 10, width: '100%',
     padding: '9px 14px', border: 'none', background: 'none',
     color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
   };
   const iconStyle: React.CSSProperties = {
-    width: 20, textAlign: 'center', flexShrink: 0, fontSize: '0.95rem',
+    width: 16, textAlign: 'center', flexShrink: 0,
   };
 
   return (
