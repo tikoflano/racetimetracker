@@ -50,14 +50,13 @@ spacetime generate --lang typescript --out-dir client/src/module_bindings --modu
 
 ### Local development
 
-Start a local SpacetimeDB instance and run the full dev stack:
+Start the full dev stack with a single command:
 
 ```bash
-spacetime start &
-npm run dev:spacetime
+npm start
 ```
 
-This builds the module, publishes to the local server, generates client bindings, and starts the Vite dev server — all with file watching for auto-rebuild.
+This starts the local SpacetimeDB server, publishes the module, and launches `spacetime dev` which watches for file changes and auto-rebuilds/republishes/regenerates client bindings.
 
 To seed demo data:
 
@@ -73,6 +72,16 @@ VITE_STDB_DATABASE=racetimetracker-dev
 ```
 
 The Vite proxy forwards `/v1/*` (including WebSocket) to `localhost:3000`.
+
+### Reset
+
+To kill all SpacetimeDB processes, clear all local database data, and log out:
+
+```bash
+npm run reset
+```
+
+This is useful when you want a clean slate — e.g. after schema changes that conflict with existing data, or to start fresh with a new identity.
 
 ### Cloud development
 
