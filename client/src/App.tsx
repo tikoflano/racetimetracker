@@ -39,6 +39,7 @@ export default function App() {
   const [switchOrgOpen, setSwitchOrgOpen] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const isRegistrationPage = location.pathname.startsWith('/register');
 
   // Close sidebar on navigation (mobile)
   useEffect(() => {
@@ -110,7 +111,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {isAuthenticated && (
+      {isAuthenticated && !isRegistrationPage && (
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
@@ -237,7 +238,7 @@ export default function App() {
         </div>
       ) : (
         <div className="app-body">
-          {isAuthenticated && (
+          {isAuthenticated && !isRegistrationPage && (
             <>
               {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
               <Sidebar
@@ -268,8 +269,8 @@ export default function App() {
                 <Route path="/locations" element={<LocationsView />} />
                 <Route path="/location/:venueId" element={<LocationDetailView />} />
                 <Route path="/timekeep" element={<TimekeepView />} />
-                <Route path="/register/:token" element={<RegisterView />} />
-                <Route path="/register/:token/qr" element={<QRCodeView />} />
+                <Route path="/register/:orgSlug" element={<RegisterView />} />
+                <Route path="/register/:orgSlug/qr" element={<QRCodeView />} />
                 <Route path="/dev" element={<DevView />} />
                 <Route path="*" element={isAuthenticated ? <NotFound /> : <Navigate to="/" replace />} />
               </Routes>

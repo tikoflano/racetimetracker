@@ -28,6 +28,7 @@ const spacetimedb = schema({
       name: t.string().unique(),
       slug: t.string().unique(),
       owner_user_id: t.u64().index('btree'),
+      registration_enabled: t.bool().default(true),
     }
   ),
 
@@ -126,17 +127,6 @@ const spacetimedb = schema({
       email: t.string(),
       phone: t.string(),
       date_of_birth: t.string(),
-    }
-  ),
-
-  registration_token: table(
-    { public: true },
-    {
-      id: t.u64().primaryKey().autoInc(),
-      org_id: t.u64().index('btree'),
-      token: t.string().unique(),
-      created_by_user_id: t.u64(),
-      is_active: t.bool(),
     }
   ),
 
@@ -513,7 +503,7 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
   if (!hasOrg) {
     const displayName = name || email.split('@')[0] || 'User';
     const orgName = generateUniqueOrgName(ctx, `${displayName}'s Organization`);
-    ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: userId });
+    ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: userId, registration_enabled: true });
   }
 });
 
@@ -523,7 +513,7 @@ export const create_organization = spacetimedb.reducer(
   { name: t.string() },
   (ctx, args) => {
     const user = requireUser(ctx);
-    const org = ctx.db.organization.insert({ id: 0n, name: args.name, slug: uniqueOrgSlug(ctx, slugify(args.name)), owner_user_id: user.id });
+    const org = ctx.db.organization.insert({ id: 0n, name: args.name, slug: uniqueOrgSlug(ctx, slugify(args.name)), owner_user_id: user.id, registration_enabled: true });
     // Creator becomes admin
     ctx.db.org_member.insert({ id: 0n, org_id: org.id, user_id: user.id, role: 'admin' });
   }
@@ -689,7 +679,6 @@ export const leave_organization = spacetimedb.reducer(
       ctx.db.venue.id.delete(v.id);
     }
     for (const r of ctx.db.rider.iter()) { if (r.org_id === args.org_id) ctx.db.rider.id.delete(r.id); }
-    for (const rt of ctx.db.registration_token.iter()) { if (rt.org_id === args.org_id) ctx.db.registration_token.id.delete(rt.id); }
     for (const m of ctx.db.org_member.iter()) { if (m.org_id === args.org_id) ctx.db.org_member.id.delete(m.id); }
     ctx.db.organization.id.delete(args.org_id);
   }
@@ -1062,46 +1051,28 @@ export const delete_rider = spacetimedb.reducer(
 
 // ─── Registration tokens ────────────────────────────────────────────────────
 
-// Simple token generator using timestamp + identity hash
-function generateToken(ctx: any): string {
-  const ts = Date.now().toString(36);
-  const id = ctx.sender.toHexString().slice(0, 8);
-  // Combine parts for a short unique token
-  let counter = 0n;
-  for (const _ of ctx.db.registration_token.iter()) counter++;
-  return `${ts}${id}${counter.toString(36)}`;
-}
-
-export const create_registration_token = spacetimedb.reducer(
-  { org_id: t.u64() },
+// Org event manager+ can enable/disable registration for their org
+export const set_registration_enabled = spacetimedb.reducer(
+  { org_id: t.u64(), enabled: t.bool() },
   (ctx, args) => {
-    const user = requireOrgEventManager(ctx, args.org_id);
-    const token = generateToken(ctx);
-    ctx.db.registration_token.insert({ id: 0n, org_id: args.org_id, token, created_by_user_id: user.id, is_active: true });
+    requireOrgEventManager(ctx, args.org_id);
+    const org = ctx.db.organization.id.find(args.org_id);
+    if (!org) throw new SenderError('Organization not found');
+    ctx.db.organization.id.update({ ...org, registration_enabled: args.enabled });
   }
 );
 
-export const deactivate_registration_token = spacetimedb.reducer(
-  { token_id: t.u64() },
+// Public reducer — anyone with a valid org slug can register as a rider (if registration is enabled)
+export const register_rider_with_org_slug = spacetimedb.reducer(
+  { org_slug: t.string(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), date_of_birth: t.string() },
   (ctx, args) => {
-    const tok = ctx.db.registration_token.id.find(args.token_id);
-    if (!tok) throw new SenderError('Token not found');
-    requireOrgEventManager(ctx, tok.org_id);
-    ctx.db.registration_token.id.update({ ...tok, is_active: false });
-  }
-);
-
-// Public reducer — anyone with a valid token can register as a rider
-export const register_rider_with_token = spacetimedb.reducer(
-  { token: t.string(), first_name: t.string(), last_name: t.string(), email: t.string(), phone: t.string(), date_of_birth: t.string() },
-  (ctx, args) => {
-    // Find active token
-    let tok = null;
-    for (const t of ctx.db.registration_token.iter()) {
-      if (t.token === args.token && t.is_active) { tok = t; break; }
+    let org = null;
+    for (const o of ctx.db.organization.iter()) {
+      if (o.slug === args.org_slug) { org = o; break; }
     }
-    if (!tok) throw new SenderError('Invalid or expired registration link');
-    ctx.db.rider.insert({ id: 0n, org_id: tok.org_id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, date_of_birth: args.date_of_birth });
+    if (!org) throw new SenderError('Organization not found');
+    if (org.registration_enabled === false) throw new SenderError('Registration is disabled for this organization');
+    ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: args.first_name, last_name: args.last_name, email: args.email, phone: args.phone, date_of_birth: args.date_of_birth });
   }
 );
 
@@ -1771,7 +1742,7 @@ export const seed_demo_data = spacetimedb.reducer(
     }
     if (!org) {
       const orgName = generateUniqueOrgName(ctx, 'Demo Racing Org');
-      org = ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: ownerId });
+      org = ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: ownerId, registration_enabled: true });
     }
 
     // Championships
@@ -1825,19 +1796,26 @@ export const seed_demo_data = spacetimedb.reducer(
     ctx.db.event_track.insert({ id: 0n, event_id: evt7.id, track_variation_id: tv1.id, sort_order: 1 });
     ctx.db.event_track.insert({ id: 0n, event_id: evtUpcoming.id, track_variation_id: tv1.id, sort_order: 1 });
 
-    // Riders
-    const ridersData = [
-      { first_name: 'Alex', last_name: 'Morgan', email: 'alex@example.com', phone: '+1-555-0101', date_of_birth: '1997-03-14' },
-      { first_name: 'Sam', last_name: 'Rivera', email: 'sam@example.com', phone: '+1-555-0102', date_of_birth: '2001-07-22' },
-      { first_name: 'Jordan', last_name: 'Chen', email: 'jordan@example.com', phone: '+1-555-0103', date_of_birth: '1994-11-05' },
-      { first_name: 'Casey', last_name: 'Brooks', email: 'casey@example.com', phone: '+1-555-0104', date_of_birth: '1999-01-30' },
-      { first_name: 'Taylor', last_name: 'Kim', email: 'taylor@example.com', phone: '+1-555-0105', date_of_birth: '1996-08-12' },
-      { first_name: 'Riley', last_name: 'Santos', email: 'riley@example.com', phone: '+1-555-0106', date_of_birth: '2000-02-28' },
-    ];
-
-    const riders = ridersData.map((r) => {
-      return ctx.db.rider.insert({ id: 0n, org_id: org.id, first_name: r.first_name, last_name: r.last_name, email: r.email, phone: r.phone, date_of_birth: r.date_of_birth });
-    });
+    // Riders — 100 total for pagination demo
+    const firstNames = ['Alex', 'Sam', 'Jordan', 'Casey', 'Taylor', 'Riley', 'Morgan', 'Quinn', 'Avery', 'Skyler', 'Jamie', 'Drew', 'Cameron', 'Reese', 'Parker', 'Blake', 'Finley', 'Emery', 'Hayden', 'Kendall'];
+    const lastNames = ['Morgan', 'Rivera', 'Chen', 'Brooks', 'Kim', 'Santos', 'Lee', 'Nguyen', 'Patel', 'Johnson', 'Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Anderson', 'Thomas', 'Jackson', 'White'];
+    const riders: { id: bigint }[] = [];
+    for (let i = 0; i < 100; i++) {
+      const fn = firstNames[i % firstNames.length];
+      const ln = lastNames[Math.floor(i / firstNames.length) % lastNames.length];
+      const year = 1985 + (i % 25);
+      const month = String((i % 12) + 1).padStart(2, '0');
+      const day = String((i % 28) + 1).padStart(2, '0');
+      riders.push(ctx.db.rider.insert({
+        id: 0n,
+        org_id: org.id,
+        first_name: fn,
+        last_name: ln,
+        email: `rider${i + 1}@example.com`,
+        phone: `+1-555-${String(i + 1001).slice(-4)}`,
+        date_of_birth: `${year}-${month}-${day}`,
+      }));
+    }
 
     // Register first 4 riders for event 1
     for (let i = 0; i < 4; i++) {
@@ -1933,7 +1911,7 @@ export const wipe_all_data = spacetimedb.reducer((ctx) => {
     ctx.db.event_category, ctx.db.event_rider, ctx.db.event_track,
     ctx.db.timekeeper_assignment,
     ctx.db.event, ctx.db.championship, ctx.db.track_variation,
-    ctx.db.track, ctx.db.venue, ctx.db.rider, ctx.db.registration_token,
+    ctx.db.track, ctx.db.venue, ctx.db.rider,
     ctx.db.pinned_event, ctx.db.event_member, ctx.db.org_member,
     ctx.db.image, ctx.db.impersonation, ctx.db.impersonation_status,
     ctx.db.server_time_response, ctx.db.organization, ctx.db.user,

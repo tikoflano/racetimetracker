@@ -2,8 +2,8 @@ import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function QRCodeView() {
-  const { token } = useParams<{ token: string }>();
-  const url = `${window.location.origin}/register/${token}`;
+  const { orgSlug } = useParams<{ orgSlug: string }>();
+  const url = `${window.location.origin}/register/${orgSlug}`;
 
   return (
     <div className="register-page">

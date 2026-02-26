@@ -142,6 +142,23 @@ Implementation pattern:
 - Show validation/error messages inside the modal body when the action fails
 - See the invite member flow in `OrgMembersView.tsx` as the reference implementation.
 
+### Table pagination
+
+Use pagination for tables that expect over 10 entries. This reduces DOM nodes and improves performance.
+
+Implementation pattern:
+- **State:** `page` (0-based), `pageSize` (default 10, persisted in localStorage)
+- **Options:** `PAGE_SIZE_OPTIONS = [10, 20, 50, 100]`
+- **localStorage key:** `racetimetracker-<entity>-page-size` (e.g. `racetimetracker-riders-page-size`)
+- **Initial pageSize:** Read from localStorage on mount; validate against options; fallback to 10
+- **Persist on change:** When user changes the per-page select, call `localStorage.setItem(key, String(n))`
+- **Derived:** `totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))`, `paginatedRows = filteredRows.slice(page * pageSize, (page + 1) * pageSize)`
+- **Reset page:** `useEffect` that calls `setPage(0)` when filters (search, age, etc.) or `pageSize` change
+- **UI:** Previous/Next buttons, "Page X of Y (N items)" text, per-page `<select>` with label "Per page", all in a flex row with `justifyContent: 'flex-end'` (aligned right below the table)
+- **Visibility:** Show pagination controls only when `filteredRows.length > PAGE_SIZE_OPTIONS[0]` (i.e. more than the smallest option)
+- **Disabled states:** Previous disabled when `page === 0`, Next disabled when `page >= totalPages - 1`
+- See `RidersView.tsx` as the reference implementation.
+
 ## Common Tasks
 
 **Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.
