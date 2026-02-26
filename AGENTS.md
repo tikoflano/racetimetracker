@@ -217,7 +217,7 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 
 ### Long-running processes
 
-Always use **tmux** for long-running or persistent commands (`npm start`, `trapdoor`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
+Always use **tmux** for long-running or persistent commands (`npm start`, `cloudflared`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
 
 ```bash
 # Start the dev stack in a named tmux session
@@ -230,17 +230,16 @@ tmux capture-pane -t dev -p  # print recent output without attaching
 
 Do **not** run long-lived processes with `&` or as foreground commands — always prefer tmux.
 
-### Tunneling with Trapdoor
+### Tunneling with Cloudflare Tunnels
 
-Use **trapdoor** (not ngrok) for exposing local ports. It provides free unlimited tunneling with a custom subdomain and no signup required. Installed at `~/.local/bin/trapdoor`.
+Use **cloudflared** for exposing local ports. Installed at `~/.local/bin/cloudflared`. No signup required for quick tunnels.
 
 ```bash
-# Expose the Vite dev server with a custom subdomain
-tmux new-session -d -s tunnel 'trapdoor 5173 racetimetracker'
-# → https://racetimetracker.trapdoor.sh
+# Expose the Vite dev server via a quick tunnel
+tmux new-session -d -s tunnel 'cloudflared tunnel --url http://localhost:5173'
 ```
 
-The subdomain is persistent — the same name gives the same URL each time.
+Check the tmux output for the generated `https://*.trycloudflare.com` URL. For persistent custom domains, configure a named tunnel via the Cloudflare dashboard.
 
 ### Running locally
 
