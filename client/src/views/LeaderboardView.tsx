@@ -7,6 +7,7 @@ import { formatElapsed } from '../utils';
 
 const PAUSE_AT_TOP_SECONDS = 3;
 const PAUSE_AT_BOTTOM_SECONDS = 2;
+const PAUSE_INACTIVITY_SECONDS = 3;
 const SCROLL_SPEED_PX_PER_SEC = 80;
 
 export default function LeaderboardView() {
@@ -162,20 +163,25 @@ export default function LeaderboardView() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const currentCategory = leaderboardByCategory[categoryIndex];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const cancelledRef = useRef(false);
+  const isProgrammaticScrollRef = useRef(false);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Auto-scroll: 3s pause at top → scroll to bottom (variable time) → 2s pause at bottom → next category
+  // User scroll cancels auto-scroll; switching categories restarts it
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el || !currentCategory || currentCategory.entries.length === 0) return;
     if (leaderboardByCategory.length === 0) return;
 
+    isProgrammaticScrollRef.current = true;
     el.scrollTop = 0;
     setScrollProgress(0);
-    let cancelled = false;
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    cancelledRef.current = false;
+    timeoutsRef.current = [];
 
     const goToNext = () => {
-      if (cancelled) return;
+      if (cancelledRef.current) return;
       if (leaderboardByCategory.length > 1) {
         setCategoryIndex(i => (i + 1) % leaderboardByCategory.length);
       } else {
@@ -183,14 +189,82 @@ export default function LeaderboardView() {
       }
     };
 
+    const cancelAutoScroll = () => {
+      cancelledRef.current = true;
+      timeoutsRef.current.forEach(t => clearTimeout(t));
+      timeoutsRef.current = [];
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      if (maxScroll > 0) {
+        setScrollProgress((el.scrollTop / maxScroll) * 100);
+      }
+    };
+
+    const scheduleResume = () => {
+      const t = setTimeout(() => {
+        cancelledRef.current = false;
+        const maxScroll = el.scrollHeight - el.clientHeight;
+        if (maxScroll <= 0) {
+          setScrollProgress(100);
+          const t2 = setTimeout(goToNext, PAUSE_AT_BOTTOM_SECONDS * 1000);
+          timeoutsRef.current.push(t2);
+          return;
+        }
+        const startScroll = el.scrollTop;
+        const distance = maxScroll - startScroll;
+        if (distance <= 0) {
+          setScrollProgress(100);
+          const t2 = setTimeout(goToNext, PAUSE_AT_BOTTOM_SECONDS * 1000);
+          timeoutsRef.current.push(t2);
+          return;
+        }
+        const scrollDurationMs = (distance / SCROLL_SPEED_PX_PER_SEC) * 1000;
+        const startTime = performance.now();
+        const animate = (now: number) => {
+          if (cancelledRef.current) return;
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / scrollDurationMs);
+          isProgrammaticScrollRef.current = true;
+          el.scrollTop = startScroll + distance * progress;
+          setScrollProgress(((startScroll + distance * progress) / maxScroll) * 100);
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            setScrollProgress(100);
+            const t2 = setTimeout(goToNext, PAUSE_AT_BOTTOM_SECONDS * 1000);
+            timeoutsRef.current.push(t2);
+          }
+        };
+        requestAnimationFrame(animate);
+      }, PAUSE_INACTIVITY_SECONDS * 1000);
+      timeoutsRef.current.push(t);
+    };
+
+    const onScroll = () => {
+      if (isProgrammaticScrollRef.current) {
+        isProgrammaticScrollRef.current = false;
+        return;
+      }
+      cancelAutoScroll();
+      scheduleResume();
+    };
+
+    const onUserScrollIntent = () => {
+      cancelAutoScroll();
+      scheduleResume();
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    el.addEventListener('wheel', onUserScrollIntent, { passive: true });
+    el.addEventListener('touchstart', onUserScrollIntent, { passive: true });
+
     // Phase 1: pause 3s at top
     const t1 = setTimeout(() => {
-      if (cancelled) return;
+      if (cancelledRef.current) return;
       const maxScroll = el.scrollHeight - el.clientHeight;
       if (maxScroll <= 0) {
         setScrollProgress(100);
         const t = setTimeout(goToNext, PAUSE_AT_BOTTOM_SECONDS * 1000);
-        timeouts.push(t);
+        timeoutsRef.current.push(t);
         return;
       }
 
@@ -199,9 +273,10 @@ export default function LeaderboardView() {
       const startTime = performance.now();
 
       const animate = (now: number) => {
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         const elapsed = now - startTime;
         const progress = Math.min(1, elapsed / scrollDurationMs);
+        isProgrammaticScrollRef.current = true;
         el.scrollTop = maxScroll * progress;
         setScrollProgress(progress * 100);
         if (progress < 1) {
@@ -209,16 +284,19 @@ export default function LeaderboardView() {
         } else {
           setScrollProgress(100);
           const t = setTimeout(goToNext, PAUSE_AT_BOTTOM_SECONDS * 1000);
-          timeouts.push(t);
+          timeoutsRef.current.push(t);
         }
       };
       requestAnimationFrame(animate);
     }, PAUSE_AT_TOP_SECONDS * 1000);
-    timeouts.push(t1);
+    timeoutsRef.current.push(t1);
 
     return () => {
-      cancelled = true;
-      timeouts.forEach(t => clearTimeout(t));
+      cancelledRef.current = true;
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', onUserScrollIntent);
+      el.removeEventListener('touchstart', onUserScrollIntent);
+      timeoutsRef.current.forEach(t => clearTimeout(t));
     };
   }, [categoryIndex, cycleKey, currentCategory, leaderboardByCategory.length]);
 
@@ -364,14 +442,26 @@ export default function LeaderboardView() {
             gap: 8,
           }}>
             {leaderboardByCategory.map((_, i) => (
-              <div
+              <button
                 key={i}
+                type="button"
+                onClick={() => setCategoryIndex(i)}
+                title={`View ${leaderboardByCategory[i].categoryName || 'results'}`}
                 style={{
-                  width: 10,
-                  height: 10,
+                  width: 12,
+                  height: 12,
+                  padding: 0,
+                  border: 'none',
                   borderRadius: '50%',
                   background: i === categoryIndex ? 'var(--accent)' : 'var(--border)',
                   opacity: i === categoryIndex ? 1 : 0.5,
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => {
+                  if (i !== categoryIndex) e.currentTarget.style.opacity = '0.8';
+                }}
+                onMouseLeave={e => {
+                  if (i !== categoryIndex) e.currentTarget.style.opacity = '0.5';
                 }}
               />
             ))}
