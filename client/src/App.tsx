@@ -110,17 +110,16 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {isAuthenticated && (
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {isAuthenticated && (
-            <button
-              className="ghost small menu-toggle"
-              onClick={() => setSidebarOpen(o => !o)}
-              aria-label="Toggle menu"
-            >
-              <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
-            </button>
-          )}
+          <button
+            className="ghost small menu-toggle"
+            onClick={() => setSidebarOpen(o => !o)}
+            aria-label="Toggle menu"
+          >
+            <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
+          </button>
           <span className="header-title" style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
           {activeOrg && (
             <>
@@ -171,6 +170,7 @@ export default function App() {
           ) : null}
         </div>
       </header>
+      )}
 
       {/* Switch org modal */}
       <Modal open={switchOrgOpen} onClose={() => setSwitchOrgOpen(false)} title="Switch Organization">
