@@ -111,6 +111,7 @@ Implementation pattern:
 - Each item: flex row with `justifyContent: 'flex-start'`, fixed-width icon span (16px), then label text
 - Destructive actions (delete, leave): `color: 'var(--red, #ef4444)'`
 - Close on outside click via `useRef` + `useEffect` mousedown listener
+- When one action is used very frequently, keep it as a visible button outside the dropdown (e.g. "Manage Event" in EventView). Secondary actions stay in the dropdown.
 - See `EventActionMenu` in `EventView.tsx` as the reference implementation.
 
 ## Common Tasks

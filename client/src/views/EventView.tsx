@@ -6,7 +6,7 @@ import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
 import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization } from '../module_bindings/types';
-import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical, faGear } from '../icons';
+import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical } from '../icons';
 import { formatElapsed } from '../utils';
 
 export default function EventView() {
@@ -219,9 +219,12 @@ export default function EventView() {
             onRename={() => { setEventMenuOpen(false); setNameValue(event.name); setNameError(''); setEditingName(true); }}
             onPin={() => { setEventMenuOpen(false); togglePin({ eventId: eid }); }}
             onShare={() => { setEventMenuOpen(false); setCopied(false); setShareOpen(true); }}
-            onManage={() => { setEventMenuOpen(false); }}
-            manageUrl={`/event/${event.slug}/manage`}
           />
+          {canEdit && (
+            <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              Manage Event
+            </Link>
+          )}
         </div>
       )}
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
@@ -351,7 +354,7 @@ export default function EventView() {
   );
 }
 
-function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, isPinned, hasPublicUrl, onRename, onPin, onShare, onManage, manageUrl }: {
+function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, isPinned, hasPublicUrl, onRename, onPin, onShare }: {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -362,8 +365,6 @@ function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, is
   onRename: () => void;
   onPin: () => void;
   onShare: () => void;
-  onManage: () => void;
-  manageUrl: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -419,14 +420,6 @@ function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, is
             >
               <span style={iconStyle}><FontAwesomeIcon icon={faLink} /></span><span>Share event</span>
             </button>
-          )}
-          {canEdit && (
-            <Link to={manageUrl} onClick={onManage} style={{ ...itemStyle, textDecoration: 'none' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-            >
-              <span style={iconStyle}><FontAwesomeIcon icon={faGear} /></span><span>Manage event</span>
-            </Link>
           )}
         </div>
       )}
