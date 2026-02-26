@@ -1,10 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
-import { FontAwesomeIcon, faPen, faThumbtack } from '../icons';
+import { FontAwesomeIcon, faPen, faThumbtack, faTrash } from '../icons';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
@@ -27,6 +27,7 @@ const STATUS_BADGE: Record<EventStatus, string> = { in_progress: 'running', not_
 
 export default function ChampionshipDetailView() {
   const { champId } = useParams<{ champId: string }>();
+  const navigate = useNavigate();
   const oid = useActiveOrg();
   const cid = BigInt(champId ?? '0');
   const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
@@ -38,6 +39,7 @@ export default function ChampionshipDetailView() {
   const [pinnedEvents] = useTable(tables.pinned_event);
 
   const updateChampionship = useReducer(reducers.updateChampionship);
+  const deleteChampionship = useReducer(reducers.deleteChampionship);
   const createEvent = useReducer(reducers.createEvent);
   const updateEvent = useReducer(reducers.updateEvent);
   const togglePin = useReducer(reducers.togglePinEvent);
@@ -242,6 +244,12 @@ export default function ChampionshipDetailView() {
               onClose={() => setMenuOpen(false)}
               items={[
                 { icon: faPen, label: 'Edit championship', onClick: () => { setMenuOpen(false); startEditing(); } },
+                { icon: faTrash, label: 'Delete championship', danger: true, onClick: () => {
+                  setMenuOpen(false);
+                  if (confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) {
+                    deleteChampionship({ championshipId: cid }).then(() => navigate('/championships'));
+                  }
+                }},
               ]}
             />
           </div>
