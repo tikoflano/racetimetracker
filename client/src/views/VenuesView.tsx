@@ -117,9 +117,10 @@ export default function VenuesView() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Description</th>
               <th>Tracks</th>
               <th>Location</th>
-              <th style={{ width: 60 }}></th>
+              <th style={{ width: 40 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -127,8 +128,8 @@ export default function VenuesView() {
               <tr key={String(v.id)}>
                 <td>
                   <Link to={`/venue/${v.id}`} className="table-link">{v.name}</Link>
-                  {v.description && <div className="muted small-text">{v.description}</div>}
                 </td>
+                <td className="muted small-text">{v.description || '—'}</td>
                 <td>{trackCounts.get(v.id) ?? 0}</td>
                 <td className="muted small-text">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</td>
                 <td>
