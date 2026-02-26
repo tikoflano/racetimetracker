@@ -1758,7 +1758,7 @@ export const seed_demo_data = spacetimedb.reducer(
     const champ2 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'Downhill Cup 2025', description: 'Gravity-focused downhill racing', color: '#ef4444' });
     const champ3 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'XC Marathon Series', description: 'Cross-country endurance events', color: '#22c55e' });
 
-    // Venues
+    // Locations
     const venue1 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', address: '1234 Mountain Rd, Blue Ridge, VA 24064' });
     const venue2 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Eagle Rock Resort', description: 'Steep downhill runs with jumps', address: '5678 Eagle Rock Dr, Hazleton, PA 18202' });
     const venue3 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Lakeside Trails', description: 'Rolling singletrack around the lake', address: '910 Lakeshore Blvd, Asheville, NC 28801' });

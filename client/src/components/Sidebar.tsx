@@ -89,7 +89,7 @@ export default function Sidebar({ className = '', activeOrg, collapsed, onToggle
             to="/venues"
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
           >
-            Venues
+            Locations
           </NavLink>
           <NavLink
             to="/racers"

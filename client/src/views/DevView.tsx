@@ -72,7 +72,7 @@ export default function DevView() {
         <div className="section-title">Reset &amp; Seed Demo Data</div>
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div className="muted small-text">Wipes all existing data, then creates sample championships, venues, events, riders, and org members. You will be logged out afterwards.</div>
+            <div className="muted small-text">Wipes all existing data, then creates sample championships, locations, events, riders, and org members. You will be logged out afterwards.</div>
           </div>
           <button className="primary" onClick={handleSeed} style={{ whiteSpace: 'nowrap' }}>Reset &amp; Seed</button>
         </div>

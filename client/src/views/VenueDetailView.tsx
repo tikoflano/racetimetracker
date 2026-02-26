@@ -171,7 +171,7 @@ export default function VenueDetailView() {
   if (!hasAccess) return <div className="empty">Access denied.</div>;
   if (!venue) {
     if (venues.length === 0) return null;
-    return <div className="empty">Venue not found.</div>;
+    return <div className="empty">Location not found.</div>;
   }
 
   // Venue edit
@@ -258,7 +258,7 @@ export default function VenueDetailView() {
   return (
     <div>
       <div className="venue-header">
-        <Link to="/venues" className="back-link">&larr; Venues</Link>
+        <Link to="/venues" className="back-link">&larr; Locations</Link>
 
         {/* Venue header */}
         {editingVenue ? (
@@ -285,10 +285,10 @@ export default function VenueDetailView() {
                 onToggle={() => setMenuOpen(!menuOpen)}
                 onClose={() => setMenuOpen(false)}
                 items={[
-                  { icon: faPen, label: 'Edit venue', onClick: () => { setMenuOpen(false); startEditVenue(); } },
-                  { icon: faTrash, label: 'Delete venue', danger: true, onClick: () => {
+                  { icon: faPen, label: 'Edit location', onClick: () => { setMenuOpen(false); startEditVenue(); } },
+                  { icon: faTrash, label: 'Delete location', danger: true, onClick: () => {
                     setMenuOpen(false);
-                    if (confirm('Delete this venue and all its tracks? This cannot be undone.')) {
+                    if (confirm('Delete this location and all its tracks? This cannot be undone.')) {
                       deleteVenue({ venueId: vid }).then(() => navigate('/venues'));
                     }
                   }},

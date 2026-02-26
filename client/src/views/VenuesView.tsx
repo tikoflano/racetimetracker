@@ -46,7 +46,7 @@ export default function VenuesView() {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;
   }
-  if (!hasAccess) return <div className="empty">You don't have access to manage venues.</div>;
+  if (!hasAccess) return <div className="empty">You don't have access to manage locations.</div>;
 
   const resetForm = () => {
     setForm({ name: '', description: '', address: '' });
@@ -61,7 +61,7 @@ export default function VenuesView() {
       await createVenue({ orgId: oid, name: form.name.trim(), description: form.description.trim(), address: form.address.trim() });
       resetForm();
     } catch (e: any) {
-      setError(e?.message || 'Failed to create venue');
+      setError(e?.message || 'Failed to create location');
     }
   };
 
@@ -70,25 +70,25 @@ export default function VenuesView() {
     try {
       await deleteVenue({ venueId: v.id });
     } catch (e: any) {
-      setError(e?.message || 'Failed to delete venue');
+      setError(e?.message || 'Failed to delete location');
     }
   };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1 style={{ marginBottom: 0 }}>Venues</h1>
+        <h1 style={{ marginBottom: 0 }}>Locations</h1>
         {!showForm && (
-          <button className="primary small" onClick={() => setShowForm(true)}>+ New Venue</button>
+          <button className="primary small" onClick={() => setShowForm(true)}>+ New Location</button>
         )}
       </div>
 
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>New Venue</div>
+          <div className="section-title" style={{ marginBottom: 8 }}>New Location</div>
           {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input type="text" placeholder="Venue name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && handleCreate()} autoFocus className="input" />
+            <input type="text" placeholder="Location name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && handleCreate()} autoFocus className="input" />
             <input type="text" placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="input" />
             <input type="text" placeholder="Address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="input" />
             <div style={{ display: 'flex', gap: 8 }}>
@@ -100,7 +100,7 @@ export default function VenuesView() {
       )}
 
       {orgVenues.length === 0 && !showForm ? (
-        <div className="empty">No venues yet. Create one to get started.</div>
+        <div className="empty">No locations yet. Create one to get started.</div>
       ) : (
         <table className="data-table">
           <thead>
@@ -129,7 +129,7 @@ export default function VenuesView() {
                 </td>
                 <td>
                   <RowActionMenu items={[
-                    { icon: faTrash, label: 'Delete venue', danger: true, onClick: () => handleDelete(v) },
+                    { icon: faTrash, label: 'Delete location', danger: true, onClick: () => handleDelete(v) },
                   ]} />
                 </td>
               </tr>

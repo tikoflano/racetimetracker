@@ -58,6 +58,7 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
 
   return (
     <Modal open={open} onClose={handleClose} title={`Add Track from ${venueName}`}>
+
       {/* Step 1: Select track */}
       {!selectedTrack && (
         <div>
@@ -72,7 +73,7 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
             {filteredTracks.length === 0 ? (
               <div className="muted small-text" style={{ padding: 8 }}>
-                {availableTracks.length === 0 ? 'No tracks available from this venue.' : 'No tracks match your search.'}
+                {availableTracks.length === 0 ? 'No tracks available from this location.' : 'No tracks match your search.'}
               </div>
             ) : (
               filteredTracks.map((track, i) => (

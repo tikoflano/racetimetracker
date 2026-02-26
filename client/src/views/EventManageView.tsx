@@ -994,7 +994,7 @@ export default function EventManageView() {
         open={showAddTrackModal}
         onClose={() => setShowAddTrackModal(false)}
         onConfirm={handleAddTrack}
-        venueName={venue?.name ?? 'the venue'}
+        venueName={venue?.name ?? 'the location'}
         venueTracks={venueTracks}
         allVariations={trackVariations}
         usedVariationIds={usedVariationIds}

@@ -151,7 +151,7 @@ export default function ChampionshipDetailView() {
     if (!evtStart) { setEvtError('Start date is required'); return; }
     if (!evtEnd) { setEvtError('End date is required'); return; }
     const venueId = evtVenueId ? BigInt(evtVenueId) : 0n;
-    if (!venueId) { setEvtError('Select a venue'); return; }
+    if (!venueId) { setEvtError('Select a location'); return; }
     try {
       await createEvent({
         orgId: oid,
@@ -314,13 +314,13 @@ export default function ChampionshipDetailView() {
                 </div>
               </div>
               <div>
-                <label className="input-label">Venue</label>
+                <label className="input-label">Location</label>
                 <select
                   value={evtVenueId}
                   onChange={(e) => setEvtVenueId(e.target.value)}
                   className="input"
                 >
-                  <option value="">Select venue...</option>
+                  <option value="">Select location...</option>
                   {venues.map((v: Venue) => (
                     <option key={String(v.id)} value={String(v.id)}>{v.name}</option>
                   ))}
@@ -345,7 +345,7 @@ export default function ChampionshipDetailView() {
                 <th style={{ width: 32 }}></th>
                 <th>Name</th>
                 <th>Status</th>
-                <th>Venue</th>
+                <th>Location</th>
                 <th>Start</th>
                 <th>End</th>
                 <th style={{ width: 40 }}></th>
