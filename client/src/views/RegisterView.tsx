@@ -2,23 +2,21 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
-import type { RegistrationToken, Organization } from '../module_bindings/types';
+import type { Organization } from '../module_bindings/types';
 
 export default function RegisterView() {
-  const { token } = useParams<{ token: string }>();
+  const { orgSlug } = useParams<{ orgSlug: string }>();
   const connState = useSpacetimeDB();
 
-  const [tokens] = useTable(tables.registration_token);
   const [orgs] = useTable(tables.organization);
 
-  const registerRider = useReducer(reducers.registerRiderWithToken);
+  const registerRider = useReducer(reducers.registerRiderWithOrgSlug);
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const regToken = tokens.find((t: RegistrationToken) => t.token === token);
-  const org = regToken ? orgs.find((o: Organization) => o.id === regToken.orgId) : null;
+  const org = orgs.find((o: Organization) => o.slug === orgSlug);
 
   if (!connState.isActive) {
     return (
@@ -41,13 +39,25 @@ export default function RegisterView() {
     );
   }
 
-  // Token not found or inactive
-  if (tokens.length > 0 && (!regToken || !regToken.isActive)) {
+  // Org not found
+  if (orgs.length > 0 && !org) {
     return (
       <div className="register-page">
         <div className="register-card">
-          <h1>Invalid Link</h1>
-          <p className="muted" style={{ marginTop: 8 }}>This registration link is invalid or has been deactivated.</p>
+          <h1>Organization Not Found</h1>
+          <p className="muted" style={{ marginTop: 8 }}>This registration link is invalid.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Registration disabled for this org
+  if (org && org.registrationEnabled === false) {
+    return (
+      <div className="register-page">
+        <div className="register-card">
+          <h1>Registration Closed</h1>
+          <p className="muted" style={{ marginTop: 8 }}>Registration is currently disabled for this organization.</p>
         </div>
       </div>
     );
@@ -61,7 +71,7 @@ export default function RegisterView() {
     }
     try {
       await registerRider({
-        token: token ?? '',
+        orgSlug: orgSlug ?? '',
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
@@ -77,7 +87,7 @@ export default function RegisterView() {
   return (
     <div className="register-page">
       <div className="register-card">
-        <h1>Racer Registration</h1>
+        <h1>Rider Registration</h1>
         {org && <p className="muted" style={{ marginBottom: 16 }}>Register with <strong>{org.name}</strong></p>}
 
         {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}

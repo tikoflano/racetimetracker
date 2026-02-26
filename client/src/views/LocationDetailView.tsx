@@ -1,11 +1,15 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
+import { FontAwesomeIcon, faPen, faTrash } from '../icons';
+import ActionMenu from '../components/ActionMenu';
+import { RowActionMenu } from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 
@@ -57,9 +61,9 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
   return null;
 }
 
-export default function VenueDetailView() {
-  const { orgId, venueId } = useParams<{ orgId: string; venueId: string }>();
-  const oid = BigInt(orgId ?? '0');
+export default function LocationDetailView() {
+  const { venueId } = useParams<{ venueId: string }>();
+  const oid = useActiveOrg();
   const vid = BigInt(venueId ?? '0');
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
@@ -68,7 +72,9 @@ export default function VenueDetailView() {
   const [allTracks] = useTable(tables.track);
   const [allVariations] = useTable(tables.track_variation);
 
+  const navigate = useNavigate();
   const updateVenue = useReducer(reducers.updateVenue);
+  const deleteVenue = useReducer(reducers.deleteVenue);
   const createTrack = useReducer(reducers.createTrack);
   const updateTrack = useReducer(reducers.updateTrack);
   const deleteTrack = useReducer(reducers.deleteTrack);
@@ -76,8 +82,9 @@ export default function VenueDetailView() {
   const updateVariation = useReducer(reducers.updateTrackVariation);
   const deleteVariation = useReducer(reducers.deleteTrackVariation);
 
+  const [menuOpen, setMenuOpen] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
-  const [venueForm, setVenueForm] = useState({ name: '', description: '', latitude: '', longitude: '' });
+  const [venueForm, setVenueForm] = useState({ name: '', description: '', address: '' });
   const [showTrackForm, setShowTrackForm] = useState(false);
   const [trackForm, setTrackForm] = useState({ name: '', color: '#3b82f6' });
   const [editingTrackId, setEditingTrackId] = useState<bigint | null>(null);
@@ -148,13 +155,12 @@ export default function VenueDetailView() {
   // All map positions for bounds fitting
   const mapPositions = useMemo(() => {
     const pts: [number, number][] = [];
-    if (venue) pts.push([venue.latitude, venue.longitude]);
     for (const [, tv] of defaultVariations) {
       if (tv.startLatitude !== 0 || tv.startLongitude !== 0) pts.push([tv.startLatitude, tv.startLongitude]);
       if (tv.endLatitude !== 0 || tv.endLongitude !== 0) pts.push([tv.endLatitude, tv.endLongitude]);
     }
     return pts;
-  }, [venue, defaultVariations]);
+  }, [defaultVariations]);
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -165,12 +171,12 @@ export default function VenueDetailView() {
   if (!hasAccess) return <div className="empty">Access denied.</div>;
   if (!venue) {
     if (venues.length === 0) return null;
-    return <div className="empty">Venue not found.</div>;
+    return <div className="empty">Location not found.</div>;
   }
 
   // Venue edit
   const startEditVenue = () => {
-    setVenueForm({ name: venue.name, description: venue.description, latitude: String(venue.latitude), longitude: String(venue.longitude) });
+    setVenueForm({ name: venue.name, description: venue.description, address: venue.address });
     setEditingVenue(true);
     setError('');
   };
@@ -178,7 +184,7 @@ export default function VenueDetailView() {
     setError('');
     if (!venueForm.name.trim()) { setError('Name is required'); return; }
     try {
-      await updateVenue({ venueId: vid, name: venueForm.name.trim(), description: venueForm.description.trim(), latitude: parseFloat(venueForm.latitude) || 0, longitude: parseFloat(venueForm.longitude) || 0 });
+      await updateVenue({ venueId: vid, name: venueForm.name.trim(), description: venueForm.description.trim(), address: venueForm.address.trim() });
       setEditingVenue(false);
     } catch (e: any) { setError(e?.message || 'Failed'); }
   };
@@ -251,8 +257,8 @@ export default function VenueDetailView() {
 
   return (
     <div>
-      <div className="venue-header">
-        <Link to={`/org/${orgId}/venues`} className="back-link">&larr; Venues</Link>
+      <div className="location-header">
+        <Link to="/locations" className="back-link">&larr; Locations</Link>
 
         {/* Venue header */}
         {editingVenue ? (
@@ -262,8 +268,7 @@ export default function VenueDetailView() {
               <input type="text" value={venueForm.name} onChange={e => setVenueForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
               <input type="text" value={venueForm.description} onChange={e => setVenueForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" className="input" />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div><label className="input-label">Latitude</label><input type="number" step="any" value={venueForm.latitude} onChange={e => setVenueForm(f => ({ ...f, latitude: e.target.value }))} className="input" /></div>
-                <div><label className="input-label">Longitude</label><input type="number" step="any" value={venueForm.longitude} onChange={e => setVenueForm(f => ({ ...f, longitude: e.target.value }))} className="input" /></div>
+                <div style={{ gridColumn: '1 / -1' }}><label className="input-label">Address</label><input type="text" value={venueForm.address} onChange={e => setVenueForm(f => ({ ...f, address: e.target.value }))} className="input" /></div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="primary small" onClick={saveVenue}>Save</button>
@@ -273,12 +278,31 @@ export default function VenueDetailView() {
           </div>
         ) : (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <h1 style={{ marginBottom: 0 }}>{venue.name}</h1>
-              <button className="ghost small" onClick={startEditVenue} title="Edit">&#9998;</button>
+              <ActionMenu
+                open={menuOpen}
+                onToggle={() => setMenuOpen(!menuOpen)}
+                onClose={() => setMenuOpen(false)}
+                items={[
+                  { icon: faPen, label: 'Edit', onClick: () => { setMenuOpen(false); startEditVenue(); } },
+                  { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
+                    setMenuOpen(false);
+                    if (confirm('Delete this location and all its tracks? This cannot be undone.')) {
+                      deleteVenue({ venueId: vid }).then(() => navigate('/locations'));
+                    }
+                  }},
+                ]}
+              />
             </div>
             {venue.description && <p className="muted small-text">{venue.description}</p>}
-            <p className="muted small-text">{venue.latitude.toFixed(4)}, {venue.longitude.toFixed(4)}</p>
+            {venue.address && (
+              <p className="small-text">
+                <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                  {venue.address}
+                </a>
+              </p>
+            )}
           </div>
         )}
 
@@ -322,9 +346,10 @@ export default function VenueDetailView() {
       )}
 
       {/* Map */}
-      <div className="venue-map-container" style={{ marginBottom: 20 }}>
+      {mapPositions.length > 0 && (
+      <div className="location-map-container" style={{ marginBottom: 20 }}>
         <MapContainer
-          center={[venue.latitude, venue.longitude]}
+          center={mapPositions[0]}
           zoom={14}
           style={{ height: 400, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
         >
@@ -369,6 +394,7 @@ export default function VenueDetailView() {
           ))}
         </div>
       </div>
+      )}
 
       {/* List view / Tracks */}
       {tracks.length === 0 && !showTrackForm ? (
@@ -391,10 +417,10 @@ export default function VenueDetailView() {
                     <span className="muted small-text">({vars.length} variation{vars.length !== 1 ? 's' : ''})</span>
                   </div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4 }}>
-                      <button className="ghost small" onClick={() => startEditTrack(track)} title="Edit">&#9998;</button>
-                      <button className="ghost small" onClick={() => handleDeleteTrack(track)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                    </div>
+                    <RowActionMenu items={[
+                      { icon: faPen, label: 'Edit', onClick: () => startEditTrack(track) },
+                      { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDeleteTrack(track) },
+                    ]} />
                     <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
                   </div>
                 </div>
@@ -480,9 +506,9 @@ export default function VenueDetailView() {
                                   Click on the map to place the start pin
                                 </div>
                               )}
-                              <div className="venue-map-container">
+                              <div className="location-map-container">
                                 <MapContainer
-                                  center={[venue.latitude, venue.longitude]}
+                                  center={mapPositions.length > 0 ? mapPositions[0] : [0, 0]}
                                   zoom={14}
                                   style={{ height: 280, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: placingPin ? 'crosshair' : '' }}
                                 >
@@ -534,12 +560,10 @@ export default function VenueDetailView() {
                             <td className="muted small-text">{tv.description || '—'}</td>
                             <td>
                               {tv.name !== 'Default' ? (
-                                <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                                  <button className="ghost small" onClick={() => startEditVar(tv)} title="Edit">&#9998;</button>
-                                  {vars.length > 1 && (
-                                    <button className="ghost small" onClick={() => handleDeleteVar(tv)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                                  )}
-                                </div>
+                                <RowActionMenu items={[
+                                  { icon: faPen, label: 'Edit', onClick: () => startEditVar(tv) },
+                                  ...(vars.length > 1 ? [{ icon: faTrash, label: 'Delete', danger: true as const, onClick: () => handleDeleteVar(tv) }] : []),
+                                ]} />
                               ) : (
                                 <span className="muted small-text">Default</span>
                               )}

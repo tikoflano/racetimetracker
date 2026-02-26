@@ -1,13 +1,11 @@
 {
-  "name": "bike-race-tracker",
+  "name": "racetimetracker",
   "private": true,
   "workspaces": [
     "spacetimedb",
     "client"
   ],
   "scripts": {
-    "dev:spacetime": "spacetime dev -y --delete-data=on-conflict --no-config --server local --module-bindings-path client/src/module_bindings --client-lang typescript --run 'cd client && npm run dev' racetimetracker-dev",
-    "publish": "spacetime publish racetimetracker-dev --server maincloud.spacetimedb.com -p spacetimedb --no-config -y",
-    "clear-data": "npm run publish -- --delete-data"
+    "start": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev"
   }
 }

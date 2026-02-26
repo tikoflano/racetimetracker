@@ -139,6 +139,48 @@ export default function CalendarView() {
 
   const today = dateKey(new Date());
 
+  // Last (most recent past) and next (upcoming) event for jump buttons
+  const { lastEvent, nextEvent } = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    let last: Event | null = null;
+    let next: Event | null = null;
+    for (const evt of filteredEvents) {
+      const start = parseDate(evt.startDate);
+      const end = parseDate(evt.endDate);
+      if (!start) continue;
+      const endDate = end ?? start;
+      if (endDate < todayStart) {
+        if (!last || (parseDate(last.endDate) ?? parseDate(last.startDate)!) < endDate) {
+          last = evt;
+        }
+      } else if (start >= todayStart) {
+        if (!next || parseDate(next.startDate)! > start) {
+          next = evt;
+        }
+      }
+    }
+    return { lastEvent: last, nextEvent: next };
+  }, [filteredEvents]);
+
+  const goToLastEvent = () => {
+    if (!lastEvent) return;
+    const d = parseDate(lastEvent.startDate);
+    if (d) {
+      setYear(d.getFullYear());
+      setMonth(d.getMonth());
+    }
+  };
+
+  const goToNextEvent = () => {
+    if (!nextEvent) return;
+    const d = parseDate(nextEvent.startDate);
+    if (d) {
+      setYear(d.getFullYear());
+      setMonth(d.getMonth());
+    }
+  };
+
   // Dropdown label
   const dropdownLabel = allSelected
     ? 'All Championships'
@@ -210,6 +252,8 @@ export default function CalendarView() {
         </span>
         <button className="ghost small" onClick={nextMonth}>&rarr;</button>
         <button className="ghost small" onClick={goToday}>Today</button>
+        <button className="ghost small" onClick={goToLastEvent} disabled={!lastEvent} title={lastEvent?.name}>Last event</button>
+        <button className="ghost small" onClick={goToNextEvent} disabled={!nextEvent} title={nextEvent?.name}>Next event</button>
       </div>
 
       {/* Calendar grid */}
@@ -231,7 +275,7 @@ export default function CalendarView() {
                   return (
                     <Link
                       key={String(evt.id)}
-                      to={`/event/${evt.id}`}
+                      to={`/event/${evt.slug}`}
                       className="cal-event"
                       style={{ borderLeftColor: champ?.color ?? 'var(--accent)' }}
                       title={evt.name}

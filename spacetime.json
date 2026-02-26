@@ -1,5 +1,9 @@
 {
+  "dev": {
+    "run": "npm run dev -w client"
+  },
+  "_source-config": "spacetime.json",
   "module_path": "spacetimedb",
-  "server": "local",
-  "database": "racetimetracker-dev"
+  "database": "racetimetracker-dev",
+  "server": "local"
 }

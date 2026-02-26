@@ -27,7 +27,6 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
 
   const handleClose = () => { reset(); onClose(); };
 
-  // Tracks that have at least one unused variation
   const availableTracks = useMemo(() => {
     return venueTracks.filter(track => {
       return allVariations.some(tv => tv.trackId === track.id && !usedVariationIds.has(tv.id));
@@ -40,11 +39,9 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
     return availableTracks.filter(t => t.name.toLowerCase().includes(q));
   }, [availableTracks, trackSearch]);
 
-  // Variations for the selected track (excluding already used)
   const availableVariations = useMemo(() => {
     if (!selectedTrack) return [];
-    return allVariations
-      .filter(tv => tv.trackId === selectedTrack.id && !usedVariationIds.has(tv.id));
+    return allVariations.filter(tv => tv.trackId === selectedTrack.id && !usedVariationIds.has(tv.id));
   }, [selectedTrack, allVariations, usedVariationIds]);
 
   const filteredVariations = useMemo(() => {
@@ -61,6 +58,7 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
 
   return (
     <Modal open={open} onClose={handleClose} title={`Add Track from ${venueName}`}>
+
       {/* Step 1: Select track */}
       {!selectedTrack && (
         <div>
@@ -75,20 +73,25 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
             {filteredTracks.length === 0 ? (
               <div className="muted small-text" style={{ padding: 8 }}>
-                {availableTracks.length === 0 ? 'No tracks available from this venue.' : 'No tracks match your search.'}
+                {availableTracks.length === 0 ? 'No tracks available from this location.' : 'No tracks match your search.'}
               </div>
             ) : (
-              filteredTracks.map(track => (
+              filteredTracks.map((track, i) => (
                 <button
                   key={String(track.id)}
-                  className="ghost small"
-                  style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 'var(--radius)' }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                    textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius)',
+                    border: 'none', cursor: 'pointer', fontSize: '0.875rem',
+                    background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
+                    color: 'var(--text)',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')}
                   onClick={() => { setSelectedTrack(track); setVarSearch(''); setSelectedVariation(null); }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="color-dot" style={{ background: track.color }} />
-                    <strong>{track.name}</strong>
-                  </span>
+                  <span className="color-dot" style={{ background: track.color }} />
+                  <strong>{track.name}</strong>
                 </button>
               ))
             )}
@@ -120,17 +123,22 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
                 {availableVariations.length === 0 ? 'No variations available.' : 'No variations match your search.'}
               </div>
             ) : (
-              filteredVariations.map(tv => (
+              filteredVariations.map((tv, i) => (
                 <button
                   key={String(tv.id)}
-                  className="ghost small"
-                  style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 'var(--radius)' }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '10px 12px', borderRadius: 'var(--radius)',
+                    border: 'none', cursor: 'pointer', fontSize: '0.875rem',
+                    background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
+                    color: 'var(--text)',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')}
                   onClick={() => setSelectedVariation(tv)}
                 >
-                  <div>
-                    <strong>{tv.name}</strong>
-                    {tv.description && <div className="muted small-text" style={{ marginTop: 2 }}>{tv.description}</div>}
-                  </div>
+                  <strong>{tv.name}</strong>
+                  {tv.description && <div className="muted small-text" style={{ marginTop: 2 }}>{tv.description}</div>}
                 </button>
               ))
             )}

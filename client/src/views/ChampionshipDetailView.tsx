@@ -1,8 +1,12 @@
-import { useState, useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
+import { FontAwesomeIcon, faPen, faThumbtack, faTrash } from '../icons';
+import ActionMenu from '../components/ActionMenu';
+import { RowActionMenu } from '../components/ActionMenu';
 import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
 
 type EventStatus = 'in_progress' | 'not_started' | 'completed';
@@ -22,8 +26,9 @@ const STATUS_LABEL: Record<EventStatus, string> = { in_progress: 'In Progress', 
 const STATUS_BADGE: Record<EventStatus, string> = { in_progress: 'running', not_started: 'queued', completed: 'finished' };
 
 export default function ChampionshipDetailView() {
-  const { orgId, champId } = useParams<{ orgId: string; champId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const { champId } = useParams<{ champId: string }>();
+  const navigate = useNavigate();
+  const oid = useActiveOrg();
   const cid = BigInt(champId ?? '0');
   const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
@@ -34,6 +39,7 @@ export default function ChampionshipDetailView() {
   const [pinnedEvents] = useTable(tables.pinned_event);
 
   const updateChampionship = useReducer(reducers.updateChampionship);
+  const deleteChampionship = useReducer(reducers.deleteChampionship);
   const createEvent = useReducer(reducers.createEvent);
   const updateEvent = useReducer(reducers.updateEvent);
   const togglePin = useReducer(reducers.togglePinEvent);
@@ -44,6 +50,8 @@ export default function ChampionshipDetailView() {
       pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map(f => f.eventId)
     );
   }, [user, pinnedEvents]);
+
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Edit championship state
   const [editing, setEditing] = useState(false);
@@ -143,7 +151,7 @@ export default function ChampionshipDetailView() {
     if (!evtStart) { setEvtError('Start date is required'); return; }
     if (!evtEnd) { setEvtError('End date is required'); return; }
     const venueId = evtVenueId ? BigInt(evtVenueId) : 0n;
-    if (!venueId) { setEvtError('Select a venue'); return; }
+    if (!venueId) { setEvtError('Select a location'); return; }
     try {
       await createEvent({
         orgId: oid,
@@ -191,7 +199,7 @@ export default function ChampionshipDetailView() {
 
   return (
     <div>
-      <Link to={`/org/${orgId}/championships`} className="back-link">&larr; Championships</Link>
+      <Link to="/championships" className="back-link">&larr; Championships</Link>
 
       {/* Championship name + description — editable */}
       {editing ? (
@@ -227,10 +235,23 @@ export default function ChampionshipDetailView() {
         </div>
       ) : (
         <div style={{ marginBottom: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="color-dot" style={{ background: champ.color, width: 14, height: 14 }} />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span className="color-dot" style={{ background: champ.color, width: 14, height: 14, alignSelf: 'center' }} />
             <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
-            <button className="ghost small" onClick={startEditing} title="Edit">&#9998;</button>
+            <ActionMenu
+              open={menuOpen}
+              onToggle={() => setMenuOpen(!menuOpen)}
+              onClose={() => setMenuOpen(false)}
+              items={[
+                { icon: faPen, label: 'Edit', onClick: () => { setMenuOpen(false); startEditing(); } },
+                { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
+                  setMenuOpen(false);
+                  if (confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) {
+                    deleteChampionship({ championshipId: cid }).then(() => navigate('/championships'));
+                  }
+                }},
+              ]}
+            />
           </div>
           {champ.description && <p className="muted small-text">{champ.description}</p>}
         </div>
@@ -293,13 +314,13 @@ export default function ChampionshipDetailView() {
                 </div>
               </div>
               <div>
-                <label className="input-label">Venue</label>
+                <label className="input-label">Location</label>
                 <select
                   value={evtVenueId}
                   onChange={(e) => setEvtVenueId(e.target.value)}
                   className="input"
                 >
-                  <option value="">Select venue...</option>
+                  <option value="">Select location...</option>
                   {venues.map((v: Venue) => (
                     <option key={String(v.id)} value={String(v.id)}>{v.name}</option>
                   ))}
@@ -324,9 +345,10 @@ export default function ChampionshipDetailView() {
                 <th style={{ width: 32 }}></th>
                 <th>Name</th>
                 <th>Status</th>
-                <th>Venue</th>
+                <th>Location</th>
                 <th>Start</th>
                 <th>End</th>
+                <th style={{ width: 40 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -339,7 +361,7 @@ export default function ChampionshipDetailView() {
                         onClick={() => togglePin({ eventId: e.id })}
                         title={pinnedEventIds.has(e.id) ? 'Unpin event' : 'Pin event'}
                       >
-                        {'\u{1F4CC}'}
+                        <FontAwesomeIcon icon={faThumbtack} />
                       </button>
                     )}
                   </td>
@@ -363,16 +385,18 @@ export default function ChampionshipDetailView() {
                         {editEventError && <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>{editEventError}</span>}
                       </div>
                     ) : (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Link to={`/event/${e.id}`} className="table-link">{e.name}</Link>
-                        <button className="ghost small" onClick={() => startEditEvent(e)} title="Rename" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>&#9998;</button>
-                      </span>
+                      <Link to={`/event/${e.slug}`} className="table-link">{e.name}</Link>
                     )}
                   </td>
                   <td><span className={`badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span></td>
                   <td>{venueMap.get(e.venueId)?.name ?? '—'}</td>
                   <td>{e.startDate}</td>
                   <td>{e.endDate}</td>
+                  <td>
+                    <RowActionMenu items={[
+                      { icon: faPen, label: 'Rename', onClick: () => startEditEvent(e) },
+                    ]} />
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -13,7 +13,7 @@ function getAge(dateOfBirth: string): number | null {
   return age;
 }
 
-interface AddRacerModalProps {
+interface AddRiderModalProps {
   open: boolean;
   onClose: () => void;
   onAdd: (riderId: bigint) => void;
@@ -21,7 +21,7 @@ interface AddRacerModalProps {
   availableRiders: readonly Rider[];
 }
 
-export default function AddRacerModal({ open, onClose, onAdd, availableRiders }: AddRacerModalProps) {
+export default function AddRiderModal({ open, onClose, onAdd, availableRiders }: AddRiderModalProps) {
   const [search, setSearch] = useState('');
   const [minAge, setMinAge] = useState('');
   const [maxAge, setMaxAge] = useState('');
@@ -51,7 +51,7 @@ export default function AddRacerModal({ open, onClose, onAdd, availableRiders }:
   }, [availableRiders, search, minAge, maxAge]);
 
   return (
-    <Modal open={open} onClose={handleClose} title="Add Racers">
+    <Modal open={open} onClose={handleClose} title="Add Riders">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
         <input
           type="text"
@@ -74,13 +74,13 @@ export default function AddRacerModal({ open, onClose, onAdd, availableRiders }:
       </div>
 
       <div className="muted small-text" style={{ marginBottom: 8 }}>
-        {filtered.length} racer{filtered.length !== 1 ? 's' : ''} found
+        {filtered.length} rider{filtered.length !== 1 ? 's' : ''} found
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
         {filtered.length === 0 ? (
           <div className="muted small-text" style={{ padding: 8 }}>
-            {availableRiders.length === 0 ? 'All racers are already assigned.' : 'No racers match your filters.'}
+            {availableRiders.length === 0 ? 'All riders are already assigned.' : 'No riders match your filters.'}
           </div>
         ) : (
           filtered.map(r => {

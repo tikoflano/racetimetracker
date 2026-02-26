@@ -1,8 +1,11 @@
 import { useState, useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
+import { useActiveOrg } from '../OrgContext';
+import { faTrash } from '../icons';
+import { RowActionMenu } from '../components/ActionMenu';
 import type { Championship, Event, Organization } from '../module_bindings/types';
 
 type ChampStatus = 'in_progress' | 'not_started' | 'completed';
@@ -37,8 +40,7 @@ function SortTh({ label, sortKey, current, onSort }: { label: string; sortKey: S
 }
 
 export default function ChampionshipsView() {
-  const { orgId } = useParams<{ orgId: string }>();
-  const oid = BigInt(orgId ?? '0');
+  const oid = useActiveOrg();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
@@ -46,6 +48,7 @@ export default function ChampionshipsView() {
   const [events] = useTable(tables.event);
 
   const createChampionship = useReducer(reducers.createChampionship);
+  const deleteChampionship = useReducer(reducers.deleteChampionship);
 
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState('');
@@ -231,6 +234,7 @@ export default function ChampionshipsView() {
               <SortTh label="Next Event" sortKey="next" current={sort} onSort={toggleSort} />
               <SortTh label="Start" sortKey="start" current={sort} onSort={toggleSort} />
               <SortTh label="End" sortKey="end" current={sort} onSort={toggleSort} />
+              <th style={{ width: 40 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -241,7 +245,7 @@ export default function ChampionshipsView() {
               <tr key={String(c.id)}>
                 <td><span className="color-dot" style={{ background: c.color }} /></td>
                 <td>
-                  <Link to={`/org/${orgId}/championship/${c.id}`} className="table-link">
+                  <Link to={`/championship/${c.id}`} className="table-link">
                     {c.name}
                   </Link>
                 </td>
@@ -250,7 +254,7 @@ export default function ChampionshipsView() {
                 <td>
                   {nextEvent ? (
                     <span>
-                      <Link to={`/event/${nextEvent.id}`} className="table-link">{nextEvent.name}</Link>
+                      <Link to={`/event/${nextEvent.slug}`} className="table-link">{nextEvent.name}</Link>
                       <div className="muted small-text">{nextEvent.startDate}</div>
                     </span>
                   ) : (
@@ -259,6 +263,15 @@ export default function ChampionshipsView() {
                 </td>
                 <td>{startDate}</td>
                 <td>{endDate}</td>
+                <td>
+                  <RowActionMenu items={[
+                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
+                      if (confirm(`Delete "${c.name}" and all its events? This cannot be undone.`)) {
+                        deleteChampionship({ championshipId: c.id });
+                      }
+                    }},
+                  ]} />
+                </td>
               </tr>
               );
             })}

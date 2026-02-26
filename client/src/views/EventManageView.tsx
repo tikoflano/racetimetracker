@@ -1,16 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import AddRacerModal from '../components/AddRacerModal';
+import { useActiveOrgMaybe } from '../OrgContext';
+import AddRiderModal from '../components/AddRiderModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
-import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule } from '../module_bindings/types';
+import { faPen, faTrash } from '../icons';
+import { RowActionMenu } from '../components/ActionMenu';
+import type { Event, EventCategory, Rider, EventRider, Venue, EventTrack, TrackVariation, Track, Run, CategoryTrack, EventTrackSchedule, User, OrgMember } from '../module_bindings/types';
 
 export default function EventManageView() {
-  const { eventId } = useParams<{ eventId: string }>();
-  const eid = BigInt(eventId ?? '0');
+  const { eventSlug } = useParams<{ eventSlug: string }>();
+  const activeOrgId = useActiveOrgMaybe();
   const { isAuthenticated, isReady, canOrganizeEvent } = useAuth();
 
   const [events] = useTable(tables.event);
@@ -24,6 +27,9 @@ export default function EventManageView() {
   const [categoryTracks] = useTable(tables.category_track);
   const [allRiders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
+  const [timekeeperAssignments] = useTable(tables.timekeeper_assignment);
+  const [users] = useTable(tables.user);
+  const [orgMembers] = useTable(tables.org_member);
 
   const createCategory = useReducer(reducers.createEventCategory);
   const addTrackToCategory = useReducer(reducers.addTrackToCategory);
@@ -38,8 +44,17 @@ export default function EventManageView() {
   const updateEventRider = useReducer(reducers.updateEventRider);
   const generateTrackSchedule = useReducer(reducers.generateTrackSchedule);
   const clearTrackSchedule = useReducer(reducers.clearTrackSchedule);
+  const setTrackTimekeepers = useReducer(reducers.setTrackTimekeepers);
 
-  const event = events.find((e: Event) => e.id === eid);
+  const event = useMemo(() => {
+    if (!eventSlug) return undefined;
+    if (activeOrgId) {
+      const inOrg = events.find((e: Event) => e.slug === eventSlug && e.orgId === activeOrgId);
+      if (inOrg) return inOrg;
+    }
+    return events.find((e: Event) => e.slug === eventSlug);
+  }, [eventSlug, activeOrgId, events]);
+  const eid = event?.id ?? 0n;
   const venue = event ? venues.find((v: Venue) => v.id === event.venueId) : undefined;
   const canEdit = event ? canOrganizeEvent(eid, event.orgId) : false;
 
@@ -185,15 +200,55 @@ export default function EventManageView() {
   const [showImport, setShowImport] = useState(false);
   const [importError, setImportError] = useState('');
 
-  // Racer state
-  const [showAddRacerModal, setShowAddRacerModal] = useState(false);
-  const [showImportRacers, setShowImportRacers] = useState(false);
-  const [racerError, setRacerError] = useState('');
-  const [importRacerError, setImportRacerError] = useState('');
+  // Rider state
+  const [showAddRiderModal, setShowAddRiderModal] = useState(false);
+  const [showImportRiders, setShowImportRiders] = useState(false);
+  const [riderError, setRiderError] = useState('');
+  const [importRiderError, setImportRiderError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all'); // 'all' | 'none' | category id as string
   const [checkInModal, setCheckInModal] = useState<{ rider: Rider; eventRider: EventRider } | null>(null);
+  const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+  const [riderPage, setRiderPage] = useState(0);
+  const [riderPageSize, setRiderPageSize] = useState(() => {
+    try {
+      const stored = localStorage.getItem('racetimetracker-event-riders-page-size');
+      if (stored) {
+        const n = parseInt(stored, 10);
+        if ([10, 20, 50, 100].includes(n)) return n;
+      }
+    } catch {}
+    return 10;
+  });
+  useEffect(() => {
+    setRiderPage(0);
+  }, [categoryFilter, riderPageSize]);
+
+  // Filtered riders for event (by category filter) — used for pagination
+  const filteredRiders = useMemo(() => {
+    const assigned = orgRiders.filter(r => eventRiderIds.has(r.id));
+    return assigned.filter(r => {
+      const er = eventRiderMap.get(r.id);
+      if (!er) return false;
+      if (categoryFilter === 'all') return true;
+      if (categoryFilter === 'none') return er.categoryId === 0n;
+      return er.categoryId === BigInt(categoryFilter);
+    });
+  }, [orgRiders, eventRiderIds, eventRiderMap, categoryFilter]);
+
   const [showAddTrackModal, setShowAddTrackModal] = useState(false);
   const [addTrackError, setAddTrackError] = useState('');
+
+  // Timekeeper assignment state
+  const [tkAssignError, setTkAssignError] = useState('');
+
+  const assignableUsers = useMemo(() => {
+    if (!event) return [];
+    const memberIds = new Set<bigint>();
+    for (const m of orgMembers) {
+      if ((m as OrgMember).orgId === event.orgId) memberIds.add((m as OrgMember).userId);
+    }
+    return users.filter((u: any) => memberIds.has(u.id)).sort((a: any, b: any) => (a.name || a.email).localeCompare(b.name || b.email)) as User[];
+  }, [event, orgMembers, users]);
   const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers' | 'runs'>('tracks');
   const [scheduleError, setScheduleError] = useState('');
   const [scheduleFormByTrack, setScheduleFormByTrack] = useState<Record<string, { startDateTime: string; intervalValue: string; intervalUnit: 'minutes' | 'seconds' }>>({});
@@ -283,25 +338,25 @@ export default function EventManageView() {
   };
 
   const handleAddRider = async (riderId: bigint) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await addRiderToEvent({ eventId: eid, riderId });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleImportRiders = async (sourceEventId: bigint) => {
-    setImportRacerError('');
+    setImportRiderError('');
     try {
       await importRiders({ targetEventId: eid, sourceEventId });
-      setShowImportRacers(false);
-    } catch (e: any) { setImportRacerError(e?.message || 'Failed'); }
+      setShowImportRiders(false);
+    } catch (e: any) { setImportRiderError(e?.message || 'Failed'); }
   };
 
   const handleToggleCheckIn = async (er: EventRider) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: !er.checkedIn, assignedNumber: er.assignedNumber });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleRevertCheckIn = async (er: EventRider, rider: Rider) => {
@@ -310,17 +365,17 @@ export default function EventManageView() {
   };
 
   const handleCheckIn = async (er: EventRider, assignedNumber: number) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: true, assignedNumber });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleChangeCategory = async (er: EventRider, newCategoryId: bigint) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await updateEventRider({ eventRiderId: er.id, categoryId: newCategoryId, checkedIn: er.checkedIn, assignedNumber: er.assignedNumber });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleAddTrack = async (tvId: bigint) => {
@@ -421,10 +476,12 @@ export default function EventManageView() {
 
   const assignedRiders = orgRiders.filter(r => eventRiderIds.has(r.id));
   const unassignedRiders = orgRiders.filter(r => !eventRiderIds.has(r.id));
+  const riderTotalPages = Math.max(1, Math.ceil(filteredRiders.length / riderPageSize));
+  const paginatedRiders = filteredRiders.slice(riderPage * riderPageSize, (riderPage + 1) * riderPageSize);
 
   return (
     <div>
-      <Link to={`/event/${eventId}`} className="back-link">&larr; Back to Event</Link>
+      <Link to={`/event/${event.slug}`} className="back-link">&larr; Back to Event</Link>
       <h1 style={{ marginBottom: 4 }}>Manage: {event.name}</h1>
       <p className="muted small-text" style={{ marginBottom: 12 }}>{event.description}</p>
 
@@ -445,7 +502,7 @@ export default function EventManageView() {
           className={activeTab === 'racers' ? 'active' : ''}
           onClick={() => setActiveTab('racers')}
         >
-          Racers ({assignedRiders.length})
+          Riders ({assignedRiders.length})
         </button>
         <button
           className={activeTab === 'runs' ? 'active' : ''}
@@ -482,7 +539,7 @@ export default function EventManageView() {
             return (
               <div key={String(et.id)} className="card" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Link
-                  to={`/event/${eventId}/track/${et.id}`}
+                  to={`/event/${event.slug}/track/${et.id}`}
                   style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
                 >
                   <div className="track-card">
@@ -500,7 +557,7 @@ export default function EventManageView() {
                 <button
                   className="ghost small"
                   onClick={() => handleRemoveTrack(et)}
-                  title="Remove track"
+                  title="Remove"
                   style={{ color: 'var(--red)', flexShrink: 0 }}
                 >
                   &times;
@@ -643,7 +700,7 @@ export default function EventManageView() {
                               }}
                             >
                               <Link
-                                to={`/event/${eventId}/track/${ct.eventTrackId}`}
+                                to={`/event/${event.slug}/track/${ct.eventTrackId}`}
                                 style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                               >
                                 <span className="color-dot" style={{ background: trackColor }} />
@@ -653,7 +710,7 @@ export default function EventManageView() {
                                 type="button"
                                 className="ghost small"
                                 onClick={() => handleRemoveTrackFromCategory(ct.id)}
-                                title="Remove track"
+                                title="Remove"
                                 style={{ padding: 0, margin: 0, lineHeight: 1, color: 'var(--red)', fontSize: '0.9em' }}
                               >
                                 &times;
@@ -691,10 +748,10 @@ export default function EventManageView() {
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="ghost small" onClick={() => startEditCat(cat)} title="Edit">&#9998;</button>
-                        <button className="ghost small" onClick={() => handleDeleteCat(cat)} title="Delete" style={{ color: 'var(--red)' }}>&times;</button>
-                      </div>
+                      <RowActionMenu items={[
+                        { icon: faPen, label: 'Edit', onClick: () => startEditCat(cat) },
+                        { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDeleteCat(cat) },
+                      ]} />
                     </td>
                   </tr>
                 );
@@ -709,25 +766,25 @@ export default function EventManageView() {
       <div className="section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-title" style={{ marginBottom: 0 }}>
-            Racers <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({assignedRiders.length})</span>
+            Riders <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({assignedRiders.length})</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ghost small" onClick={() => { setShowImportRacers(!showImportRacers); setImportRacerError(''); }}>
-              {showImportRacers ? 'Cancel Import' : 'Import'}
+            <button className="ghost small" onClick={() => { setShowImportRiders(!showImportRiders); setImportRiderError(''); }}>
+              {showImportRiders ? 'Cancel Import' : 'Import'}
             </button>
-            <button className="primary small" onClick={() => setShowAddRacerModal(true)}>
-              + Add Racers
+            <button className="primary small" onClick={() => setShowAddRiderModal(true)}>
+              + Add Riders
             </button>
           </div>
         </div>
 
-        {racerError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{racerError}</div>}
+        {riderError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{riderError}</div>}
 
         {/* Import racers from another event */}
-        {showImportRacers && (
+        {showImportRiders && (
           <div className="card" style={{ marginBottom: 12 }}>
-            <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>Import racers from another event</div>
-            {importRacerError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{importRacerError}</div>}
+            <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>Import riders from another event</div>
+            {importRiderError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{importRiderError}</div>}
             {otherEvents.length === 0 ? (
               <div className="muted small-text">No other events in this organization.</div>
             ) : (
@@ -739,7 +796,7 @@ export default function EventManageView() {
                       <div>
                         <strong style={{ fontSize: '0.85rem' }}>{evt.name}</strong>
                         <span className="muted small-text" style={{ marginLeft: 8 }}>
-                          {count} racer{count !== 1 ? 's' : ''}
+                          {count} rider{count !== 1 ? 's' : ''}
                         </span>
                       </div>
                       <button className="primary small" onClick={() => handleImportRiders(evt.id)}>Import</button>
@@ -747,7 +804,7 @@ export default function EventManageView() {
                   );
                 })}
                 {otherEvents.every(e => !riderCountByEvent.has(e.id)) && (
-                  <div className="muted small-text">No other events have racers assigned.</div>
+                  <div className="muted small-text">No other events have riders assigned.</div>
                 )}
               </div>
             )}
@@ -773,18 +830,11 @@ export default function EventManageView() {
         )}
 
         {assignedRiders.length === 0 ? (
-          <div className="empty">No racers assigned to this event.</div>
-        ) : (() => {
-          const filteredRiders = assignedRiders.filter(r => {
-            const er = eventRiderMap.get(r.id);
-            if (!er) return false;
-            if (categoryFilter === 'all') return true;
-            if (categoryFilter === 'none') return er.categoryId === 0n;
-            return er.categoryId === BigInt(categoryFilter);
-          });
-          return filteredRiders.length === 0 ? (
-            <div className="empty">No racers match this filter.</div>
-          ) : (
+          <div className="empty">No riders assigned to this event.</div>
+        ) : filteredRiders.length === 0 ? (
+          <div className="empty">No riders match this filter.</div>
+        ) : (
+          <>
             <table className="data-table">
               <thead>
                 <tr>
@@ -796,7 +846,7 @@ export default function EventManageView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredRiders.map((r: Rider) => {
+                {paginatedRiders.map((r: Rider) => {
                   const er = eventRiderMap.get(r.id);
                   if (!er) return null;
                   const num = assignedNumberByRiderId.get(r.id);
@@ -845,8 +895,48 @@ export default function EventManageView() {
                 })}
               </tbody>
             </table>
-          );
-        })()}
+            {filteredRiders.length > PAGE_SIZE_OPTIONS[0] && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                <button
+                  className="ghost small"
+                  onClick={() => setRiderPage(p => Math.max(0, p - 1))}
+                  disabled={riderPage === 0}
+                >
+                  Previous
+                </button>
+                <span className="muted small-text">
+                  Page {riderPage + 1} of {riderTotalPages} ({filteredRiders.length} riders)
+                </span>
+                <button
+                  className="ghost small"
+                  onClick={() => setRiderPage(p => Math.min(riderTotalPages - 1, p + 1))}
+                  disabled={riderPage >= riderTotalPages - 1}
+                >
+                  Next
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label className="input-label" style={{ marginBottom: 0 }}>Per page</label>
+                  <select
+                    className="input"
+                    value={riderPageSize}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setRiderPageSize(n);
+                      try {
+                        localStorage.setItem('racetimetracker-event-riders-page-size', String(n));
+                      } catch {}
+                    }}
+                    style={{ width: 72, padding: '6px 8px' }}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
       )}
 
@@ -864,7 +954,7 @@ export default function EventManageView() {
         {sortedEventTracks.length === 0 ? (
           <div className="empty">No tracks assigned to this event. Add tracks first.</div>
         ) : assignedRiders.length === 0 ? (
-          <div className="empty">No racers registered. Add racers to create a schedule.</div>
+          <div className="empty">No riders registered. Add riders to create a schedule.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {sortedEventTracks.map((et: EventTrack) => {
@@ -882,7 +972,7 @@ export default function EventManageView() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div>
                       <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>{trackLabel}</h3>
-                      <Link to={`/event/${eventId}/track/${et.id}`} className="small-text" style={{ color: 'var(--accent)' }}>
+                      <Link to={`/event/${event.slug}/track/${et.id}`} className="small-text" style={{ color: 'var(--accent)' }}>
                         Track timing →
                       </Link>
                     </div>
@@ -941,6 +1031,19 @@ export default function EventManageView() {
                       )}
                     </div>
                   </div>
+
+                  {/* Timekeeper assignments */}
+                  <TimekeeperSection
+                    eventTrackId={et.id}
+                    assignments={timekeeperAssignments}
+                    assignableUsers={assignableUsers}
+                    onSave={async (startUserId, endUserId) => {
+                      setTkAssignError('');
+                      try { await setTrackTimekeepers({ eventTrackId: et.id, startUserId, endUserId }); }
+                      catch (e: any) { setTkAssignError(e?.message || 'Failed'); }
+                    }}
+                    error={tkAssignError}
+                  />
                 </div>
               );
             })}
@@ -954,14 +1057,14 @@ export default function EventManageView() {
         open={showAddTrackModal}
         onClose={() => setShowAddTrackModal(false)}
         onConfirm={handleAddTrack}
-        venueName={venue?.name ?? 'the venue'}
+        venueName={venue?.name ?? 'the location'}
         venueTracks={venueTracks}
         allVariations={trackVariations}
         usedVariationIds={usedVariationIds}
       />
-      <AddRacerModal
-        open={showAddRacerModal}
-        onClose={() => setShowAddRacerModal(false)}
+      <AddRiderModal
+        open={showAddRiderModal}
+        onClose={() => setShowAddRiderModal(false)}
         onAdd={handleAddRider}
         availableRiders={unassignedRiders}
       />
@@ -981,6 +1084,162 @@ export default function EventManageView() {
               : null
           }
         />
+      )}
+    </div>
+  );
+}
+
+function TimekeeperSection({ eventTrackId, assignments, assignableUsers, onSave, error }: {
+  eventTrackId: bigint;
+  assignments: readonly any[];
+  assignableUsers: User[];
+  onSave: (startUserId: bigint, endUserId: bigint) => void;
+  error: string;
+}) {
+  const trackAssignments = useMemo(() =>
+    assignments.filter((a: any) => a.eventTrackId === eventTrackId),
+  [assignments, eventTrackId]);
+
+  const currentStart = useMemo(() => {
+    for (const a of trackAssignments) {
+      if (a.position === 'start' || a.position === 'both') return a.userId as bigint;
+    }
+    return 0n;
+  }, [trackAssignments]);
+
+  const currentEnd = useMemo(() => {
+    for (const a of trackAssignments) {
+      if (a.position === 'end' || a.position === 'both') return a.userId as bigint;
+    }
+    return 0n;
+  }, [trackAssignments]);
+
+  return (
+    <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+      <div style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 8 }}>
+        Timekeepers
+      </div>
+      {error && <div style={{ color: 'var(--red)', fontSize: '0.8rem', marginBottom: 8 }}>{error}</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
+          <label className="input-label">Start line</label>
+          <UserSearchSelect
+            users={assignableUsers}
+            value={currentStart}
+            onChange={uid => onSave(uid, currentEnd)}
+            placeholder="Select timekeeper..."
+          />
+        </div>
+        <div>
+          <label className="input-label">Finish line</label>
+          <UserSearchSelect
+            users={assignableUsers}
+            value={currentEnd}
+            onChange={uid => onSave(currentStart, uid)}
+            placeholder="Select timekeeper..."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserSearchSelect({ users, value, onChange, placeholder }: {
+  users: User[];
+  value: bigint;
+  onChange: (userId: bigint) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const list = q ? users.filter(u => (u.name || u.email).toLowerCase().includes(q)) : users;
+    return list.sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
+  }, [users, search]);
+
+  const selected = value !== 0n ? users.find(u => u.id === value) : null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => { setOpen(!open); setSearch(''); }}
+        className="input"
+        style={{
+          width: '100%', textAlign: 'left', cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '6px 8px', fontSize: '0.8rem',
+          color: selected ? 'var(--text)' : 'var(--text-muted)',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected ? (selected.name || selected.email) : placeholder}
+        </span>
+        <span style={{ fontSize: '0.6rem', marginLeft: 4 }}>▼</span>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, top: '100%', marginTop: 2,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 50, maxHeight: 220, display: 'flex', flexDirection: 'column',
+        }}>
+          <input
+            type="text"
+            className="input"
+            placeholder="Search..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            autoFocus
+            style={{ margin: 6, width: 'calc(100% - 12px)', fontSize: '0.8rem' }}
+          />
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {value !== 0n && (
+              <button
+                onClick={() => { onChange(0n); setOpen(false); }}
+                style={{
+                  display: 'block', width: '100%', padding: '6px 12px', border: 'none',
+                  background: 'none', color: 'var(--text-muted)', fontSize: '0.8rem',
+                  textAlign: 'left', cursor: 'pointer', fontStyle: 'italic',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                Unassign
+              </button>
+            )}
+            {filtered.map(u => (
+              <button
+                key={String(u.id)}
+                onClick={() => { onChange(u.id); setOpen(false); }}
+                style={{
+                  display: 'block', width: '100%', padding: '6px 12px', border: 'none',
+                  background: u.id === value ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'none',
+                  color: 'var(--text)', fontSize: '0.8rem', textAlign: 'left', cursor: 'pointer',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
+                onMouseLeave={e => (e.currentTarget.style.background = u.id === value ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'none')}
+              >
+                {u.name || u.email}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="muted small-text" style={{ padding: '8px 12px' }}>No users found</div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
