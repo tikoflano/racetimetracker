@@ -145,7 +145,7 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
                   <button
                     className="img-modal-delete"
                     onClick={() => handleDelete(modalImage.id)}
-                    title="Delete image"
+                    title="Delete"
                   >
                     Delete
                   </button>

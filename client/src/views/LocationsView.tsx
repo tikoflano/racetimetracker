@@ -129,7 +129,7 @@ export default function LocationsView() {
                 </td>
                 <td>
                   <RowActionMenu items={[
-                    { icon: faTrash, label: 'Delete location', danger: true, onClick: () => handleDelete(v) },
+                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDelete(v) },
                   ]} />
                 </td>
               </tr>

@@ -222,7 +222,7 @@ export default function EventView() {
           />
           {canEdit && (
             <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-              Manage Event
+              Manage
             </Link>
           )}
         </div>
@@ -402,7 +402,7 @@ function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, is
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename event</span>
+              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename</span>
             </button>
           )}
           {isAuthenticated && (
@@ -418,7 +418,7 @@ function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, is
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faLink} /></span><span>Share event</span>
+              <span style={iconStyle}><FontAwesomeIcon icon={faLink} /></span><span>Share</span>
             </button>
           )}
         </div>

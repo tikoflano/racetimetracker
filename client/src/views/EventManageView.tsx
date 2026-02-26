@@ -527,7 +527,7 @@ export default function EventManageView() {
                 <button
                   className="ghost small"
                   onClick={() => handleRemoveTrack(et)}
-                  title="Remove track"
+                  title="Remove"
                   style={{ color: 'var(--red)', flexShrink: 0 }}
                 >
                   &times;
@@ -680,7 +680,7 @@ export default function EventManageView() {
                                 type="button"
                                 className="ghost small"
                                 onClick={() => handleRemoveTrackFromCategory(ct.id)}
-                                title="Remove track"
+                                title="Remove"
                                 style={{ padding: 0, margin: 0, lineHeight: 1, color: 'var(--red)', fontSize: '0.9em' }}
                               >
                                 &times;
@@ -719,8 +719,8 @@ export default function EventManageView() {
                     </td>
                     <td>
                       <RowActionMenu items={[
-                        { icon: faPen, label: 'Edit category', onClick: () => startEditCat(cat) },
-                        { icon: faTrash, label: 'Delete category', danger: true, onClick: () => handleDeleteCat(cat) },
+                        { icon: faPen, label: 'Edit', onClick: () => startEditCat(cat) },
+                        { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDeleteCat(cat) },
                       ]} />
                     </td>
                   </tr>

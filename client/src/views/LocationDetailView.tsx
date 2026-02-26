@@ -285,8 +285,8 @@ export default function LocationDetailView() {
                 onToggle={() => setMenuOpen(!menuOpen)}
                 onClose={() => setMenuOpen(false)}
                 items={[
-                  { icon: faPen, label: 'Edit location', onClick: () => { setMenuOpen(false); startEditVenue(); } },
-                  { icon: faTrash, label: 'Delete location', danger: true, onClick: () => {
+                  { icon: faPen, label: 'Edit', onClick: () => { setMenuOpen(false); startEditVenue(); } },
+                  { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
                     setMenuOpen(false);
                     if (confirm('Delete this location and all its tracks? This cannot be undone.')) {
                       deleteVenue({ venueId: vid }).then(() => navigate('/locations'));
@@ -418,8 +418,8 @@ export default function LocationDetailView() {
                   </div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     <RowActionMenu items={[
-                      { icon: faPen, label: 'Edit track', onClick: () => startEditTrack(track) },
-                      { icon: faTrash, label: 'Delete track', danger: true, onClick: () => handleDeleteTrack(track) },
+                      { icon: faPen, label: 'Edit', onClick: () => startEditTrack(track) },
+                      { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDeleteTrack(track) },
                     ]} />
                     <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
                   </div>
@@ -561,8 +561,8 @@ export default function LocationDetailView() {
                             <td>
                               {tv.name !== 'Default' ? (
                                 <RowActionMenu items={[
-                                  { icon: faPen, label: 'Edit variation', onClick: () => startEditVar(tv) },
-                                  ...(vars.length > 1 ? [{ icon: faTrash, label: 'Delete variation', danger: true as const, onClick: () => handleDeleteVar(tv) }] : []),
+                                  { icon: faPen, label: 'Edit', onClick: () => startEditVar(tv) },
+                                  ...(vars.length > 1 ? [{ icon: faTrash, label: 'Delete', danger: true as const, onClick: () => handleDeleteVar(tv) }] : []),
                                 ]} />
                               ) : (
                                 <span className="muted small-text">Default</span>

@@ -243,8 +243,8 @@ export default function ChampionshipDetailView() {
               onToggle={() => setMenuOpen(!menuOpen)}
               onClose={() => setMenuOpen(false)}
               items={[
-                { icon: faPen, label: 'Edit championship', onClick: () => { setMenuOpen(false); startEditing(); } },
-                { icon: faTrash, label: 'Delete championship', danger: true, onClick: () => {
+                { icon: faPen, label: 'Edit', onClick: () => { setMenuOpen(false); startEditing(); } },
+                { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
                   setMenuOpen(false);
                   if (confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) {
                     deleteChampionship({ championshipId: cid }).then(() => navigate('/championships'));
@@ -394,7 +394,7 @@ export default function ChampionshipDetailView() {
                   <td>{e.endDate}</td>
                   <td>
                     <RowActionMenu items={[
-                      { icon: faPen, label: 'Rename event', onClick: () => startEditEvent(e) },
+                      { icon: faPen, label: 'Rename', onClick: () => startEditEvent(e) },
                     ]} />
                   </td>
                 </tr>

@@ -303,8 +303,8 @@ export default function RidersView() {
                 })() : '—'}</td>
                 <td>
                   <RowActionMenu items={[
-                    { icon: faPen, label: 'Edit rider', onClick: () => startEdit(r) },
-                    { icon: faTrash, label: 'Delete rider', danger: true, onClick: () => handleDelete(r) },
+                    { icon: faPen, label: 'Edit', onClick: () => startEdit(r) },
+                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDelete(r) },
                   ]} />
                 </td>
               </tr>

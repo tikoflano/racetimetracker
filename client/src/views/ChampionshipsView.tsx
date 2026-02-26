@@ -265,7 +265,7 @@ export default function ChampionshipsView() {
                 <td>{endDate}</td>
                 <td>
                   <RowActionMenu items={[
-                    { icon: faTrash, label: 'Delete championship', danger: true, onClick: () => {
+                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
                       if (confirm(`Delete "${c.name}" and all its events? This cannot be undone.`)) {
                         deleteChampionship({ championshipId: c.id });
                       }

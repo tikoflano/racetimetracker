@@ -336,7 +336,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename organization</span>
+              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename</span>
             </button>
           )}
           {isAdmin && (
@@ -351,7 +351,7 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onLeave, w
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
-            <span style={iconStyle}><FontAwesomeIcon icon={faRightFromBracket} /></span><span>{willDeleteOrg ? 'Leave & delete organization' : 'Leave organization'}</span>
+            <span style={iconStyle}><FontAwesomeIcon icon={faRightFromBracket} /></span><span>{willDeleteOrg ? 'Leave & delete' : 'Leave'}</span>
           </button>
         </div>
       )}
