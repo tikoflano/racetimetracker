@@ -206,20 +206,22 @@ export default function EventView() {
           {nameError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
-          <EventActionMenu
-            open={eventMenuOpen}
-            onToggle={() => setEventMenuOpen(!eventMenuOpen)}
-            onClose={() => setEventMenuOpen(false)}
-            canEdit={canEdit}
-            isAuthenticated={isAuthenticated}
-            isPinned={isPinned}
-            hasPublicUrl={!!publicUrl}
-            onRename={() => { setEventMenuOpen(false); setNameValue(event.name); setNameError(''); setEditingName(true); }}
-            onPin={() => { setEventMenuOpen(false); togglePin({ eventId: eid }); }}
-            onShare={() => { setEventMenuOpen(false); setCopied(false); setShareOpen(true); }}
-          />
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
+            <EventActionMenu
+              open={eventMenuOpen}
+              onToggle={() => setEventMenuOpen(!eventMenuOpen)}
+              onClose={() => setEventMenuOpen(false)}
+              canEdit={canEdit}
+              isAuthenticated={isAuthenticated}
+              isPinned={isPinned}
+              hasPublicUrl={!!publicUrl}
+              onRename={() => { setEventMenuOpen(false); setNameValue(event.name); setNameError(''); setEditingName(true); }}
+              onPin={() => { setEventMenuOpen(false); togglePin({ eventId: eid }); }}
+              onShare={() => { setEventMenuOpen(false); setCopied(false); setShareOpen(true); }}
+            />
+          </div>
           {canEdit && (
             <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
               Manage
