@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0',
-    allowedHosts: ['.gitpod.dev', '.ngrok-free.app'],
+    allowedHosts: ['.gitpod.dev', '.tikoflano.work'],
     proxy: {
       '/v1': {
         target: 'http://localhost:3000',

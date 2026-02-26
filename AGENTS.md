@@ -232,14 +232,14 @@ Do **not** run long-lived processes with `&` or as foreground commands — alway
 
 ### Tunneling with Cloudflare Tunnels
 
-Use **cloudflared** for exposing local ports. Installed at `~/.local/bin/cloudflared`. No signup required for quick tunnels.
+Use **cloudflared** with a named tunnel to expose the Vite dev server at `https://racetimetracker.tikoflano.work`. The tunnel token is provided via the `CLOUDFLARE_TUNNEL_TOKEN` environment variable (injected as a secret).
 
 ```bash
-# Expose the Vite dev server via a quick tunnel
-tmux new-session -d -s tunnel 'cloudflared tunnel --url http://localhost:5173'
+# Start the named tunnel (routes racetimetracker.tikoflano.work → localhost:5173)
+tmux new-session -d -s tunnel 'cloudflared tunnel run --token $CLOUDFLARE_TUNNEL_TOKEN'
 ```
 
-Check the tmux output for the generated `https://*.trycloudflare.com` URL. For persistent custom domains, configure a named tunnel via the Cloudflare dashboard.
+Verify the tunnel is connected by checking `tmux capture-pane -t tunnel -p` for "Registered tunnel connection" messages. The app will then be accessible at `https://racetimetracker.tikoflano.work`.
 
 ### Running locally
 
