@@ -4,6 +4,8 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
+import { faTrash } from '../icons';
+import { RowActionMenu } from '../components/ActionMenu';
 import type { Venue, Track, Organization } from '../module_bindings/types';
 
 export default function VenuesView() {
@@ -130,7 +132,9 @@ export default function VenuesView() {
                 <td>{trackCounts.get(v.id) ?? 0}</td>
                 <td className="muted small-text">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</td>
                 <td>
-                  <button className="ghost small" onClick={() => handleDelete(v)} style={{ color: 'var(--red)' }} title="Delete">&times;</button>
+                  <RowActionMenu items={[
+                    { icon: faTrash, label: 'Delete venue', danger: true, onClick: () => handleDelete(v) },
+                  ]} />
                 </td>
               </tr>
             ))}
