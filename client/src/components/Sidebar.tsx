@@ -4,15 +4,17 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { IS_DEV } from '../env';
-import { FontAwesomeIcon, faThumbtack } from '../icons';
+import { FontAwesomeIcon, faThumbtack, faChevronLeft, faChevronRight } from '../icons';
 import type { Event, Organization, PinnedEvent } from '../module_bindings/types';
 
 interface SidebarProps {
   className?: string;
   activeOrg: Organization | null;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function Sidebar({ className = '', activeOrg }: SidebarProps) {
+export default function Sidebar({ className = '', activeOrg, collapsed, onToggleCollapse }: SidebarProps) {
   const { user, isAuthenticated, canManageOrg, canManageOrgEvents } = useAuth();
   const [events] = useTable(tables.event);
   const [pinnedEvents] = useTable(tables.pinned_event);
@@ -113,11 +115,23 @@ export default function Sidebar({ className = '', activeOrg }: SidebarProps) {
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
             style={{ fontSize: '0.8rem', opacity: 0.6 }}
           >
-            Dev Tools
+            {collapsed ? '🛠' : 'Dev Tools'}
           </NavLink>
         </div>
       )}
 
+      {onToggleCollapse && (
+        <div className="sidebar-collapse-toggle">
+          <button
+            className="ghost small"
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            style={{ width: '100%', padding: '8px', fontSize: '0.75rem', opacity: 0.6 }}
+          >
+            <FontAwesomeIcon icon={collapsed ? faChevronRight : faChevronLeft} />
+          </button>
+        </div>
+      )}
     </nav>
   );
 }

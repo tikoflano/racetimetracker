@@ -76,6 +76,20 @@ body {
   border-right: 1px solid var(--border);
   padding: 16px 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.15s ease;
+}
+.sidebar.collapsed {
+  width: 40px;
+}
+.sidebar.collapsed .sidebar-section {
+  display: none;
+}
+.sidebar-collapse-toggle {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: 4px;
 }
 
 .sidebar-section {
@@ -706,6 +720,9 @@ body {
     z-index: 99;
     background: rgba(0, 0, 0, 0.5);
   }
+  .sidebar.collapsed { width: 260px; }
+  .sidebar.collapsed .sidebar-section { display: block; }
+  .sidebar-collapse-toggle { display: none; }
   .app-main { padding: 16px; }
   .cal-cell { min-height: 60px; }
   .cal-event { font-size: 0.6rem; }

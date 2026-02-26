@@ -13,4 +13,6 @@ export {
   faShareNodes,
   faUser,
   faArrowRightArrowLeft,
+  faChevronLeft,
+  faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';

@@ -21,7 +21,7 @@ import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
 import TimekeepView from './views/TimekeepView';
 import DevView from './views/DevView';
-import { FontAwesomeIcon, faBars, faXmark, faUser, faRightFromBracket, faArrowRightArrowLeft } from './icons';
+import { FontAwesomeIcon, faBars, faXmark, faRightFromBracket, faArrowRightArrowLeft, faChevronLeft, faChevronRight } from './icons';
 import Modal from './components/Modal';
 import type { Organization } from './module_bindings/types';
 
@@ -34,6 +34,7 @@ export default function App() {
   const stopImpersonation = useReducer(reducers.stopImpersonation);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [switchOrgOpen, setSwitchOrgOpen] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
@@ -242,8 +243,14 @@ export default function App() {
             <>
               {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
               <Sidebar
-                className={sidebarOpen ? 'open' : ''}
+                className={`${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
                 activeOrg={activeOrg}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => {
+                  const next = !sidebarCollapsed;
+                  setSidebarCollapsed(next);
+                  localStorage.setItem('sidebar_collapsed', String(next));
+                }}
               />
             </>
           )}
