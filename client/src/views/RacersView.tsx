@@ -28,6 +28,8 @@ export default function RacersView() {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [ageMin, setAgeMin] = useState('');
+  const [ageMax, setAgeMax] = useState('');
   const [expandedQR, setExpandedQR] = useState<bigint | null>(null);
 
   const org = orgs.find((o: Organization) => o.id === oid);
@@ -40,13 +42,31 @@ export default function RacersView() {
   }, [riders, oid]);
 
   const filteredRiders = useMemo(() => {
-    if (!search.trim()) return orgRiders;
-    const q = search.toLowerCase();
-    return orgRiders.filter((r: Rider) =>
-      `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
-      r.email.toLowerCase().includes(q)
-    );
-  }, [orgRiders, search]);
+    let list = orgRiders;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((r: Rider) =>
+        `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q)
+      );
+    }
+    const min = parseInt(ageMin);
+    const max = parseInt(ageMax);
+    if (!isNaN(min) || !isNaN(max)) {
+      const today = new Date();
+      list = list.filter((r: Rider) => {
+        if (!r.dateOfBirth) return false;
+        const dob = new Date(r.dateOfBirth);
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+        if (!isNaN(min) && age < min) return false;
+        if (!isNaN(max) && age > max) return false;
+        return true;
+      });
+    }
+    return list;
+  }, [orgRiders, search, ageMin, ageMax]);
 
   const orgTokens = useMemo(() => {
     return tokens.filter((t: RegistrationToken) => t.orgId === oid);
@@ -226,6 +246,28 @@ export default function RacersView() {
             className="input"
             style={{ maxWidth: 300 }}
           />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="muted small-text">Age:</span>
+            <input
+              type="number"
+              placeholder="Min"
+              value={ageMin}
+              onChange={e => setAgeMin(e.target.value)}
+              className="input"
+              style={{ width: 70 }}
+              min="0"
+            />
+            <span className="muted small-text">–</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={ageMax}
+              onChange={e => setAgeMax(e.target.value)}
+              className="input"
+              style={{ width: 70 }}
+              min="0"
+            />
+          </div>
         </div>
       )}
 
@@ -240,7 +282,8 @@ export default function RacersView() {
               <th>Email</th>
               <th>Phone</th>
               <th>DOB</th>
-              <th style={{ width: 100 }}></th>
+              <th>Age</th>
+              <th style={{ width: 40 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -250,6 +293,14 @@ export default function RacersView() {
                 <td className="muted">{r.email || '—'}</td>
                 <td className="muted">{r.phone || '—'}</td>
                 <td>{r.dateOfBirth || '—'}</td>
+                <td className="muted">{r.dateOfBirth ? (() => {
+                  const today = new Date();
+                  const dob = new Date(r.dateOfBirth);
+                  let age = today.getFullYear() - dob.getFullYear();
+                  const m = today.getMonth() - dob.getMonth();
+                  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                  return age;
+                })() : '—'}</td>
                 <td>
                   <RowActionMenu items={[
                     { icon: faPen, label: 'Edit racer', onClick: () => startEdit(r) },
