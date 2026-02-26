@@ -9,7 +9,7 @@ import { faPen, faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import type { Rider, Organization, RegistrationToken } from '../module_bindings/types';
 
-export default function RacersView() {
+export default function RidersView() {
   const oid = useActiveOrg();
   const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 

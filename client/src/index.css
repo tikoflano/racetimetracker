@@ -586,8 +586,8 @@ body {
   gap: 12px;
 }
 
-/* Venue header */
-.venue-header {
+/* Location header */
+.location-header {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -595,23 +595,23 @@ body {
   margin-bottom: 24px;
 }
 
-/* Venue map */
-.venue-map-container .leaflet-container {
+/* Location map */
+.location-map-container .leaflet-container {
   background: var(--surface);
   font-family: inherit;
   z-index: 1;
 }
-.venue-map-container .leaflet-popup-content-wrapper {
+.location-map-container .leaflet-popup-content-wrapper {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
-.venue-map-container .leaflet-popup-tip {
+.location-map-container .leaflet-popup-tip {
   background: var(--surface);
 }
-.venue-map-container .leaflet-popup-close-button {
+.location-map-container .leaflet-popup-close-button {
   color: var(--text-muted);
 }
 

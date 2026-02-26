@@ -4,7 +4,7 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
-import AddRacerModal from '../components/AddRacerModal';
+import AddRiderModal from '../components/AddRiderModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
 import { faPen, faTrash } from '../icons';
@@ -200,11 +200,11 @@ export default function EventManageView() {
   const [showImport, setShowImport] = useState(false);
   const [importError, setImportError] = useState('');
 
-  // Racer state
-  const [showAddRacerModal, setShowAddRacerModal] = useState(false);
-  const [showImportRacers, setShowImportRacers] = useState(false);
-  const [racerError, setRacerError] = useState('');
-  const [importRacerError, setImportRacerError] = useState('');
+  // Rider state
+  const [showAddRiderModal, setShowAddRiderModal] = useState(false);
+  const [showImportRiders, setShowImportRiders] = useState(false);
+  const [riderError, setRiderError] = useState('');
+  const [importRiderError, setImportRiderError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all'); // 'all' | 'none' | category id as string
   const [checkInModal, setCheckInModal] = useState<{ rider: Rider; eventRider: EventRider } | null>(null);
   const [showAddTrackModal, setShowAddTrackModal] = useState(false);
@@ -310,25 +310,25 @@ export default function EventManageView() {
   };
 
   const handleAddRider = async (riderId: bigint) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await addRiderToEvent({ eventId: eid, riderId });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleImportRiders = async (sourceEventId: bigint) => {
-    setImportRacerError('');
+    setImportRiderError('');
     try {
       await importRiders({ targetEventId: eid, sourceEventId });
-      setShowImportRacers(false);
-    } catch (e: any) { setImportRacerError(e?.message || 'Failed'); }
+      setShowImportRiders(false);
+    } catch (e: any) { setImportRiderError(e?.message || 'Failed'); }
   };
 
   const handleToggleCheckIn = async (er: EventRider) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: !er.checkedIn, assignedNumber: er.assignedNumber });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleRevertCheckIn = async (er: EventRider, rider: Rider) => {
@@ -337,17 +337,17 @@ export default function EventManageView() {
   };
 
   const handleCheckIn = async (er: EventRider, assignedNumber: number) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await updateEventRider({ eventRiderId: er.id, categoryId: er.categoryId, checkedIn: true, assignedNumber });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleChangeCategory = async (er: EventRider, newCategoryId: bigint) => {
-    setRacerError('');
+    setRiderError('');
     try {
       await updateEventRider({ eventRiderId: er.id, categoryId: newCategoryId, checkedIn: er.checkedIn, assignedNumber: er.assignedNumber });
-    } catch (e: any) { setRacerError(e?.message || 'Failed'); }
+    } catch (e: any) { setRiderError(e?.message || 'Failed'); }
   };
 
   const handleAddTrack = async (tvId: bigint) => {
@@ -739,22 +739,22 @@ export default function EventManageView() {
             Riders <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({assignedRiders.length})</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="ghost small" onClick={() => { setShowImportRacers(!showImportRacers); setImportRacerError(''); }}>
-              {showImportRacers ? 'Cancel Import' : 'Import'}
+            <button className="ghost small" onClick={() => { setShowImportRiders(!showImportRiders); setImportRiderError(''); }}>
+              {showImportRiders ? 'Cancel Import' : 'Import'}
             </button>
-            <button className="primary small" onClick={() => setShowAddRacerModal(true)}>
+            <button className="primary small" onClick={() => setShowAddRiderModal(true)}>
               + Add Riders
             </button>
           </div>
         </div>
 
-        {racerError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{racerError}</div>}
+        {riderError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{riderError}</div>}
 
         {/* Import racers from another event */}
-        {showImportRacers && (
+        {showImportRiders && (
           <div className="card" style={{ marginBottom: 12 }}>
             <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>Import riders from another event</div>
-            {importRacerError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{importRacerError}</div>}
+            {importRiderError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{importRiderError}</div>}
             {otherEvents.length === 0 ? (
               <div className="muted small-text">No other events in this organization.</div>
             ) : (
@@ -999,9 +999,9 @@ export default function EventManageView() {
         allVariations={trackVariations}
         usedVariationIds={usedVariationIds}
       />
-      <AddRacerModal
-        open={showAddRacerModal}
-        onClose={() => setShowAddRacerModal(false)}
+      <AddRiderModal
+        open={showAddRiderModal}
+        onClose={() => setShowAddRiderModal(false)}
         onAdd={handleAddRider}
         availableRiders={unassignedRiders}
       />

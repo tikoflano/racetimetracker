@@ -13,9 +13,9 @@ import OrgMembersView from './views/OrgMembersView';
 import ChampionshipsView from './views/ChampionshipsView';
 import ChampionshipDetailView from './views/ChampionshipDetailView';
 import CalendarView from './views/CalendarView';
-import RacersView from './views/RacersView';
-import VenuesView from './views/VenuesView';
-import VenueDetailView from './views/VenueDetailView';
+import RidersView from './views/RidersView';
+import LocationsView from './views/LocationsView';
+import LocationDetailView from './views/LocationDetailView';
 import EventManageView from './views/EventManageView';
 import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
@@ -266,9 +266,9 @@ export default function App() {
                 <Route path="/calendar" element={<CalendarView />} />
                 <Route path="/championships" element={<ChampionshipsView />} />
                 <Route path="/championship/:champId" element={<ChampionshipDetailView />} />
-                <Route path="/racers" element={<RacersView />} />
-                <Route path="/venues" element={<VenuesView />} />
-                <Route path="/venue/:venueId" element={<VenueDetailView />} />
+                <Route path="/riders" element={<RidersView />} />
+                <Route path="/locations" element={<LocationsView />} />
+                <Route path="/location/:venueId" element={<LocationDetailView />} />
                 <Route path="/timekeep" element={<TimekeepView />} />
                 <Route path="/register/:token" element={<RegisterView />} />
                 <Route path="/register/:token/qr" element={<QRCodeView />} />

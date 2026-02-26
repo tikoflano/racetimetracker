@@ -230,7 +230,7 @@ export default function EventView() {
       <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
       {venue && (
         <p className="muted small-text" style={{ marginBottom: 16 }}>
-          <Link to={`/venue/${venue.id}`} style={{ color: 'inherit' }}>{venue.name}</Link>
+          <Link to={`/location/${venue.id}`} style={{ color: 'inherit' }}>{venue.name}</Link>
           {' '}&middot; {event.startDate} &ndash; {event.endDate}
         </p>
       )}

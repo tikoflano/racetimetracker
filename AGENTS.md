@@ -90,7 +90,7 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 ## Terminology
 
 - Always use **"rider"** (not "racer") when referring to participants. If a request uses "racer", replace it with "rider" and let the requester know.
-- Always use **"location"** (not "venue") when referring to the places where events happen. If a request uses "venue", replace it with "location" and let the requester know. Note: internal code (table names, variable names, routes) still uses `venue` — only user-facing text uses "location".
+- Always use **"location"** (not "venue") when referring to the places where events happen. If a request uses "venue", replace it with "location" and let the requester know. Note: SpacetimeDB table/column names and generated bindings still use `venue` (schema rename would require migration), but file names, routes, CSS classes, component names, and local variables use "location".
 
 ## Code Conventions
 

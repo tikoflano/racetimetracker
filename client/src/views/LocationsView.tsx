@@ -8,12 +8,12 @@ import { faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import type { Venue, Track, Organization } from '../module_bindings/types';
 
-export default function VenuesView() {
+export default function LocationsView() {
   const oid = useActiveOrg();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
-  const [venues] = useTable(tables.venue);
+  const [locations] = useTable(tables.venue);
   const [tracks] = useTable(tables.track);
 
   const createVenue = useReducer(reducers.createVenue);
@@ -26,19 +26,19 @@ export default function VenuesView() {
   const org = orgs.find((o: Organization) => o.id === oid);
   const hasAccess = canManageOrgEvents(oid);
 
-  const orgVenues = useMemo(() => {
-    return venues.filter((v: Venue) => v.orgId === oid).sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
-  }, [venues, oid]);
+  const orgLocations = useMemo(() => {
+    return locations.filter((v: Venue) => v.orgId === oid).sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
+  }, [locations, oid]);
 
   const trackCounts = useMemo(() => {
     const m = new Map<bigint, number>();
     for (const t of tracks) {
-      for (const v of orgVenues) {
+      for (const v of orgLocations) {
         if (t.venueId === v.id) m.set(v.id, (m.get(v.id) ?? 0) + 1);
       }
     }
     return m;
-  }, [tracks, orgVenues]);
+  }, [tracks, orgLocations]);
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -99,7 +99,7 @@ export default function VenuesView() {
         </div>
       )}
 
-      {orgVenues.length === 0 && !showForm ? (
+      {orgLocations.length === 0 && !showForm ? (
         <div className="empty">No locations yet. Create one to get started.</div>
       ) : (
         <table className="data-table">
@@ -113,10 +113,10 @@ export default function VenuesView() {
             </tr>
           </thead>
           <tbody>
-            {orgVenues.map((v: Venue) => (
+            {orgLocations.map((v: Venue) => (
               <tr key={String(v.id)}>
                 <td>
-                  <Link to={`/venue/${v.id}`} className="table-link">{v.name}</Link>
+                  <Link to={`/location/${v.id}`} className="table-link">{v.name}</Link>
                 </td>
                 <td className="muted small-text">{v.description || '—'}</td>
                 <td>{trackCounts.get(v.id) ?? 0}</td>

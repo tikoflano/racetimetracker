@@ -13,7 +13,7 @@ function getAge(dateOfBirth: string): number | null {
   return age;
 }
 
-interface AddRacerModalProps {
+interface AddRiderModalProps {
   open: boolean;
   onClose: () => void;
   onAdd: (riderId: bigint) => void;
@@ -21,7 +21,7 @@ interface AddRacerModalProps {
   availableRiders: readonly Rider[];
 }
 
-export default function AddRacerModal({ open, onClose, onAdd, availableRiders }: AddRacerModalProps) {
+export default function AddRiderModal({ open, onClose, onAdd, availableRiders }: AddRiderModalProps) {
   const [search, setSearch] = useState('');
   const [minAge, setMinAge] = useState('');
   const [maxAge, setMaxAge] = useState('');

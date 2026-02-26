@@ -61,7 +61,7 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
   return null;
 }
 
-export default function VenueDetailView() {
+export default function LocationDetailView() {
   const { venueId } = useParams<{ venueId: string }>();
   const oid = useActiveOrg();
   const vid = BigInt(venueId ?? '0');
@@ -257,8 +257,8 @@ export default function VenueDetailView() {
 
   return (
     <div>
-      <div className="venue-header">
-        <Link to="/venues" className="back-link">&larr; Locations</Link>
+      <div className="location-header">
+        <Link to="/locations" className="back-link">&larr; Locations</Link>
 
         {/* Venue header */}
         {editingVenue ? (
@@ -289,7 +289,7 @@ export default function VenueDetailView() {
                   { icon: faTrash, label: 'Delete location', danger: true, onClick: () => {
                     setMenuOpen(false);
                     if (confirm('Delete this location and all its tracks? This cannot be undone.')) {
-                      deleteVenue({ venueId: vid }).then(() => navigate('/venues'));
+                      deleteVenue({ venueId: vid }).then(() => navigate('/locations'));
                     }
                   }},
                 ]}
@@ -347,7 +347,7 @@ export default function VenueDetailView() {
 
       {/* Map */}
       {mapPositions.length > 0 && (
-      <div className="venue-map-container" style={{ marginBottom: 20 }}>
+      <div className="location-map-container" style={{ marginBottom: 20 }}>
         <MapContainer
           center={mapPositions[0]}
           zoom={14}
@@ -506,7 +506,7 @@ export default function VenueDetailView() {
                                   Click on the map to place the start pin
                                 </div>
                               )}
-                              <div className="venue-map-container">
+                              <div className="location-map-container">
                                 <MapContainer
                                   center={mapPositions.length > 0 ? mapPositions[0] : [0, 0]}
                                   zoom={14}
