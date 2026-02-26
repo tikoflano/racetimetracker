@@ -450,6 +450,8 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
   const jwt = ctx.senderAuth.jwt;
   // Anonymous connections are allowed (read-only via subscriptions)
   if (!jwt) return;
+  // Only accept Google OAuth tokens; reject others (e.g. Codespaces, dev tools) to avoid orphan "User's Organization"
+  if (jwt.issuer !== GOOGLE_ISSUER) return;
 
   const sub = jwt.subject;
   const email = (jwt.fullPayload['email'] as string) ?? '';
@@ -495,13 +497,15 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
     userId = newUser.id;
   }
 
-  // Auto-create an org if the user doesn't own one
+  // Auto-create an org if the user doesn't own one (skip when profile is empty to avoid orphan "User's Organization")
+  const displayName = name || (email ? email.split('@')[0] : '') || 'User';
+  if (displayName === 'User') return; // Incomplete profile — don't create org
+
   let hasOrg = false;
   for (const o of ctx.db.organization.iter()) {
     if (o.owner_user_id === userId) { hasOrg = true; break; }
   }
   if (!hasOrg) {
-    const displayName = name || email.split('@')[0] || 'User';
     const orgName = generateUniqueOrgName(ctx, `${displayName}'s Organization`);
     ctx.db.organization.insert({ id: 0n, name: orgName, slug: uniqueOrgSlug(ctx, slugify(orgName)), owner_user_id: userId, registration_enabled: true });
   }
