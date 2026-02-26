@@ -78,7 +78,7 @@ export default function RacersView() {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;
   }
-  if (!hasAccess) return <div className="empty">You don't have access to manage racers.</div>;
+  if (!hasAccess) return <div className="empty">You don't have access to manage riders.</div>;
 
   const resetForm = () => {
     setForm({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
@@ -122,7 +122,7 @@ export default function RacersView() {
       }
       resetForm();
     } catch (e: any) {
-      setError(e?.message || 'Failed to save racer');
+      setError(e?.message || 'Failed to save rider');
     }
   };
 
@@ -131,7 +131,7 @@ export default function RacersView() {
     try {
       await deleteRider({ riderId: r.id });
     } catch (e: any) {
-      setError(e?.message || 'Failed to delete racer');
+      setError(e?.message || 'Failed to delete rider');
     }
   };
 
@@ -158,10 +158,10 @@ export default function RacersView() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
-        <h1 style={{ marginBottom: 0 }}>Racers <span className="muted" style={{ fontSize: '1rem', fontWeight: 400 }}>({orgRiders.length})</span></h1>
+        <h1 style={{ marginBottom: 0 }}>Riders <span className="muted" style={{ fontSize: '1rem', fontWeight: 400 }}>({orgRiders.length})</span></h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {!showForm && (
-            <button className="primary small" onClick={() => { setEditingId(null); setShowForm(true); setError(''); }}>+ Add Racer</button>
+            <button className="primary small" onClick={() => { setEditingId(null); setShowForm(true); setError(''); }}>+ Add Rider</button>
           )}
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function RacersView() {
       {/* Add / Edit form */}
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>{editingId !== null ? 'Edit Racer' : 'New Racer'}</div>
+          <div className="section-title" style={{ marginBottom: 8 }}>{editingId !== null ? 'Edit Rider' : 'New Rider'}</div>
           {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
@@ -229,7 +229,7 @@ export default function RacersView() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button className="primary small" onClick={handleSubmit}>{editingId !== null ? 'Save' : 'Add Racer'}</button>
+            <button className="primary small" onClick={handleSubmit}>{editingId !== null ? 'Save' : 'Add Rider'}</button>
             <button className="ghost small" onClick={resetForm}>Cancel</button>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function RacersView() {
         <div style={{ marginBottom: 16 }}>
           <input
             type="text"
-            placeholder="Search racers..."
+            placeholder="Search riders..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input"
@@ -273,7 +273,7 @@ export default function RacersView() {
 
       {/* Riders table */}
       {filteredRiders.length === 0 && !showForm ? (
-        <div className="empty">{search ? 'No racers match your search.' : 'No racers yet. Add one or generate a registration link.'}</div>
+        <div className="empty">{search ? 'No riders match your search.' : 'No riders yet. Add one or generate a registration link.'}</div>
       ) : (
         <table className="data-table">
           <thead>
@@ -303,8 +303,8 @@ export default function RacersView() {
                 })() : '—'}</td>
                 <td>
                   <RowActionMenu items={[
-                    { icon: faPen, label: 'Edit racer', onClick: () => startEdit(r) },
-                    { icon: faTrash, label: 'Delete racer', danger: true, onClick: () => handleDelete(r) },
+                    { icon: faPen, label: 'Edit rider', onClick: () => startEdit(r) },
+                    { icon: faTrash, label: 'Delete rider', danger: true, onClick: () => handleDelete(r) },
                   ]} />
                 </td>
               </tr>
@@ -320,7 +320,7 @@ export default function RacersView() {
           <button className="primary small" onClick={handleCreateToken}>+ Generate Link</button>
         </div>
         <p className="muted small-text" style={{ marginBottom: 12 }}>
-          Share these links or QR codes so racers can register themselves.
+          Share these links or QR codes so riders can register themselves.
         </p>
         {orgTokens.length === 0 ? (
           <div className="empty" style={{ padding: 16 }}>No registration links yet.</div>

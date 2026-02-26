@@ -95,7 +95,7 @@ export default function Sidebar({ className = '', activeOrg, collapsed, onToggle
             to="/racers"
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
           >
-            Racers
+            Riders
           </NavLink>
           {canManageOrg(activeOrg.id) && (
             <NavLink

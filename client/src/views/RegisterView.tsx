@@ -77,7 +77,7 @@ export default function RegisterView() {
   return (
     <div className="register-page">
       <div className="register-card">
-        <h1>Racer Registration</h1>
+        <h1>Rider Registration</h1>
         {org && <p className="muted" style={{ marginBottom: 16 }}>Register with <strong>{org.name}</strong></p>}
 
         {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}

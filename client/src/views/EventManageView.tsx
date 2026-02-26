@@ -472,7 +472,7 @@ export default function EventManageView() {
           className={activeTab === 'racers' ? 'active' : ''}
           onClick={() => setActiveTab('racers')}
         >
-          Racers ({assignedRiders.length})
+          Riders ({assignedRiders.length})
         </button>
         <button
           className={activeTab === 'runs' ? 'active' : ''}
@@ -736,14 +736,14 @@ export default function EventManageView() {
       <div className="section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <div className="section-title" style={{ marginBottom: 0 }}>
-            Racers <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({assignedRiders.length})</span>
+            Riders <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({assignedRiders.length})</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="ghost small" onClick={() => { setShowImportRacers(!showImportRacers); setImportRacerError(''); }}>
               {showImportRacers ? 'Cancel Import' : 'Import'}
             </button>
             <button className="primary small" onClick={() => setShowAddRacerModal(true)}>
-              + Add Racers
+              + Add Riders
             </button>
           </div>
         </div>
@@ -753,7 +753,7 @@ export default function EventManageView() {
         {/* Import racers from another event */}
         {showImportRacers && (
           <div className="card" style={{ marginBottom: 12 }}>
-            <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>Import racers from another event</div>
+            <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>Import riders from another event</div>
             {importRacerError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{importRacerError}</div>}
             {otherEvents.length === 0 ? (
               <div className="muted small-text">No other events in this organization.</div>
@@ -766,7 +766,7 @@ export default function EventManageView() {
                       <div>
                         <strong style={{ fontSize: '0.85rem' }}>{evt.name}</strong>
                         <span className="muted small-text" style={{ marginLeft: 8 }}>
-                          {count} racer{count !== 1 ? 's' : ''}
+                          {count} rider{count !== 1 ? 's' : ''}
                         </span>
                       </div>
                       <button className="primary small" onClick={() => handleImportRiders(evt.id)}>Import</button>
@@ -774,7 +774,7 @@ export default function EventManageView() {
                   );
                 })}
                 {otherEvents.every(e => !riderCountByEvent.has(e.id)) && (
-                  <div className="muted small-text">No other events have racers assigned.</div>
+                  <div className="muted small-text">No other events have riders assigned.</div>
                 )}
               </div>
             )}
@@ -800,7 +800,7 @@ export default function EventManageView() {
         )}
 
         {assignedRiders.length === 0 ? (
-          <div className="empty">No racers assigned to this event.</div>
+          <div className="empty">No riders assigned to this event.</div>
         ) : (() => {
           const filteredRiders = assignedRiders.filter(r => {
             const er = eventRiderMap.get(r.id);
@@ -810,7 +810,7 @@ export default function EventManageView() {
             return er.categoryId === BigInt(categoryFilter);
           });
           return filteredRiders.length === 0 ? (
-            <div className="empty">No racers match this filter.</div>
+            <div className="empty">No riders match this filter.</div>
           ) : (
             <table className="data-table">
               <thead>
@@ -891,7 +891,7 @@ export default function EventManageView() {
         {sortedEventTracks.length === 0 ? (
           <div className="empty">No tracks assigned to this event. Add tracks first.</div>
         ) : assignedRiders.length === 0 ? (
-          <div className="empty">No racers registered. Add racers to create a schedule.</div>
+          <div className="empty">No riders registered. Add riders to create a schedule.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {sortedEventTracks.map((et: EventTrack) => {

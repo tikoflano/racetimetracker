@@ -207,7 +207,7 @@ const spacetimedb = schema({
     }
   ),
 
-  // Tracks that racers in this category will race on (subset of event tracks)
+  // Tracks that riders in this category will race on (subset of event tracks)
   category_track: table(
     { public: true },
     {
@@ -1850,7 +1850,7 @@ export const seed_demo_data = spacetimedb.reducer(
     // Categories
     const catElite = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Elite', description: 'Pro and semi-pro riders', number_range_start: 1, number_range_end: 50 });
     const catSport = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Sport', description: 'Intermediate competitive riders', number_range_start: 51, number_range_end: 100 });
-    const catBeginner = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Beginner', description: 'First-time racers welcome', number_range_start: 101, number_range_end: 150 });
+    const catBeginner = ctx.db.event_category.insert({ id: 0n, event_id: evtUpcoming.id, name: 'Beginner', description: 'First-time riders welcome', number_range_start: 101, number_range_end: 150 });
 
     // Assign tracks to categories
     ctx.db.category_track.insert({ id: 0n, category_id: catElite.id, event_track_id: etR4_1!.id });

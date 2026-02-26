@@ -87,6 +87,10 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 - Permission helpers in `client/src/auth.tsx`: `canManageOrg()`, `canManageOrgEvents()`, `canOrganizeEvent()`, `canTimekeep()`.
 - Anonymous users see the leaderboard. Track timing controls require auth + role.
 
+## Terminology
+
+- Always use **"rider"** (not "racer") when referring to participants. If a request uses "racer", replace it with "rider" and let the requester know.
+
 ## Code Conventions
 
 - TypeScript strict mode in both client and server.
