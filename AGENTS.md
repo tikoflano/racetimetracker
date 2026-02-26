@@ -215,9 +215,35 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 - Node.js 22+ and npm are pre-installed.
 - `npm install` at the workspace root installs both `client/` and `spacetimedb/` via npm workspaces.
 
+### Long-running processes
+
+Always use **tmux** for long-running or persistent commands (`npm start`, `cloudflared`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
+
+```bash
+# Start the dev stack in a named tmux session
+tmux new-session -d -s dev 'npm start'
+
+# View logs
+tmux attach -t dev        # attach interactively
+tmux capture-pane -t dev -p  # print recent output without attaching
+```
+
+Do **not** run long-lived processes with `&` or as foreground commands — always prefer tmux.
+
+### Tunneling with Cloudflare Tunnels
+
+Use **cloudflared** for exposing local ports. Installed at `~/.local/bin/cloudflared`. No signup required for quick tunnels.
+
+```bash
+# Expose the Vite dev server via a quick tunnel
+tmux new-session -d -s tunnel 'cloudflared tunnel --url http://localhost:5173'
+```
+
+Check the tmux output for the generated `https://*.trycloudflare.com` URL. For persistent custom domains, configure a named tunnel via the Cloudflare dashboard.
+
 ### Running locally
 
-1. Run `npm start` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
+1. Run `tmux new-session -d -s dev 'npm start'` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
 2. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
 3. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
 4. To reset everything (kill processes, clear data, logout): `npm run reset`
@@ -230,3 +256,7 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 - Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
 - The `client/.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `client/.env.local.example`.
 - Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.
+
+### Startup verification
+
+After starting services with `npm start`, verify the app loads by checking that `http://localhost:5173` returns HTTP 200 and shows the login screen. A full interactive demo (seeding data, clicking through flows) is **not** required on every startup — confirming the login screen renders is sufficient.
