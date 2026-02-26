@@ -215,9 +215,24 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 - Node.js 22+ and npm are pre-installed.
 - `npm install` at the workspace root installs both `client/` and `spacetimedb/` via npm workspaces.
 
+### Long-running processes
+
+Always use **tmux** for long-running or persistent commands (`npm start`, `ngrok`, `trapdoor`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
+
+```bash
+# Start the dev stack in a named tmux session
+tmux new-session -d -s dev 'npm start'
+
+# View logs
+tmux attach -t dev        # attach interactively
+tmux capture-pane -t dev -p  # print recent output without attaching
+```
+
+Do **not** run long-lived processes with `&` or as foreground commands — always prefer tmux.
+
 ### Running locally
 
-1. Run `npm start` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
+1. Run `tmux new-session -d -s dev 'npm start'` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
 2. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
 3. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
 4. To reset everything (kill processes, clear data, logout): `npm run reset`
