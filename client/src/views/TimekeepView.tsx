@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
@@ -67,7 +67,8 @@ export default function TimekeepView() {
   }, [user, assignments, eventTracks, events, trackVariations, tracksData, runs]);
 
   if (!isAuthenticated || !user) {
-    return <div className="empty">Sign in to access timekeeping.</div>;
+    localStorage.setItem('redirect_after_login', '/timekeep');
+    return <Navigate to="/" replace />;
   }
 
   const handleStart = (runId: bigint) => startRun({ runId, clientTime: getCorrectedTime() });

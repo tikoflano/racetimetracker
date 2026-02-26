@@ -79,10 +79,10 @@ export default function OrgMembersView() {
       const email = (u.email || '').toLowerCase();
       return !q || name.includes(q) || email.includes(q);
     };
-    const ownerIncluded = ownerUser && (roleFilter === 'all' || roleFilter === 'owner') && matchesSearch(ownerUser);
+    const ownerIncluded = ownerUser && (roleFilter === 'all' || roleFilter === 'owner') && matchesSearch(ownerUser ?? null);
     const filteredMembers = members.filter(({ member, user: mu }) => {
       if (roleFilter !== 'all' && roleFilter !== member.role) return false;
-      return matchesSearch(mu);
+      return matchesSearch(mu ?? null);
     });
     return { ownerIncluded, ownerUser, filteredMembers };
   }, [members, ownerUser, search, roleFilter]);

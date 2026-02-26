@@ -258,7 +258,7 @@ export default function App() {
           <main className="app-main">
             <OrgProvider value={{ activeOrgId: activeOrgId }}>
               <Routes>
-                <Route path="/" element={isAuthenticated ? <Navigate to="/championships" replace /> : <HomePage />} />
+                <Route path="/" element={isAuthenticated ? <AuthRedirect /> : <HomePage />} />
                 <Route path="/event/:eventSlug" element={<EventView />} />
                 <Route path="/event/:eventSlug/manage" element={<EventManageView />} />
                 <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
@@ -319,6 +319,15 @@ function AvatarMenuItem({ icon, label, onClick, danger }: { icon: any; label: st
       <span>{label}</span>
     </button>
   );
+}
+
+function AuthRedirect() {
+  const redirect = localStorage.getItem('redirect_after_login');
+  if (redirect) {
+    localStorage.removeItem('redirect_after_login');
+    return <Navigate to={redirect} replace />;
+  }
+  return <Navigate to="/championships" replace />;
 }
 
 function NotFound() {
