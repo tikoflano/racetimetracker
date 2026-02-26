@@ -119,6 +119,29 @@ Implementation pattern:
 - When one action is used very frequently, keep it as a visible button outside the dropdown (e.g. "Manage Event" in EventView). Secondary actions stay in the dropdown.
 - See `EventActionMenu` in `EventView.tsx` as the reference implementation.
 
+### Error messages
+
+Show error messages in a **dismissable banner** using the `ErrorBanner` component (`client/src/components/ErrorBanner.tsx`).
+
+Implementation pattern:
+- Import: `import ErrorBanner from '../components/ErrorBanner';`
+- Props: `message` (string), `onDismiss` (callback), `noMargin` (optional, for use inside modals)
+- Place the banner near the relevant context (e.g. below a section header, inside a modal)
+- Call `onDismiss` to clear the error state when the user clicks the X button
+- See `OrgMembersView.tsx` for usage (page-level and inside invite modal).
+
+### Modals
+
+Use the `Modal` component (`client/src/components/Modal.tsx`) for forms and dialogs that require user input or confirmation. Prefer modals over inline forms for add/edit flows (invite member, create entity, etc.).
+
+Implementation pattern:
+- Import: `import Modal from '../components/Modal';`
+- Props: `open`, `onClose`, `title`, `children`
+- Close on Escape key and overlay click (handled by Modal)
+- On success, call `onClose()` (or your close handler) to dismiss
+- Show validation/error messages inside the modal body when the action fails
+- See the invite member flow in `OrgMembersView.tsx` as the reference implementation.
+
 ## Common Tasks
 
 **Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.

@@ -15,4 +15,5 @@ export {
   faArrowRightArrowLeft,
   faChevronLeft,
   faChevronRight,
+  faEnvelope,
 } from '@fortawesome/free-solid-svg-icons';

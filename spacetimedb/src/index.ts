@@ -562,13 +562,15 @@ export const add_org_member = spacetimedb.reducer(
 );
 
 export const invite_org_member = spacetimedb.reducer(
-  { org_id: t.u64(), email: t.string(), role: t.string() },
+  { org_id: t.u64(), email: t.string(), name: t.string(), role: t.string() },
   (ctx, args) => {
     requireOrgAdmin(ctx, args.org_id);
     if (args.role !== 'admin' && args.role !== 'manager' && args.role !== 'timekeeper') throw new SenderError('Invalid role');
 
     const trimmedEmail = args.email.trim().toLowerCase();
     if (!trimmedEmail || !trimmedEmail.includes('@')) throw new SenderError('Valid email is required');
+
+    const trimmedName = (args.name ?? '').trim() || trimmedEmail.split('@')[0];
 
     let targetUser = null;
     for (const u of ctx.db.user.iter()) {
@@ -581,10 +583,13 @@ export const invite_org_member = spacetimedb.reducer(
         identity: placeholderIdentity(trimmedEmail),
         google_sub: `pending:${trimmedEmail}`,
         email: trimmedEmail,
-        name: trimmedEmail.split('@')[0],
+        name: trimmedName,
         picture: '',
         is_super_admin: false,
       });
+    } else if (targetUser.google_sub.startsWith('pending:')) {
+      // Update name for existing pending user
+      ctx.db.user.id.update({ ...targetUser, name: trimmedName });
     }
 
     for (const m of ctx.db.org_member.iter()) {
@@ -593,6 +598,22 @@ export const invite_org_member = spacetimedb.reducer(
       }
     }
     ctx.db.org_member.insert({ id: 0n, org_id: args.org_id, user_id: targetUser.id, role: args.role });
+  }
+);
+
+export const resend_org_invitation = spacetimedb.reducer(
+  { org_member_id: t.u64() },
+  (ctx, args) => {
+    const member = ctx.db.org_member.id.find(args.org_member_id);
+    if (!member) throw new SenderError('Member not found');
+    requireOrgAdmin(ctx, member.org_id);
+
+    const targetUser = ctx.db.user.id.find(member.user_id);
+    if (!targetUser) throw new SenderError('User not found');
+    if (!targetUser.google_sub.startsWith('pending:')) throw new SenderError('User has already accepted the invitation');
+    if (!targetUser.email || !targetUser.email.includes('@')) throw new SenderError('User must have a valid email');
+
+    // Invitation resend validated — actual email sending would be integrated here
   }
 );
 

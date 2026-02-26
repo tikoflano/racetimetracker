@@ -571,6 +571,35 @@ body {
   flex: 1;
 }
 
+/* Dismissable error banner */
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--red-bg, rgba(239, 68, 68, 0.1));
+  border: 1px solid var(--red, #ef4444);
+  border-radius: var(--radius);
+  color: var(--red, #ef4444);
+  font-size: 0.85rem;
+}
+.error-banner .error-banner-dismiss {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+  opacity: 0.8;
+}
+.error-banner .error-banner-dismiss:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.2);
+}
+
 /* Impersonation banner */
 .impersonation-banner {
   background: #b45309;
