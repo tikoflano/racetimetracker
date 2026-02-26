@@ -217,7 +217,7 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 
 ### Long-running processes
 
-Always use **tmux** for long-running or persistent commands (`npm start`, `ngrok`, `trapdoor`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
+Always use **tmux** for long-running or persistent commands (`npm start`, `trapdoor`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
 
 ```bash
 # Start the dev stack in a named tmux session
@@ -229,6 +229,18 @@ tmux capture-pane -t dev -p  # print recent output without attaching
 ```
 
 Do **not** run long-lived processes with `&` or as foreground commands — always prefer tmux.
+
+### Tunneling with Trapdoor
+
+Use **trapdoor** (not ngrok) for exposing local ports. It provides free unlimited tunneling with a custom subdomain and no signup required. Installed at `~/.local/bin/trapdoor`.
+
+```bash
+# Expose the Vite dev server with a custom subdomain
+tmux new-session -d -s tunnel 'trapdoor 5173 racetimetracker'
+# → https://racetimetracker.trapdoor.sh
+```
+
+The subdomain is persistent — the same name gives the same URL each time.
 
 ### Running locally
 
