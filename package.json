@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "start": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev",
-    "reset": "kill $(pgrep -f spacetime) 2>/dev/null; sleep 1; spacetime server clear -y; spacetime logout"
+    "reset": "kill $(pgrep -f spacetime) 2>/dev/null; sleep 1; spacetime server clear -y; spacetime logout",
+    "tunnel": "set -a && . ./.env && set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\""
   }
 }
