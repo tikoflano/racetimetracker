@@ -168,9 +168,7 @@ export default function App() {
                 </div>
               )}
             </div>
-          ) : (
-            <LoginButton />
-          )}
+          ) : null}
         </div>
       </header>
 
