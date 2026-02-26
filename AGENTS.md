@@ -26,10 +26,11 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 │   │   ├── module_bindings/     Auto-generated (DO NOT EDIT) — run spacetime generate
 │   │   ├── utils.ts             Shared utilities (formatElapsed)
 │   │   └── index.css            All styles (single file, no CSS modules)
-│   ├── .env                     Runtime config (VITE_STDB_ENV, VITE_STDB_DATABASE, etc.)
-│   └── vite.config.ts           Dev server config, Vite proxy for local SpacetimeDB
+│   └── vite.config.ts           Dev server config, Vite proxy for local SpacetimeDB (envDir points to root)
 ├── spacetimedb/                 Server module
 │   └── src/index.ts             All tables, reducers, RBAC logic (single file)
+├── .env                         Runtime config — VITE_*, CLOUDFLARE_TUNNEL_TOKEN (gitignored, copy from .env.example)
+├── .env.example                 Template for .env
 ├── spacetime.json               SpacetimeDB project config with database targets
 └── package.json                 npm workspace root
 ```
@@ -82,7 +83,7 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 
 ## Auth & RBAC
 
-- Google OAuth Client ID is in `client/.env` and hardcoded in `spacetimedb/src/index.ts` for server-side validation.
+- Google OAuth Client ID is in the root `.env` file and hardcoded in `spacetimedb/src/index.ts` for server-side validation.
 - Permission hierarchy: super_admin > org admin > org manager > event organizer > event timekeeper.
 - Permission helpers in `client/src/auth.tsx`: `canManageOrg()`, `canManageOrgEvents()`, `canOrganizeEvent()`, `canTimekeep()`.
 - Anonymous users can view the public leaderboard display at `/event/:slug/leaderboard` or `/:orgSlug/event/:slug/leaderboard`. The event view requires auth. Track timing controls require auth + role.
@@ -254,7 +255,7 @@ Verify the tunnel is connected by checking `tmux capture-pane -t tunnel -p` for 
 - The `dev:spacetime` script uses `--no-config` because SpacetimeDB CLI v2.0.1 doesn't support the nested `databases` config format in `spacetime.json`. All flags are passed explicitly.
 - `client/src/module_bindings/` is gitignored and auto-generated. Never edit manually; `spacetime dev` regenerates on each run.
 - Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
-- The `client/.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `client/.env.local.example`.
+- The root `.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `.env.example`.
 - Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.
 
 ### Startup verification
