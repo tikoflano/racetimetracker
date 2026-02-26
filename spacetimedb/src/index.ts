@@ -1862,13 +1862,15 @@ export const seed_demo_data = spacetimedb.reducer(
     ctx.db.category_track.insert({ id: 0n, category_id: catSport.id, event_track_id: etR4_2.id });
     ctx.db.category_track.insert({ id: 0n, category_id: catBeginner.id, event_track_id: etR4_1!.id });
 
-    // Register all 6 riders for R4 with categories and assigned numbers
-    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[0].id, category_id: catElite.id, checked_in: false, assigned_number: 1 });
-    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[1].id, category_id: catElite.id, checked_in: false, assigned_number: 2 });
-    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[2].id, category_id: catSport.id, checked_in: false, assigned_number: 51 });
-    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[3].id, category_id: catSport.id, checked_in: false, assigned_number: 52 });
-    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[4].id, category_id: catBeginner.id, checked_in: false, assigned_number: 101 });
-    ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[5].id, category_id: catBeginner.id, checked_in: false, assigned_number: 102 });
+    // Register all 100 riders for R4 with categories and assigned numbers
+    // Elite: riders 0-49, numbers 1-50
+    for (let i = 0; i < 50; i++) {
+      ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[i].id, category_id: catElite.id, checked_in: false, assigned_number: i + 1 });
+    }
+    // Sport: riders 50-99, numbers 51-100
+    for (let i = 50; i < 100; i++) {
+      ctx.db.event_rider.insert({ id: 0n, event_id: evtUpcoming.id, rider_id: riders[i].id, category_id: catSport.id, checked_in: false, assigned_number: i + 1 });
+    }
 
     // ─── Pending org members ─────────────────────────────────────────────
 

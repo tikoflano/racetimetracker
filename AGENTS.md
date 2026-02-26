@@ -85,7 +85,7 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 - Google OAuth Client ID is in `client/.env` and hardcoded in `spacetimedb/src/index.ts` for server-side validation.
 - Permission hierarchy: super_admin > org admin > org manager > event organizer > event timekeeper.
 - Permission helpers in `client/src/auth.tsx`: `canManageOrg()`, `canManageOrgEvents()`, `canOrganizeEvent()`, `canTimekeep()`.
-- Anonymous users see the leaderboard. Track timing controls require auth + role.
+- Anonymous users can view the public leaderboard display at `/event/:slug/leaderboard` or `/:orgSlug/event/:slug/leaderboard`. The event view requires auth. Track timing controls require auth + role.
 
 ## Terminology
 

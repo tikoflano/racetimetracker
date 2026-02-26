@@ -1,11 +1,11 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
-import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization } from '../module_bindings/types';
+import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization, EventCategory } from '../module_bindings/types';
 import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical } from '../icons';
 import { formatElapsed } from '../utils';
 
@@ -23,6 +23,7 @@ export default function EventView() {
   const [runs] = useTable(tables.run);
   const [riders] = useTable(tables.rider);
   const [eventRiders] = useTable(tables.event_rider);
+  const [eventCategories] = useTable(tables.event_category);
   const [pinnedEvents] = useTable(tables.pinned_event);
 
   const updateEvent = useReducer(reducers.updateEvent);
@@ -101,9 +102,43 @@ export default function EventView() {
   }, [tracksData]);
 
   type RunDetail = { eventTrackId: bigint; trackName: string; status: string; elapsed: number };
+  type LeaderboardEntry = { riderId: bigint; rider?: Rider; total: number; complete: boolean; dnf: boolean; trackCount: number; runs: RunDetail[] };
 
-  const leaderboard = useMemo(() => {
+  const riderToCategory = useMemo(() => {
+    const m = new Map<bigint, bigint>();
+    for (const er of eventRiders) {
+      if ((er as EventRider).eventId !== eid) continue;
+      m.set((er as EventRider).riderId, (er as EventRider).categoryId);
+    }
+    return m;
+  }, [eventRiders, eid]);
+
+  const categoriesForEvent = useMemo(() => {
+    return [...eventCategories]
+      .filter((c: EventCategory) => c.eventId === eid)
+      .sort((a: EventCategory, b: EventCategory) => a.numberRangeStart - b.numberRangeStart);
+  }, [eventCategories, eid]);
+
+  const riderNumberMap = useMemo(() => {
+    const m = new Map<string, number | null>();
+    const catStartMap = new Map<bigint, number>();
+    for (const c of eventCategories) catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
+    for (const er of eventRiders) {
+      const e = er as EventRider;
+      if (e.eventId !== eid) continue;
+      const num = e.assignedNumber !== 0
+        ? e.assignedNumber
+        : (e.categoryId !== 0n ? (catStartMap.get(e.categoryId) ?? null) : null);
+      m.set(`${e.eventId}-${e.riderId}`, num);
+    }
+    return m;
+  }, [eventRiders, eventCategories, eid]);
+
+  const getRiderNumber = (riderId: bigint) => riderNumberMap.get(`${eid}-${riderId}`);
+
+  const leaderboardByCategory = useMemo(() => {
     const etIds = new Set(sortedEventTracks.map((et: EventTrack) => et.id));
+    const totalTracks = sortedEventTracks.length;
     const riderData = new Map<bigint, { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }>();
 
     for (const run of runs) {
@@ -128,19 +163,18 @@ export default function EventView() {
       riderData.set(run.riderId, entry);
     }
 
-    const totalTracks = sortedEventTracks.length;
+    const toEntry = (riderId: bigint, data: { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }): LeaderboardEntry => ({
+      riderId,
+      rider: riderMap.get(riderId),
+      total: data.total,
+      complete: data.trackCount === totalTracks && !data.dnf,
+      dnf: data.dnf,
+      trackCount: data.trackCount,
+      runs: data.runs,
+    });
 
-    return [...riderData.entries()]
-      .map(([riderId, data]) => ({
-        riderId,
-        rider: riderMap.get(riderId),
-        total: data.total,
-        complete: data.trackCount === totalTracks && !data.dnf,
-        dnf: data.dnf,
-        trackCount: data.trackCount,
-        runs: data.runs,
-      }))
-      .sort((a, b) => {
+    const sortEntries = (entries: LeaderboardEntry[]) =>
+      [...entries].sort((a, b) => {
         if (a.complete && !b.complete) return -1;
         if (!a.complete && b.complete) return 1;
         if (a.complete && b.complete) return a.total - b.total;
@@ -149,7 +183,42 @@ export default function EventView() {
         if (a.trackCount !== b.trackCount) return b.trackCount - a.trackCount;
         return a.total - b.total;
       });
-  }, [runs, sortedEventTracks, eventRiderIds, riderMap, tvMap, trackMap]);
+
+    const result: { categoryId: bigint; categoryName: string; entries: LeaderboardEntry[] }[] = [];
+
+    if (categoriesForEvent.length === 0) {
+      const entries = [...riderData.entries()]
+        .map(([riderId, data]) => toEntry(riderId, data));
+      result.push({ categoryId: 0n, categoryName: '', entries: sortEntries(entries) });
+      return result;
+    }
+
+    for (const cat of categoriesForEvent) {
+      const riderIdsInCat = [...riderToCategory.entries()]
+        .filter(([, cid]) => cid === cat.id)
+        .map(([rid]) => rid);
+      const entries = riderIdsInCat
+        .filter(rid => riderData.has(rid))
+        .map(rid => toEntry(rid, riderData.get(rid)!));
+      if (entries.length > 0) {
+        result.push({ categoryId: cat.id, categoryName: cat.name, entries: sortEntries(entries) });
+      }
+    }
+
+    const uncatRiderIds = [...riderToCategory.entries()].filter(([, cid]) => cid === 0n).map(([rid]) => rid);
+    const uncatEntries = uncatRiderIds
+      .filter(rid => riderData.has(rid))
+      .map(rid => toEntry(rid, riderData.get(rid)!));
+    if (uncatEntries.length > 0) {
+      result.push({ categoryId: 0n, categoryName: 'Other', entries: sortEntries(uncatEntries) });
+    }
+
+    return result;
+  }, [runs, sortedEventTracks, eventRiderIds, riderMap, tvMap, trackMap, riderToCategory, categoriesForEvent]);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   if (!event) {
     if (events.length === 0) return null;
@@ -237,105 +306,108 @@ export default function EventView() {
         </p>
       )}
 
-      {/* Leaderboard — always visible */}
+      {/* Leaderboard — per category */}
       <div className="section">
         <div className="section-title">Leaderboard</div>
-        {leaderboard.length === 0 ? (
+        {leaderboardByCategory.length === 0 ? (
           <div className="empty">No results yet.</div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>Pos</th>
-                <th>Rider</th>
-                <th>Tracks</th>
-                <th style={{ textAlign: 'right' }}>Total Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry, idx) => {
-                const pos = idx + 1;
-                const posClass = pos === 1 ? 'position p1' : pos === 2 ? 'position p2' : pos === 3 ? 'position p3' : 'position';
-                const isExpanded = expandedRiderId === entry.riderId;
-                return (
-                  <>
-                    <tr
-                      key={entry.rider ? String(entry.rider.id) : idx}
-                      onClick={() => setExpandedRiderId(isExpanded ? null : entry.riderId)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td><span className={posClass}>{entry.complete ? pos : '-'}</span></td>
-                      <td>
-                        {entry.rider ? `${entry.rider.firstName} ${entry.rider.lastName}` : 'Unknown'}
-                      </td>
-                      <td className="muted small-text">
-                        {entry.trackCount}/{sortedEventTracks.length}
-                        {entry.dnf && <span className="badge dnf" style={{ marginLeft: 6 }}>DNF</span>}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {entry.total > 0 ? (
-                          <span className="elapsed">{formatElapsed(entry.total)}</span>
-                        ) : (
-                          <span className="muted">--:--</span>
+          leaderboardByCategory.map(({ categoryId, categoryName, entries }) => (
+            <div key={String(categoryId)} style={{ marginBottom: categoryName ? 24 : 0 }}>
+              {categoryName && (
+                <div className="muted small-text" style={{ marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {categoryName}
+                </div>
+              )}
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 40 }}>Pos</th>
+                    <th style={{ width: 50 }}>#</th>
+                    <th>Rider</th>
+                    <th>Runs</th>
+                    <th style={{ textAlign: 'right' }}>Total Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, idx) => {
+                    const pos = idx + 1;
+                    const posClass = pos === 1 ? 'position p1' : pos === 2 ? 'position p2' : pos === 3 ? 'position p3' : 'position';
+                    const isExpanded = expandedRiderId === entry.riderId;
+                    return (
+                      <React.Fragment key={entry.rider ? String(entry.rider.id) : idx}>
+                        <tr
+                          onClick={() => setExpandedRiderId(isExpanded ? null : entry.riderId)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td><span className={posClass}>{entry.complete ? pos : '-'}</span></td>
+                          <td className="muted small-text">{getRiderNumber(entry.riderId) ?? '—'}</td>
+                          <td>
+                            {entry.rider ? `${entry.rider.firstName} ${entry.rider.lastName}` : 'Unknown'}
+                          </td>
+                          <td className="muted small-text">
+                            {entry.trackCount}/{sortedEventTracks.length}
+                            {entry.dnf && <span className="badge dnf" style={{ marginLeft: 6 }}>DNF</span>}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            {entry.total > 0 ? (
+                              <span className="elapsed">{formatElapsed(entry.total)}</span>
+                            ) : (
+                              <span className="muted">--:--</span>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${entry.riderId}-detail`}>
+                            <td colSpan={5} style={{ padding: '0 12px 12px 52px', background: 'var(--surface-hover, rgba(255,255,255,0.02))' }}>
+                              <table style={{ width: '100%', fontSize: '0.8rem' }}>
+                                <tbody>
+                                  {sortedEventTracks.map((et: EventTrack) => {
+                                    const tv = tvMap.get(et.trackVariationId);
+                                    const track = tv ? trackMap.get(tv.trackId) : undefined;
+                                    const run = entry.runs.find(r => r.eventTrackId === et.id);
+                                    return (
+                                      <tr key={String(et.id)} style={{ borderBottom: '1px solid var(--border)' }}>
+                                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>{track?.name ?? 'Track'}</td>
+                                        <td style={{ padding: '6px 0', textAlign: 'right' }}>
+                                          {run ? (
+                                            run.status === 'finished' ? (
+                                              <span className="elapsed">{formatElapsed(run.elapsed)}</span>
+                                            ) : (
+                                              <span className={`badge ${run.status === 'dnf' ? 'dnf' : run.status === 'dns' ? '' : 'running'}`}>
+                                                {run.status.toUpperCase()}
+                                              </span>
+                                            )
+                                          ) : (
+                                            <span className="muted">—</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr key={`${entry.riderId}-detail`}>
-                        <td colSpan={4} style={{ padding: '0 12px 12px 52px', background: 'var(--surface-hover, rgba(255,255,255,0.02))' }}>
-                          <table style={{ width: '100%', fontSize: '0.8rem' }}>
-                            <tbody>
-                              {sortedEventTracks.map((et: EventTrack) => {
-                                const tv = tvMap.get(et.trackVariationId);
-                                const track = tv ? trackMap.get(tv.trackId) : undefined;
-                                const run = entry.runs.find(r => r.eventTrackId === et.id);
-                                return (
-                                  <tr key={String(et.id)} style={{ borderBottom: '1px solid var(--border)' }}>
-                                    <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>{track?.name ?? 'Track'}</td>
-                                    <td style={{ padding: '6px 0', textAlign: 'right' }}>
-                                      {run ? (
-                                        run.status === 'finished' ? (
-                                          <span className="elapsed">{formatElapsed(run.elapsed)}</span>
-                                        ) : (
-                                          <span className={`badge ${run.status === 'dnf' ? 'dnf' : run.status === 'dns' ? '' : 'running'}`}>
-                                            {run.status.toUpperCase()}
-                                          </span>
-                                        )
-                                      ) : (
-                                        <span className="muted">—</span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })}
-            </tbody>
-          </table>
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ))
         )}
       </div>
 
-      {/* Prompt for non-authenticated users */}
-      {!isAuthenticated && (
-        <div className="card" style={{ textAlign: 'center', padding: 20, marginTop: 12 }}>
-          <p className="muted small-text">Sign in to access track timing and event management.</p>
-        </div>
-      )}
-
-      {/* Share modal */}
-      <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Share Event">
-        <p className="muted small-text" style={{ marginBottom: 12 }}>Anyone with this link can view the event leaderboard.</p>
+      {/* Share modal — leaderboard display URL for big screens */}
+      <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Leaderboard Display">
+        <p className="muted small-text" style={{ marginBottom: 12 }}>Use this link to display the leaderboard on a big screen at the event.</p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             type="text"
             readOnly
-            value={publicUrl}
+            value={publicUrl ? `${publicUrl}/leaderboard` : ''}
             className="input"
             style={{ flex: 1, fontSize: '0.8rem' }}
             onFocus={e => e.target.select()}
@@ -343,13 +415,22 @@ export default function EventView() {
           <button
             className="primary"
             onClick={() => {
-              navigator.clipboard.writeText(publicUrl);
+              navigator.clipboard.writeText(publicUrl ? `${publicUrl}/leaderboard` : '');
               setCopied(true);
             }}
             style={{ whiteSpace: 'nowrap' }}
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
+          <a
+            href={publicUrl ? `${publicUrl}/leaderboard` : '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="primary"
+            style={{ whiteSpace: 'nowrap', padding: '8px 16px', borderRadius: 'var(--radius)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+          >
+            Open
+          </a>
         </div>
       </Modal>
     </div>

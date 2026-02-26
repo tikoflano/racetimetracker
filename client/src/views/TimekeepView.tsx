@@ -118,7 +118,7 @@ export default function TimekeepView() {
                     {track?.name ?? 'Track'}
                   </div>
                   <div className="muted small-text" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Link to={`/event/${event!.slug}`} style={{ color: 'inherit' }}>{event!.name}</Link>
+                    <Link to={`/event/${event!.slug}`} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>{event!.name}</Link>
                   </div>
                 </div>
                 <span className="badge" style={{

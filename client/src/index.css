@@ -844,6 +844,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .badge.running { background: var(--green-bg); color: var(--green); }
 .badge.finished { background: var(--border); color: var(--text-muted); }
 .badge.dnf { background: var(--red-bg); color: var(--red); }
+.badge.dns { background: var(--border); color: var(--text-muted); }
 .badge.checked-in {
   background: var(--green-bg);
   color: var(--green);
@@ -967,4 +968,23 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   margin-bottom: 16px;
 }
 .back-link:hover { color: var(--text); text-decoration: none; }
+
+/* Public leaderboard — full-screen display for event TVs */
+.leaderboard-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-scroll-area {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.leaderboard-scroll-area::-webkit-scrollbar {
+  display: none;
+}
 

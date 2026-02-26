@@ -20,6 +20,7 @@ import EventManageView from './views/EventManageView';
 import RegisterView from './views/RegisterView';
 import QRCodeView from './views/QRCodeView';
 import TimekeepView from './views/TimekeepView';
+import LeaderboardView from './views/LeaderboardView';
 import DevView from './views/DevView';
 import { FontAwesomeIcon, faBars, faXmark, faRightFromBracket, faArrowRightArrowLeft, faChevronLeft, faChevronRight } from './icons';
 import Modal from './components/Modal';
@@ -40,6 +41,7 @@ export default function App() {
   const avatarRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isRegistrationPage = location.pathname.startsWith('/register');
+  const isLeaderboardPage = location.pathname.includes('/leaderboard');
 
   // Close sidebar on navigation (mobile)
   useEffect(() => {
@@ -238,7 +240,7 @@ export default function App() {
         </div>
       ) : (
         <div className="app-body">
-          {isAuthenticated && !isRegistrationPage && (
+          {isAuthenticated && !isRegistrationPage && !isLeaderboardPage && (
             <>
               {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
               <Sidebar
@@ -260,7 +262,9 @@ export default function App() {
                 <Route path="/event/:eventSlug" element={<EventView />} />
                 <Route path="/event/:eventSlug/manage" element={<EventManageView />} />
                 <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
+                <Route path="/event/:eventSlug/leaderboard" element={<LeaderboardView />} />
                 <Route path="/:orgSlug/event/:eventSlug" element={<EventView />} />
+                <Route path="/:orgSlug/event/:eventSlug/leaderboard" element={<LeaderboardView />} />
                 <Route path="/members" element={<OrgMembersView />} />
                 <Route path="/calendar" element={<CalendarView />} />
                 <Route path="/championships" element={<ChampionshipsView />} />

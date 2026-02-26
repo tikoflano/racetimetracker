@@ -207,6 +207,34 @@ export default function EventManageView() {
   const [importRiderError, setImportRiderError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all'); // 'all' | 'none' | category id as string
   const [checkInModal, setCheckInModal] = useState<{ rider: Rider; eventRider: EventRider } | null>(null);
+  const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+  const [riderPage, setRiderPage] = useState(0);
+  const [riderPageSize, setRiderPageSize] = useState(() => {
+    try {
+      const stored = localStorage.getItem('racetimetracker-event-riders-page-size');
+      if (stored) {
+        const n = parseInt(stored, 10);
+        if ([10, 20, 50, 100].includes(n)) return n;
+      }
+    } catch {}
+    return 10;
+  });
+  useEffect(() => {
+    setRiderPage(0);
+  }, [categoryFilter, riderPageSize]);
+
+  // Filtered riders for event (by category filter) — used for pagination
+  const filteredRiders = useMemo(() => {
+    const assigned = orgRiders.filter(r => eventRiderIds.has(r.id));
+    return assigned.filter(r => {
+      const er = eventRiderMap.get(r.id);
+      if (!er) return false;
+      if (categoryFilter === 'all') return true;
+      if (categoryFilter === 'none') return er.categoryId === 0n;
+      return er.categoryId === BigInt(categoryFilter);
+    });
+  }, [orgRiders, eventRiderIds, eventRiderMap, categoryFilter]);
+
   const [showAddTrackModal, setShowAddTrackModal] = useState(false);
   const [addTrackError, setAddTrackError] = useState('');
 
@@ -448,6 +476,8 @@ export default function EventManageView() {
 
   const assignedRiders = orgRiders.filter(r => eventRiderIds.has(r.id));
   const unassignedRiders = orgRiders.filter(r => !eventRiderIds.has(r.id));
+  const riderTotalPages = Math.max(1, Math.ceil(filteredRiders.length / riderPageSize));
+  const paginatedRiders = filteredRiders.slice(riderPage * riderPageSize, (riderPage + 1) * riderPageSize);
 
   return (
     <div>
@@ -801,17 +831,10 @@ export default function EventManageView() {
 
         {assignedRiders.length === 0 ? (
           <div className="empty">No riders assigned to this event.</div>
-        ) : (() => {
-          const filteredRiders = assignedRiders.filter(r => {
-            const er = eventRiderMap.get(r.id);
-            if (!er) return false;
-            if (categoryFilter === 'all') return true;
-            if (categoryFilter === 'none') return er.categoryId === 0n;
-            return er.categoryId === BigInt(categoryFilter);
-          });
-          return filteredRiders.length === 0 ? (
-            <div className="empty">No riders match this filter.</div>
-          ) : (
+        ) : filteredRiders.length === 0 ? (
+          <div className="empty">No riders match this filter.</div>
+        ) : (
+          <>
             <table className="data-table">
               <thead>
                 <tr>
@@ -823,7 +846,7 @@ export default function EventManageView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredRiders.map((r: Rider) => {
+                {paginatedRiders.map((r: Rider) => {
                   const er = eventRiderMap.get(r.id);
                   if (!er) return null;
                   const num = assignedNumberByRiderId.get(r.id);
@@ -872,8 +895,48 @@ export default function EventManageView() {
                 })}
               </tbody>
             </table>
-          );
-        })()}
+            {filteredRiders.length > PAGE_SIZE_OPTIONS[0] && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                <button
+                  className="ghost small"
+                  onClick={() => setRiderPage(p => Math.max(0, p - 1))}
+                  disabled={riderPage === 0}
+                >
+                  Previous
+                </button>
+                <span className="muted small-text">
+                  Page {riderPage + 1} of {riderTotalPages} ({filteredRiders.length} riders)
+                </span>
+                <button
+                  className="ghost small"
+                  onClick={() => setRiderPage(p => Math.min(riderTotalPages - 1, p + 1))}
+                  disabled={riderPage >= riderTotalPages - 1}
+                >
+                  Next
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label className="input-label" style={{ marginBottom: 0 }}>Per page</label>
+                  <select
+                    className="input"
+                    value={riderPageSize}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      setRiderPageSize(n);
+                      try {
+                        localStorage.setItem('racetimetracker-event-riders-page-size', String(n));
+                      } catch {}
+                    }}
+                    style={{ width: 72, padding: '6px 8px' }}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
       )}
 
