@@ -73,8 +73,7 @@ const spacetimedb = schema({
       org_id: t.u64().index('btree'),
       name: t.string(),
       description: t.string(),
-      latitude: t.f64(),
-      longitude: t.f64(),
+      address: t.string(),
     }
   ),
 
@@ -747,20 +746,20 @@ export const update_championship = spacetimedb.reducer(
 // ─── Venue (org event manager+) ─────────────────────────────────────────────
 
 export const create_venue = spacetimedb.reducer(
-  { org_id: t.u64(), name: t.string(), description: t.string(), latitude: t.f64(), longitude: t.f64() },
+  { org_id: t.u64(), name: t.string(), description: t.string(), address: t.string() },
   (ctx, args) => {
     requireOrgEventManager(ctx, args.org_id);
-    ctx.db.venue.insert({ id: 0n, org_id: args.org_id, name: args.name, description: args.description, latitude: args.latitude, longitude: args.longitude });
+    ctx.db.venue.insert({ id: 0n, org_id: args.org_id, name: args.name, description: args.description, address: args.address });
   }
 );
 
 export const update_venue = spacetimedb.reducer(
-  { venue_id: t.u64(), name: t.string(), description: t.string(), latitude: t.f64(), longitude: t.f64() },
+  { venue_id: t.u64(), name: t.string(), description: t.string(), address: t.string() },
   (ctx, args) => {
     const venue = ctx.db.venue.id.find(args.venue_id);
     if (!venue) throw new SenderError('Venue not found');
     requireOrgEventManager(ctx, venue.org_id);
-    ctx.db.venue.id.update({ ...venue, name: args.name, description: args.description, latitude: args.latitude, longitude: args.longitude });
+    ctx.db.venue.id.update({ ...venue, name: args.name, description: args.description, address: args.address });
   }
 );
 
@@ -867,17 +866,15 @@ export const create_track = spacetimedb.reducer(
   (ctx, args) => {
     requireVenueManager(ctx, args.venue_id);
     const track = ctx.db.track.insert({ id: 0n, venue_id: args.venue_id, name: args.name, color: args.color });
-    // Auto-create a default variation using the venue's coordinates
-    const venue = ctx.db.venue.id.find(args.venue_id)!;
     ctx.db.track_variation.insert({
       id: 0n,
       track_id: track.id,
       name: 'Default',
       description: '',
-      start_latitude: venue.latitude,
-      start_longitude: venue.longitude,
-      end_latitude: venue.latitude,
-      end_longitude: venue.longitude,
+      start_latitude: 0,
+      start_longitude: 0,
+      end_latitude: 0,
+      end_longitude: 0,
     });
   }
 );
@@ -1732,9 +1729,9 @@ export const seed_demo_data = spacetimedb.reducer(
     const champ3 = ctx.db.championship.insert({ id: 0n, org_id: org.id, name: 'XC Marathon Series', description: 'Cross-country endurance events', color: '#22c55e' });
 
     // Venues
-    const venue1 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', latitude: 38.8977, longitude: -77.0365 });
-    const venue2 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Eagle Rock Resort', description: 'Steep downhill runs with jumps', latitude: 40.9176, longitude: -76.0452 });
-    const venue3 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Lakeside Trails', description: 'Rolling singletrack around the lake', latitude: 35.5951, longitude: -82.5515 });
+    const venue1 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Pine Mountain Bike Park', description: 'Technical enduro trails in the Blue Ridge', address: '1234 Mountain Rd, Blue Ridge, VA 24064' });
+    const venue2 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Eagle Rock Resort', description: 'Steep downhill runs with jumps', address: '5678 Eagle Rock Dr, Hazleton, PA 18202' });
+    const venue3 = ctx.db.venue.insert({ id: 0n, org_id: org.id, name: 'Lakeside Trails', description: 'Rolling singletrack around the lake', address: '910 Lakeshore Blvd, Asheville, NC 28801' });
 
     // Tracks & variations
     const track1 = ctx.db.track.insert({ id: 0n, venue_id: venue1.id, name: 'Widow Maker', color: '#ef4444' });

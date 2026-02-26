@@ -84,7 +84,7 @@ export default function VenueDetailView() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingVenue, setEditingVenue] = useState(false);
-  const [venueForm, setVenueForm] = useState({ name: '', description: '', latitude: '', longitude: '' });
+  const [venueForm, setVenueForm] = useState({ name: '', description: '', address: '' });
   const [showTrackForm, setShowTrackForm] = useState(false);
   const [trackForm, setTrackForm] = useState({ name: '', color: '#3b82f6' });
   const [editingTrackId, setEditingTrackId] = useState<bigint | null>(null);
@@ -155,13 +155,12 @@ export default function VenueDetailView() {
   // All map positions for bounds fitting
   const mapPositions = useMemo(() => {
     const pts: [number, number][] = [];
-    if (venue) pts.push([venue.latitude, venue.longitude]);
     for (const [, tv] of defaultVariations) {
       if (tv.startLatitude !== 0 || tv.startLongitude !== 0) pts.push([tv.startLatitude, tv.startLongitude]);
       if (tv.endLatitude !== 0 || tv.endLongitude !== 0) pts.push([tv.endLatitude, tv.endLongitude]);
     }
     return pts;
-  }, [venue, defaultVariations]);
+  }, [defaultVariations]);
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -177,7 +176,7 @@ export default function VenueDetailView() {
 
   // Venue edit
   const startEditVenue = () => {
-    setVenueForm({ name: venue.name, description: venue.description, latitude: String(venue.latitude), longitude: String(venue.longitude) });
+    setVenueForm({ name: venue.name, description: venue.description, address: venue.address });
     setEditingVenue(true);
     setError('');
   };
@@ -185,7 +184,7 @@ export default function VenueDetailView() {
     setError('');
     if (!venueForm.name.trim()) { setError('Name is required'); return; }
     try {
-      await updateVenue({ venueId: vid, name: venueForm.name.trim(), description: venueForm.description.trim(), latitude: parseFloat(venueForm.latitude) || 0, longitude: parseFloat(venueForm.longitude) || 0 });
+      await updateVenue({ venueId: vid, name: venueForm.name.trim(), description: venueForm.description.trim(), address: venueForm.address.trim() });
       setEditingVenue(false);
     } catch (e: any) { setError(e?.message || 'Failed'); }
   };
@@ -269,8 +268,7 @@ export default function VenueDetailView() {
               <input type="text" value={venueForm.name} onChange={e => setVenueForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
               <input type="text" value={venueForm.description} onChange={e => setVenueForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" className="input" />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div><label className="input-label">Latitude</label><input type="number" step="any" value={venueForm.latitude} onChange={e => setVenueForm(f => ({ ...f, latitude: e.target.value }))} className="input" /></div>
-                <div><label className="input-label">Longitude</label><input type="number" step="any" value={venueForm.longitude} onChange={e => setVenueForm(f => ({ ...f, longitude: e.target.value }))} className="input" /></div>
+                <div style={{ gridColumn: '1 / -1' }}><label className="input-label">Address</label><input type="text" value={venueForm.address} onChange={e => setVenueForm(f => ({ ...f, address: e.target.value }))} className="input" /></div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="primary small" onClick={saveVenue}>Save</button>
@@ -298,7 +296,13 @@ export default function VenueDetailView() {
               />
             </div>
             {venue.description && <p className="muted small-text">{venue.description}</p>}
-            <p className="muted small-text">{venue.latitude.toFixed(4)}, {venue.longitude.toFixed(4)}</p>
+            {venue.address && (
+              <p className="small-text">
+                <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                  {venue.address}
+                </a>
+              </p>
+            )}
           </div>
         )}
 
@@ -342,9 +346,10 @@ export default function VenueDetailView() {
       )}
 
       {/* Map */}
+      {mapPositions.length > 0 && (
       <div className="venue-map-container" style={{ marginBottom: 20 }}>
         <MapContainer
-          center={[venue.latitude, venue.longitude]}
+          center={mapPositions[0]}
           zoom={14}
           style={{ height: 400, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
         >
@@ -389,6 +394,7 @@ export default function VenueDetailView() {
           ))}
         </div>
       </div>
+      )}
 
       {/* List view / Tracks */}
       {tracks.length === 0 && !showTrackForm ? (
@@ -502,7 +508,7 @@ export default function VenueDetailView() {
                               )}
                               <div className="venue-map-container">
                                 <MapContainer
-                                  center={[venue.latitude, venue.longitude]}
+                                  center={mapPositions.length > 0 ? mapPositions[0] : [0, 0]}
                                   zoom={14}
                                   style={{ height: 280, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: placingPin ? 'crosshair' : '' }}
                                 >

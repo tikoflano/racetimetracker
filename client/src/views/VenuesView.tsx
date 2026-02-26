@@ -20,7 +20,7 @@ export default function VenuesView() {
   const deleteVenue = useReducer(reducers.deleteVenue);
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', latitude: '', longitude: '' });
+  const [form, setForm] = useState({ name: '', description: '', address: '' });
   const [error, setError] = useState('');
 
   const org = orgs.find((o: Organization) => o.id === oid);
@@ -49,7 +49,7 @@ export default function VenuesView() {
   if (!hasAccess) return <div className="empty">You don't have access to manage venues.</div>;
 
   const resetForm = () => {
-    setForm({ name: '', description: '', latitude: '', longitude: '' });
+    setForm({ name: '', description: '', address: '' });
     setError('');
     setShowForm(false);
   };
@@ -57,10 +57,8 @@ export default function VenuesView() {
   const handleCreate = async () => {
     setError('');
     if (!form.name.trim()) { setError('Name is required'); return; }
-    const lat = parseFloat(form.latitude) || 0;
-    const lng = parseFloat(form.longitude) || 0;
     try {
-      await createVenue({ orgId: oid, name: form.name.trim(), description: form.description.trim(), latitude: lat, longitude: lng });
+      await createVenue({ orgId: oid, name: form.name.trim(), description: form.description.trim(), address: form.address.trim() });
       resetForm();
     } catch (e: any) {
       setError(e?.message || 'Failed to create venue');
@@ -92,16 +90,7 @@ export default function VenuesView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input type="text" placeholder="Venue name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && handleCreate()} autoFocus className="input" />
             <input type="text" placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="input" />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div>
-                <label className="input-label">Latitude</label>
-                <input type="number" step="any" placeholder="0.0" value={form.latitude} onChange={e => setForm(f => ({ ...f, latitude: e.target.value }))} className="input" />
-              </div>
-              <div>
-                <label className="input-label">Longitude</label>
-                <input type="number" step="any" placeholder="0.0" value={form.longitude} onChange={e => setForm(f => ({ ...f, longitude: e.target.value }))} className="input" />
-              </div>
-            </div>
+            <input type="text" placeholder="Address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="input" />
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="primary small" onClick={handleCreate}>Create</button>
               <button className="ghost small" onClick={resetForm}>Cancel</button>
@@ -119,7 +108,7 @@ export default function VenuesView() {
               <th>Name</th>
               <th>Description</th>
               <th>Tracks</th>
-              <th>Location</th>
+              <th>Address</th>
               <th style={{ width: 40 }}></th>
             </tr>
           </thead>
@@ -131,7 +120,13 @@ export default function VenuesView() {
                 </td>
                 <td className="muted small-text">{v.description || '—'}</td>
                 <td>{trackCounts.get(v.id) ?? 0}</td>
-                <td className="muted small-text">{v.latitude.toFixed(4)}, {v.longitude.toFixed(4)}</td>
+                <td className="small-text">
+                  {v.address ? (
+                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.address)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                      {v.address}
+                    </a>
+                  ) : <span className="muted">—</span>}
+                </td>
                 <td>
                   <RowActionMenu items={[
                     { icon: faTrash, label: 'Delete venue', danger: true, onClick: () => handleDelete(v) },
