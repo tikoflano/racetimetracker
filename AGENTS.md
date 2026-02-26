@@ -232,11 +232,11 @@ Do **not** run long-lived processes with `&` or as foreground commands — alway
 
 ### Tunneling with Cloudflare Tunnels
 
-Use **cloudflared** with a named tunnel to expose the Vite dev server at `https://racetimetracker.tikoflano.work`. The tunnel token is provided via the `CLOUDFLARE_TUNNEL_TOKEN` environment variable (injected as a secret).
+Use **cloudflared** with a named tunnel to expose the Vite dev server at `https://racetimetracker.tikoflano.work`. The tunnel token is stored in the root `.env` file (gitignored — see `.env.example` for the required variable).
 
 ```bash
-# Start the named tunnel (routes racetimetracker.tikoflano.work → localhost:5173)
-tmux new-session -d -s tunnel 'cloudflared tunnel run --token $CLOUDFLARE_TUNNEL_TOKEN'
+# Start the tunnel (reads token from .env, routes racetimetracker.tikoflano.work → localhost:5173)
+tmux new-session -d -s tunnel 'npm run tunnel'
 ```
 
 Verify the tunnel is connected by checking `tmux capture-pane -t tunnel -p` for "Registered tunnel connection" messages. The app will then be accessible at `https://racetimetracker.tikoflano.work`.
