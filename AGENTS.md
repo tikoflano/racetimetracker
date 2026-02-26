@@ -230,3 +230,7 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 - Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
 - The `client/.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `client/.env.local.example`.
 - Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.
+
+### Startup verification
+
+After starting services with `npm start`, verify the app loads by checking that `http://localhost:5173` returns HTTP 200 and shows the login screen. A full interactive demo (seeding data, clicking through flows) is **not** required on every startup — confirming the login screen renders is sufficient.
