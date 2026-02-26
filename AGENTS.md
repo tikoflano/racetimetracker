@@ -163,16 +163,25 @@ Implementation pattern:
 
 **Important:** When you make schema changes or other changes that require publishing, run the publish command yourself. Do not instruct the user to run it — execute it as part of your workflow.
 
-### Local development with `spacetime dev`
+### Local development
 
-Start the full stack (SpacetimeDB server must be running on port 3000):
+Start the full dev stack:
 
 ```bash
-spacetime start &          # Start local server (if not already running)
-npm run dev:spacetime      # Build + publish + generate bindings + start Vite
+npm start
 ```
 
-`spacetime dev` watches for file changes and auto-rebuilds/republishes/regenerates.
+This starts the local SpacetimeDB server, publishes the module, and launches `spacetime dev` with file watching for auto-rebuild/republish/regenerate.
+
+### Reset
+
+Kill all SpacetimeDB processes, clear local database data, and log out:
+
+```bash
+npm run reset
+```
+
+Use this when you need a clean slate — e.g. after schema changes that conflict with existing data, or to start fresh with a new identity. After resetting, run `npm start` again to restart everything.
 
 ### Regenerate client bindings manually
 
@@ -208,10 +217,10 @@ spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
 
 ### Running locally
 
-1. Start the SpacetimeDB standalone server: `spacetime start --listen-addr 0.0.0.0:3000 &`
-2. Run `npm run dev:spacetime` — this handles build, publish, binding generation, and Vite startup.
-3. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
-4. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
+1. Run `npm start` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
+2. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
+3. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
+4. To reset everything (kill processes, clear data, logout): `npm run reset`
 
 ### Gotchas
 
