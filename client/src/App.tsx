@@ -136,12 +136,18 @@ export default function App() {
                 title={user?.name || user?.email || 'User'}
                 style={{
                   width: 32, height: 32, borderRadius: '50%',
-                  background: 'var(--accent)', color: 'white', border: 'none',
+                  background: user?.picture ? 'transparent' : 'var(--accent)',
+                  color: 'white', border: 'none',
                   cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 0, overflow: 'hidden',
                 }}
               >
-                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                {user?.picture ? (
+                  <img src={user.picture} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                ) : (
+                  (user?.name || user?.email || 'U').charAt(0).toUpperCase()
+                )}
               </button>
               {avatarMenuOpen && (
                 <div style={{

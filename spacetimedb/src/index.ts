@@ -16,6 +16,7 @@ const spacetimedb = schema({
       google_sub: t.string().unique(),
       email: t.string(),
       name: t.string(),
+      picture: t.string(),
       is_super_admin: t.bool(),
     }
   ),
@@ -464,6 +465,7 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
   const sub = jwt.subject;
   const email = (jwt.fullPayload['email'] as string) ?? '';
   const name = (jwt.fullPayload['name'] as string) ?? '';
+  const picture = (jwt.fullPayload['picture'] as string) ?? '';
 
   // Check if user already exists by google_sub
   let existing = null;
@@ -487,6 +489,7 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
       google_sub: sub,
       email: email || existing.email,
       name: name || existing.name,
+      picture: picture || existing.picture,
       is_super_admin: existing.is_super_admin,
     });
     userId = existing.id;
@@ -497,6 +500,7 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
       google_sub: sub,
       email,
       name,
+      picture,
       is_super_admin: false,
     });
     userId = newUser.id;
@@ -579,6 +583,7 @@ export const invite_org_member = spacetimedb.reducer(
         google_sub: `pending:${trimmedEmail}`,
         email: trimmedEmail,
         name: trimmedEmail.split('@')[0],
+        picture: '',
         is_super_admin: false,
       });
     }
@@ -1853,6 +1858,7 @@ export const seed_demo_data = spacetimedb.reducer(
         google_sub: `pending:${p.email}`,
         email: p.email,
         name: p.name,
+        picture: '',
         is_super_admin: false,
       }).id;
       let alreadyMember = false;
