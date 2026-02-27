@@ -39,7 +39,9 @@ export default function CheckInModal({
     <Modal open={open} onClose={onClose} title="Confirm Check-in">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <div className="muted small-text" style={{ marginBottom: 4 }}>Rider</div>
+          <div className="muted small-text" style={{ marginBottom: 4 }}>
+            Rider
+          </div>
           <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>
             {rider.firstName} {rider.lastName}
           </div>
@@ -51,7 +53,7 @@ export default function CheckInModal({
             min="0"
             className="input"
             value={numberInput}
-            onChange={e => setNumberInput(e.target.value)}
+            onChange={(e) => setNumberInput(e.target.value)}
             placeholder={defaultNumber !== null ? String(defaultNumber) : '—'}
           />
           {categoryName && (
@@ -64,7 +66,9 @@ export default function CheckInModal({
           Confirm that this rider has checked in. Set or change the number above.
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button className="ghost small" onClick={onClose}>Cancel</button>
+          <button className="ghost small" onClick={onClose}>
+            Cancel
+          </button>
           <button className="primary small" onClick={handleConfirm}>
             Confirm Check-in
           </button>

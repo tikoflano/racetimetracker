@@ -3,7 +3,16 @@ import { useParams, Link } from 'react-router-dom';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from '../module_bindings';
 import { useActiveOrgMaybe } from '../OrgContext';
-import type { Event, EventTrack, TrackVariation, Track, Run, Rider, EventRider, EventCategory } from '../module_bindings/types';
+import type {
+  Event,
+  EventTrack,
+  TrackVariation,
+  Track,
+  Run,
+  Rider,
+  EventRider,
+  EventCategory,
+} from '../module_bindings/types';
 import ElapsedTimer from '../components/ElapsedTimer';
 import { formatElapsed } from '../utils';
 
@@ -23,7 +32,7 @@ export default function TrackView() {
   const [eventRiders] = useTable(tables.event_rider);
   const [eventCategories] = useTable(tables.event_category);
 
-  const event = useMemo(() => {
+  const _event = useMemo(() => {
     if (!eventSlug) return undefined;
     if (activeOrgId) {
       const inOrg = events.find((e: Event) => e.slug === eventSlug && e.orgId === activeOrgId);
@@ -32,7 +41,9 @@ export default function TrackView() {
     return events.find((e: Event) => e.slug === eventSlug);
   }, [eventSlug, activeOrgId, events]);
   const eventTrack = eventTracks.find((et: EventTrack) => et.id === etId);
-  const tv = eventTrack ? trackVariations.find((v: TrackVariation) => v.id === eventTrack.trackVariationId) : undefined;
+  const tv = eventTrack
+    ? trackVariations.find((v: TrackVariation) => v.id === eventTrack.trackVariationId)
+    : undefined;
   const track = tv ? tracksData.find((t: Track) => t.id === tv.trackId) : undefined;
 
   const riderMap = useMemo(() => {
@@ -44,12 +55,16 @@ export default function TrackView() {
   const riderNumberMap = useMemo(() => {
     const m = new Map<string, number | null>();
     const catStartMap = new Map<bigint, number>();
-    for (const c of eventCategories) catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
+    for (const c of eventCategories)
+      catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
     for (const er of eventRiders) {
       const e = er as EventRider;
-      const num = e.assignedNumber !== 0
-        ? e.assignedNumber
-        : (e.categoryId !== 0n ? (catStartMap.get(e.categoryId) ?? null) : null);
+      const num =
+        e.assignedNumber !== 0
+          ? e.assignedNumber
+          : e.categoryId !== 0n
+            ? (catStartMap.get(e.categoryId) ?? null)
+            : null;
       m.set(`${e.eventId}-${e.riderId}`, num);
     }
     return m;
@@ -77,9 +92,8 @@ export default function TrackView() {
 
   const nextQueued = queuedRuns.length > 0 ? queuedRuns[0] : null;
 
-  const getRiderNumber = (riderId: bigint) => eventTrack
-    ? riderNumberMap.get(`${eventTrack.eventId}-${riderId}`)
-    : null;
+  const getRiderNumber = (riderId: bigint) =>
+    eventTrack ? riderNumberMap.get(`${eventTrack.eventId}-${riderId}`) : null;
 
   if (!eventTrack) {
     if (eventTracks.length === 0) return null;
@@ -88,15 +102,24 @@ export default function TrackView() {
 
   return (
     <div>
-      <Link to={`/event/${eventSlug}`} className="back-link">&larr; Back to Event</Link>
+      <Link to={`/event/${eventSlug}`} className="back-link">
+        &larr; Back to Event
+      </Link>
 
       <div className="connection-bar">
         <span className={`dot ${isConnected ? 'on' : ''}`} />
         {isConnected ? 'Connected' : 'Disconnected'}
       </div>
 
-      <h1>{track?.name ?? 'Track'}{tv ? ` — ${tv.name}` : ''}</h1>
-      {tv && <p className="muted small-text" style={{ marginBottom: 20 }}>{tv.description}</p>}
+      <h1>
+        {track?.name ?? 'Track'}
+        {tv ? ` — ${tv.name}` : ''}
+      </h1>
+      {tv && (
+        <p className="muted small-text" style={{ marginBottom: 20 }}>
+          {tv.description}
+        </p>
+      )}
 
       {/* Currently running riders */}
       {runningRuns.length > 0 && (
@@ -107,7 +130,9 @@ export default function TrackView() {
             const num = getRiderNumber(run.riderId);
             return (
               <div className="running-card" key={String(run.id)}>
-                <div className="badge running" style={{ marginBottom: 8 }}>Racing</div>
+                <div className="badge running" style={{ marginBottom: 8 }}>
+                  Racing
+                </div>
                 <h3 style={{ fontSize: '1.3rem', marginBottom: 8 }}>
                   <span style={{ fontWeight: 700, marginRight: 6 }}>#{num ?? '?'}</span>
                   {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
@@ -126,9 +151,13 @@ export default function TrackView() {
         <div className="section">
           <div className="section-title">Next Rider</div>
           <div className="next-rider-card">
-            <p className="muted small-text" style={{ marginBottom: 4 }}>Up next — #{nextQueued.sortOrder} in queue</p>
+            <p className="muted small-text" style={{ marginBottom: 4 }}>
+              Up next — #{nextQueued.sortOrder} in queue
+            </p>
             <h3>
-              <span style={{ fontWeight: 700, marginRight: 6 }}>#{getRiderNumber(nextQueued.riderId) ?? '?'}</span>
+              <span style={{ fontWeight: 700, marginRight: 6 }}>
+                #{getRiderNumber(nextQueued.riderId) ?? '?'}
+              </span>
               {(() => {
                 const rider = riderMap.get(nextQueued.riderId);
                 return rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown';
@@ -142,10 +171,15 @@ export default function TrackView() {
       {nextQueued && runningRuns.length > 0 && (
         <div className="section">
           <div className="section-title">Next Up</div>
-          <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            className="card"
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <div>
               <span className="muted small-text">#{nextQueued.sortOrder} in queue</span>{' '}
-              <span style={{ fontWeight: 600, marginRight: 6 }}>#{getRiderNumber(nextQueued.riderId) ?? '?'}</span>
+              <span style={{ fontWeight: 600, marginRight: 6 }}>
+                #{getRiderNumber(nextQueued.riderId) ?? '?'}
+              </span>
               {(() => {
                 const rider = riderMap.get(nextQueued.riderId);
                 return rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown';
@@ -164,7 +198,16 @@ export default function TrackView() {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div className="card" key={String(run.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
+              <div
+                className="card"
+                key={String(run.id)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 16px',
+                }}
+              >
                 <div>
                   <span className="muted small-text">#{run.sortOrder}</span>{' '}
                   <span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span>
@@ -203,11 +246,22 @@ export default function TrackView() {
                 const num = getRiderNumber(run.riderId);
                 const elapsed = Number(run.endTime) - Number(run.startTime);
                 const pos = idx + 1;
-                const posClass = pos === 1 ? 'position p1' : pos === 2 ? 'position p2' : pos === 3 ? 'position p3' : 'position';
+                const posClass =
+                  pos === 1
+                    ? 'position p1'
+                    : pos === 2
+                      ? 'position p2'
+                      : pos === 3
+                        ? 'position p3'
+                        : 'position';
                 return (
                   <tr key={String(run.id)}>
-                    <td><span className={posClass}>{pos}</span></td>
-                    <td><span className="muted small-text">{num ?? '—'}</span></td>
+                    <td>
+                      <span className={posClass}>{pos}</span>
+                    </td>
+                    <td>
+                      <span className="muted small-text">{num ?? '—'}</span>
+                    </td>
                     <td>{rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}</td>
                     <td style={{ textAlign: 'right' }}>
                       <span className="elapsed">{formatElapsed(elapsed)}</span>
@@ -228,8 +282,20 @@ export default function TrackView() {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div className="card" key={String(run.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
-                <span><span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span> {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}</span>
+              <div
+                className="card"
+                key={String(run.id)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 16px',
+                }}
+              >
+                <span>
+                  <span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span>{' '}
+                  {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
+                </span>
                 <span className="badge dnf">DNF</span>
               </div>
             );
@@ -245,8 +311,20 @@ export default function TrackView() {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div className="card" key={String(run.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' }}>
-                <span><span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span> {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}</span>
+              <div
+                className="card"
+                key={String(run.id)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 16px',
+                }}
+              >
+                <span>
+                  <span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span>{' '}
+                  {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
+                </span>
                 <span className="badge dns">DNS</span>
               </div>
             );

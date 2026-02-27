@@ -5,13 +5,13 @@ interface SkeletonProps {
   style?: React.CSSProperties;
 }
 
-export function Skeleton({ width = '100%', height = '16px', borderRadius = '4px', style }: SkeletonProps) {
-  return (
-    <div
-      className="skeleton"
-      style={{ width, height, borderRadius, ...style }}
-    />
-  );
+export function Skeleton({
+  width = '100%',
+  height = '16px',
+  borderRadius = '4px',
+  style,
+}: SkeletonProps) {
+  return <div className="skeleton" style={{ width, height, borderRadius, ...style }} />;
 }
 
 export function SkeletonCard({ lines = 2 }: { lines?: number }) {
@@ -36,7 +36,9 @@ export function SkeletonTable({ rows = 4, cols = 3 }: { rows?: number; cols?: nu
       <thead>
         <tr>
           {Array.from({ length: cols }).map((_, i) => (
-            <th key={i}><Skeleton width="60px" height="10px" /></th>
+            <th key={i}>
+              <Skeleton width="60px" height="10px" />
+            </th>
           ))}
         </tr>
       </thead>
@@ -45,7 +47,10 @@ export function SkeletonTable({ rows = 4, cols = 3 }: { rows?: number; cols?: nu
           <tr key={r}>
             {Array.from({ length: cols }).map((_, c) => (
               <td key={c}>
-                <Skeleton width={c === 0 ? '30px' : c === cols - 1 ? '70px' : '100px'} height="14px" />
+                <Skeleton
+                  width={c === 0 ? '30px' : c === cols - 1 ? '70px' : '100px'}
+                  height="14px"
+                />
               </td>
             ))}
           </tr>
@@ -109,7 +114,14 @@ export function TrackViewSkeleton() {
 export function AppSkeleton() {
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <header
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
         <Skeleton width="90px" height="14px" />
         <Skeleton width="80px" height="32px" borderRadius="16px" />
       </header>

@@ -1,7 +1,13 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { useTable, useSpacetimeDB } from 'spacetimedb/react';
 import { tables } from './module_bindings';
-import type { User, OrgMember, EventMember, Organization, ImpersonationStatus } from './module_bindings/types';
+import type {
+  User,
+  OrgMember,
+  EventMember,
+  Organization,
+  ImpersonationStatus,
+} from './module_bindings/types';
 
 interface AuthState {
   token: string | null;
@@ -41,14 +47,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isReady = users.length > 0 || !token;
 
   // Real user: always resolved from connection identity
-  const realUser = (token && identity)
-    ? users.find((u: User) => u.identity.isEqual(identity)) ?? null
-    : null;
+  const realUser =
+    token && identity ? (users.find((u: User) => u.identity.isEqual(identity)) ?? null) : null;
 
   // Check for active impersonation via the public status table
   const impersonation = useMemo(() => {
     if (!identity || !realUser) return null;
-    return impersonationStatuses.find((s: ImpersonationStatus) => s.adminIdentity.isEqual(identity)) ?? null;
+    return (
+      impersonationStatuses.find((s: ImpersonationStatus) => s.adminIdentity.isEqual(identity)) ??
+      null
+    );
   }, [identity, realUser, impersonationStatuses]);
 
   // Effective user: impersonated target or real user
@@ -89,55 +97,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.reload();
   }, []);
 
-  const isOrgOwner = useCallback((orgId: bigint): boolean => {
-    if (!user) return false;
-    const org = orgs.find((o: Organization) => o.id === orgId);
-    return org?.ownerUserId === user.id;
-  }, [user, orgs]);
+  const isOrgOwner = useCallback(
+    (orgId: bigint): boolean => {
+      if (!user) return false;
+      const org = orgs.find((o: Organization) => o.id === orgId);
+      return org?.ownerUserId === user.id;
+    },
+    [user, orgs]
+  );
 
   // Org owners are implicitly 'admin'
-  const getOrgRole = useCallback((orgId: bigint): string | null => {
-    if (!user) return null;
-    if (user.isSuperAdmin) return 'admin';
-    if (isOrgOwner(orgId)) return 'admin';
-    const m = orgMembers.find((m: OrgMember) => m.orgId === orgId && m.userId === user.id);
-    return m?.role ?? null;
-  }, [user, orgMembers, isOrgOwner]);
+  const getOrgRole = useCallback(
+    (orgId: bigint): string | null => {
+      if (!user) return null;
+      if (user.isSuperAdmin) return 'admin';
+      if (isOrgOwner(orgId)) return 'admin';
+      const m = orgMembers.find((m: OrgMember) => m.orgId === orgId && m.userId === user.id);
+      return m?.role ?? null;
+    },
+    [user, orgMembers, isOrgOwner]
+  );
 
-  const getEventRole = useCallback((eventId: bigint): string | null => {
-    if (!user) return null;
-    const m = eventMembers.find((m: EventMember) => m.eventId === eventId && m.userId === user.id);
-    return m?.role ?? null;
-  }, [user, eventMembers]);
+  const getEventRole = useCallback(
+    (eventId: bigint): string | null => {
+      if (!user) return null;
+      const m = eventMembers.find(
+        (m: EventMember) => m.eventId === eventId && m.userId === user.id
+      );
+      return m?.role ?? null;
+    },
+    [user, eventMembers]
+  );
 
-  const canManageOrg = useCallback((orgId: bigint): boolean => {
-    if (!user) return false;
-    if (user.isSuperAdmin) return true;
-    return getOrgRole(orgId) === 'admin';
-  }, [user, getOrgRole]);
+  const canManageOrg = useCallback(
+    (orgId: bigint): boolean => {
+      if (!user) return false;
+      if (user.isSuperAdmin) return true;
+      return getOrgRole(orgId) === 'admin';
+    },
+    [user, getOrgRole]
+  );
 
-  const canManageOrgEvents = useCallback((orgId: bigint): boolean => {
-    if (!user) return false;
-    if (user.isSuperAdmin) return true;
-    const role = getOrgRole(orgId);
-    return role === 'admin' || role === 'manager';
-  }, [user, getOrgRole]);
+  const canManageOrgEvents = useCallback(
+    (orgId: bigint): boolean => {
+      if (!user) return false;
+      if (user.isSuperAdmin) return true;
+      const role = getOrgRole(orgId);
+      return role === 'admin' || role === 'manager';
+    },
+    [user, getOrgRole]
+  );
 
-  const canOrganizeEvent = useCallback((eventId: bigint, orgId: bigint): boolean => {
-    if (!user) return false;
-    if (user.isSuperAdmin) return true;
-    if (canManageOrgEvents(orgId)) return true;
-    return getEventRole(eventId) === 'organizer';
-  }, [user, canManageOrgEvents, getEventRole]);
+  const canOrganizeEvent = useCallback(
+    (eventId: bigint, orgId: bigint): boolean => {
+      if (!user) return false;
+      if (user.isSuperAdmin) return true;
+      if (canManageOrgEvents(orgId)) return true;
+      return getEventRole(eventId) === 'organizer';
+    },
+    [user, canManageOrgEvents, getEventRole]
+  );
 
-  const canTimekeep = useCallback((eventId: bigint, orgId: bigint): boolean => {
-    if (!user) return false;
-    if (user.isSuperAdmin) return true;
-    const orgRole = getOrgRole(orgId);
-    if (orgRole) return true;
-    const evtRole = getEventRole(eventId);
-    return evtRole === 'organizer' || evtRole === 'timekeeper';
-  }, [user, getOrgRole, getEventRole]);
+  const canTimekeep = useCallback(
+    (eventId: bigint, orgId: bigint): boolean => {
+      if (!user) return false;
+      if (user.isSuperAdmin) return true;
+      const orgRole = getOrgRole(orgId);
+      if (orgRole) return true;
+      const evtRole = getEventRole(eventId);
+      return evtRole === 'organizer' || evtRole === 'timekeeper';
+    },
+    [user, getOrgRole, getEventRole]
+  );
 
   return (
     <AuthContext.Provider

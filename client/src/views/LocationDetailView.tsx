@@ -1,27 +1,25 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  Popup,
+  useMap,
+  useMapEvents,
+} from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
-import { FontAwesomeIcon, faPen, faTrash } from '../icons';
+import { faPen, faTrash } from '../icons';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
-
-// Colored circle marker icon
-function circleIcon(color: string, size = 12) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
-}
 
 function pinIcon(color: string, label: string) {
   return L.divIcon({
@@ -54,7 +52,7 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
   const map = useMap();
   useMemo(() => {
     if (positions.length > 0) {
-      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+      const bounds = L.latLngBounds(positions.map((p) => L.latLng(p[0], p[1])));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }
   }, [positions, map]);
@@ -90,7 +88,14 @@ export default function LocationDetailView() {
   const [editingTrackId, setEditingTrackId] = useState<bigint | null>(null);
   const [expandedTrack, setExpandedTrack] = useState<bigint | null>(null);
   const [showVarForm, setShowVarForm] = useState<bigint | null>(null);
-  const [varForm, setVarForm] = useState({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' });
+  const [varForm, setVarForm] = useState({
+    name: '',
+    description: '',
+    startLat: '',
+    startLng: '',
+    endLat: '',
+    endLng: '',
+  });
   const [editingVarId, setEditingVarId] = useState<bigint | null>(null);
   const [placingPin, setPlacingPin] = useState<'start' | 'end' | null>(null);
   const [expandedVarImages, setExpandedVarImages] = useState<bigint | null>(null);
@@ -103,16 +108,19 @@ export default function LocationDetailView() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, []);
 
-  const toggleExpand = useCallback((trackId: bigint) => {
-    setExpandedTrack(prev => {
-      const next = prev === trackId ? null : trackId;
-      if (next !== null) setTimeout(() => scrollToTrack(next), 50);
-      return next;
-    });
-  }, [scrollToTrack]);
+  const toggleExpand = useCallback(
+    (trackId: bigint) => {
+      setExpandedTrack((prev) => {
+        const next = prev === trackId ? null : trackId;
+        if (next !== null) setTimeout(() => scrollToTrack(next), 50);
+        return next;
+      });
+    },
+    [scrollToTrack]
+  );
 
   const toggleTrackImages = useCallback((trackId: bigint) => {
-    setShowTrackImages(prev => {
+    setShowTrackImages((prev) => {
       const next = new Set(prev);
       if (next.has(trackId)) next.delete(trackId);
       else next.add(trackId);
@@ -125,7 +133,9 @@ export default function LocationDetailView() {
   const hasAccess = canManageOrgEvents(oid);
 
   const tracks = useMemo(() => {
-    return allTracks.filter((t: Track) => t.venueId === vid).sort((a: Track, b: Track) => a.name.localeCompare(b.name));
+    return allTracks
+      .filter((t: Track) => t.venueId === vid)
+      .sort((a: Track, b: Track) => a.name.localeCompare(b.name));
   }, [allTracks, vid]);
 
   const variationsByTrack = useMemo(() => {
@@ -146,7 +156,7 @@ export default function LocationDetailView() {
   const defaultVariations = useMemo(() => {
     const m = new Map<bigint, TrackVariation>();
     for (const [trackId, vars] of variationsByTrack) {
-      const def = vars.find(v => v.name === 'Default') ?? vars[0];
+      const def = vars.find((v) => v.name === 'Default') ?? vars[0];
       if (def) m.set(trackId, def);
     }
     return m;
@@ -156,8 +166,10 @@ export default function LocationDetailView() {
   const mapPositions = useMemo(() => {
     const pts: [number, number][] = [];
     for (const [, tv] of defaultVariations) {
-      if (tv.startLatitude !== 0 || tv.startLongitude !== 0) pts.push([tv.startLatitude, tv.startLongitude]);
-      if (tv.endLatitude !== 0 || tv.endLongitude !== 0) pts.push([tv.endLatitude, tv.endLongitude]);
+      if (tv.startLatitude !== 0 || tv.startLongitude !== 0)
+        pts.push([tv.startLatitude, tv.startLongitude]);
+      if (tv.endLatitude !== 0 || tv.endLongitude !== 0)
+        pts.push([tv.endLatitude, tv.endLongitude]);
     }
     return pts;
   }, [defaultVariations]);
@@ -182,11 +194,21 @@ export default function LocationDetailView() {
   };
   const saveVenue = async () => {
     setError('');
-    if (!venueForm.name.trim()) { setError('Name is required'); return; }
+    if (!venueForm.name.trim()) {
+      setError('Name is required');
+      return;
+    }
     try {
-      await updateVenue({ venueId: vid, name: venueForm.name.trim(), description: venueForm.description.trim(), address: venueForm.address.trim() });
+      await updateVenue({
+        venueId: vid,
+        name: venueForm.name.trim(),
+        description: venueForm.description.trim(),
+        address: venueForm.address.trim(),
+      });
       setEditingVenue(false);
-    } catch (e: any) { setError(e?.message || 'Failed'); }
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
   };
 
   // Track create/edit
@@ -196,22 +218,40 @@ export default function LocationDetailView() {
     setShowTrackForm(true);
     setError('');
   };
-  const resetTrackForm = () => { setTrackForm({ name: '', color: '#3b82f6' }); setEditingTrackId(null); setShowTrackForm(false); setError(''); };
+  const resetTrackForm = () => {
+    setTrackForm({ name: '', color: '#3b82f6' });
+    setEditingTrackId(null);
+    setShowTrackForm(false);
+    setError('');
+  };
   const handleTrackSubmit = async () => {
     setError('');
-    if (!trackForm.name.trim()) { setError('Track name is required'); return; }
+    if (!trackForm.name.trim()) {
+      setError('Track name is required');
+      return;
+    }
     try {
       if (editingTrackId !== null) {
-        await updateTrack({ trackId: editingTrackId, name: trackForm.name.trim(), color: trackForm.color });
+        await updateTrack({
+          trackId: editingTrackId,
+          name: trackForm.name.trim(),
+          color: trackForm.color,
+        });
       } else {
         await createTrack({ venueId: vid, name: trackForm.name.trim(), color: trackForm.color });
       }
       resetTrackForm();
-    } catch (e: any) { setError(e?.message || 'Failed'); }
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
   };
   const handleDeleteTrack = async (t: Track) => {
     if (!confirm(`Delete "${t.name}" and all its variations?`)) return;
-    try { await deleteTrack({ trackId: t.id }); } catch (e: any) { setError(e?.message || 'Failed'); }
+    try {
+      await deleteTrack({ trackId: t.id });
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
   };
 
   // Variation create/edit
@@ -223,16 +263,32 @@ export default function LocationDetailView() {
     setError('');
   };
   const startEditVar = (tv: TrackVariation) => {
-    setVarForm({ name: tv.name, description: tv.description, startLat: String(tv.startLatitude), startLng: String(tv.startLongitude), endLat: String(tv.endLatitude), endLng: String(tv.endLongitude) });
+    setVarForm({
+      name: tv.name,
+      description: tv.description,
+      startLat: String(tv.startLatitude),
+      startLng: String(tv.startLongitude),
+      endLat: String(tv.endLatitude),
+      endLng: String(tv.endLongitude),
+    });
     setEditingVarId(tv.id);
     setShowVarForm(tv.trackId);
     setPlacingPin(null);
     setError('');
   };
-  const resetVarForm = () => { setVarForm({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' }); setEditingVarId(null); setShowVarForm(null); setPlacingPin(null); setError(''); };
+  const resetVarForm = () => {
+    setVarForm({ name: '', description: '', startLat: '', startLng: '', endLat: '', endLng: '' });
+    setEditingVarId(null);
+    setShowVarForm(null);
+    setPlacingPin(null);
+    setError('');
+  };
   const handleVarSubmit = async () => {
     setError('');
-    if (!varForm.name.trim()) { setError('Variation name is required'); return; }
+    if (!varForm.name.trim()) {
+      setError('Variation name is required');
+      return;
+    }
     try {
       const data = {
         name: varForm.name.trim(),
@@ -248,31 +304,67 @@ export default function LocationDetailView() {
         await createVariation({ trackId: showVarForm!, ...data });
       }
       resetVarForm();
-    } catch (e: any) { setError(e?.message || 'Failed'); }
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
   };
   const handleDeleteVar = async (tv: TrackVariation) => {
     if (!confirm(`Delete variation "${tv.name}"?`)) return;
-    try { await deleteVariation({ variationId: tv.id }); } catch (e: any) { setError(e?.message || 'Failed'); }
+    try {
+      await deleteVariation({ variationId: tv.id });
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
   };
 
   return (
     <div>
       <div className="location-header">
-        <Link to="/locations" className="back-link">&larr; Locations</Link>
+        <Link to="/locations" className="back-link">
+          &larr; Locations
+        </Link>
 
         {/* Venue header */}
         {editingVenue ? (
           <div className="card" style={{ marginBottom: 12 }}>
-            {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
+            {error && (
+              <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+                {error}
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input type="text" value={venueForm.name} onChange={e => setVenueForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
-              <input type="text" value={venueForm.description} onChange={e => setVenueForm(f => ({ ...f, description: e.target.value }))} placeholder="Description" className="input" />
+              <input
+                type="text"
+                value={venueForm.name}
+                onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
+                className="input"
+                autoFocus
+              />
+              <input
+                type="text"
+                value={venueForm.description}
+                onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Description"
+                className="input"
+              />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div style={{ gridColumn: '1 / -1' }}><label className="input-label">Address</label><input type="text" value={venueForm.address} onChange={e => setVenueForm(f => ({ ...f, address: e.target.value }))} className="input" /></div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="input-label">Address</label>
+                  <input
+                    type="text"
+                    value={venueForm.address}
+                    onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
+                    className="input"
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="primary small" onClick={saveVenue}>Save</button>
-                <button className="ghost small" onClick={() => setEditingVenue(false)}>Cancel</button>
+                <button className="primary small" onClick={saveVenue}>
+                  Save
+                </button>
+                <button className="ghost small" onClick={() => setEditingVenue(false)}>
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -285,20 +377,39 @@ export default function LocationDetailView() {
                 onToggle={() => setMenuOpen(!menuOpen)}
                 onClose={() => setMenuOpen(false)}
                 items={[
-                  { icon: faPen, label: 'Edit', onClick: () => { setMenuOpen(false); startEditVenue(); } },
-                  { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
-                    setMenuOpen(false);
-                    if (confirm('Delete this location and all its tracks? This cannot be undone.')) {
-                      deleteVenue({ venueId: vid }).then(() => navigate('/locations'));
-                    }
-                  }},
+                  {
+                    icon: faPen,
+                    label: 'Edit',
+                    onClick: () => {
+                      setMenuOpen(false);
+                      startEditVenue();
+                    },
+                  },
+                  {
+                    icon: faTrash,
+                    label: 'Delete',
+                    danger: true,
+                    onClick: () => {
+                      setMenuOpen(false);
+                      if (
+                        confirm('Delete this location and all its tracks? This cannot be undone.')
+                      ) {
+                        deleteVenue({ venueId: vid }).then(() => navigate('/locations'));
+                      }
+                    },
+                  },
                 ]}
               />
             </div>
             {venue.description && <p className="muted small-text">{venue.description}</p>}
             {venue.address && (
               <p className="small-text">
-                <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--accent)' }}
+                >
                   {venue.address}
                 </a>
               </p>
@@ -312,88 +423,177 @@ export default function LocationDetailView() {
 
       {/* Tracks section */}
       <div className="section" style={{ marginTop: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
           <div className="section-title" style={{ marginBottom: 0 }}>
-            Tracks <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>({tracks.length})</span>
+            Tracks{' '}
+            <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>
+              ({tracks.length})
+            </span>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {!showTrackForm && (
-              <button className="primary small" onClick={() => { setEditingTrackId(null); setTrackForm({ name: '', color: '#3b82f6' }); setShowTrackForm(true); setError(''); }}>+ Add Track</button>
+              <button
+                className="primary small"
+                onClick={() => {
+                  setEditingTrackId(null);
+                  setTrackForm({ name: '', color: '#3b82f6' });
+                  setShowTrackForm(true);
+                  setError('');
+                }}
+              >
+                + Add Track
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {error && !editingVenue && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}
+      {error && !editingVenue && (
+        <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>
+      )}
 
       {/* Track create/edit form */}
       {showTrackForm && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>{editingTrackId ? 'Edit Track' : 'New Track'}</div>
+          <div className="section-title" style={{ marginBottom: 8 }}>
+            {editingTrackId ? 'Edit Track' : 'New Track'}
+          </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 150 }}>
               <label className="input-label">Name</label>
-              <input type="text" value={trackForm.name} onChange={e => setTrackForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && handleTrackSubmit()} className="input" autoFocus />
+              <input
+                type="text"
+                value={trackForm.name}
+                onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
+                className="input"
+                autoFocus
+              />
             </div>
             <div>
               <label className="input-label">Color</label>
-              <input type="color" value={trackForm.color} onChange={e => setTrackForm(f => ({ ...f, color: e.target.value }))} className="color-input" />
+              <input
+                type="color"
+                value={trackForm.color}
+                onChange={(e) => setTrackForm((f) => ({ ...f, color: e.target.value }))}
+                className="color-input"
+              />
             </div>
-            <button className="primary small" onClick={handleTrackSubmit}>{editingTrackId ? 'Save' : 'Create'}</button>
-            <button className="ghost small" onClick={resetTrackForm}>Cancel</button>
+            <button className="primary small" onClick={handleTrackSubmit}>
+              {editingTrackId ? 'Save' : 'Create'}
+            </button>
+            <button className="ghost small" onClick={resetTrackForm}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {/* Map */}
       {mapPositions.length > 0 && (
-      <div className="location-map-container" style={{ marginBottom: 20 }}>
-        <MapContainer
-          center={mapPositions[0]}
-          zoom={14}
-          style={{ height: 400, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <FitBounds positions={mapPositions} />
-          {tracks.map((track: Track) => {
-            const tv = defaultVariations.get(track.id);
-            if (!tv) return null;
-            const start: [number, number] = [tv.startLatitude, tv.startLongitude];
-            const end: [number, number] = [tv.endLatitude, tv.endLongitude];
-            const hasCoords = (tv.startLatitude !== 0 || tv.startLongitude !== 0);
-            if (!hasCoords) return null;
-            return (
-              <span key={String(track.id)}>
-                <Marker position={start} icon={START_ICON}>
-                  <Popup>
-                    <div style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 700, marginBottom: 2 }}>Start</div>
-                    <a href="#" onClick={(e) => { e.preventDefault(); toggleExpand(track.id); }} style={{ fontWeight: 600 }}>{track.name}</a>
-                  </Popup>
-                </Marker>
-                <Marker position={end} icon={END_ICON}>
-                  <Popup>
-                    <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 700, marginBottom: 2 }}>End</div>
-                    <a href="#" onClick={(e) => { e.preventDefault(); toggleExpand(track.id); }} style={{ fontWeight: 600 }}>{track.name}</a>
-                  </Popup>
-                </Marker>
-                <Polyline positions={[start, end]} pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }} />
-              </span>
-            );
-          })}
-        </MapContainer>
-        {/* Map legend */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-          {tracks.map((t: Track) => (
-            <div key={String(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
-              <span className="color-dot" style={{ background: t.color }} />
-              <span className="muted">{t.name}</span>
-            </div>
-          ))}
+        <div className="location-map-container" style={{ marginBottom: 20 }}>
+          <MapContainer
+            center={mapPositions[0]}
+            zoom={14}
+            style={{
+              height: 400,
+              width: '100%',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <FitBounds positions={mapPositions} />
+            {tracks.map((track: Track) => {
+              const tv = defaultVariations.get(track.id);
+              if (!tv) return null;
+              const start: [number, number] = [tv.startLatitude, tv.startLongitude];
+              const end: [number, number] = [tv.endLatitude, tv.endLongitude];
+              const hasCoords = tv.startLatitude !== 0 || tv.startLongitude !== 0;
+              if (!hasCoords) return null;
+              return (
+                <span key={String(track.id)}>
+                  <Marker position={start} icon={START_ICON}>
+                    <Popup>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: '#22c55e',
+                          fontWeight: 700,
+                          marginBottom: 2,
+                        }}
+                      >
+                        Start
+                      </div>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleExpand(track.id);
+                        }}
+                        style={{ fontWeight: 600 }}
+                      >
+                        {track.name}
+                      </a>
+                    </Popup>
+                  </Marker>
+                  <Marker position={end} icon={END_ICON}>
+                    <Popup>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: '#ef4444',
+                          fontWeight: 700,
+                          marginBottom: 2,
+                        }}
+                      >
+                        End
+                      </div>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleExpand(track.id);
+                        }}
+                        style={{ fontWeight: 600 }}
+                      >
+                        {track.name}
+                      </a>
+                    </Popup>
+                  </Marker>
+                  <Polyline
+                    positions={[start, end]}
+                    pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }}
+                  />
+                </span>
+              );
+            })}
+          </MapContainer>
+          {/* Map legend */}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+            {tracks.map((t: Track) => (
+              <div
+                key={String(t.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}
+              >
+                <span className="color-dot" style={{ background: t.color }} />
+                <span className="muted">{t.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
       )}
 
       {/* List view / Tracks */}
@@ -405,23 +605,52 @@ export default function LocationDetailView() {
             const vars = variationsByTrack.get(track.id) ?? [];
             const isExpanded = expandedTrack === track.id;
             return (
-              <div key={String(track.id)} id={`track-${track.id}`} ref={el => { if (el) trackRefs.current.set(track.id, el); else trackRefs.current.delete(track.id); }} className="card" style={{ padding: 0 }}>
+              <div
+                key={String(track.id)}
+                id={`track-${track.id}`}
+                ref={(el) => {
+                  if (el) trackRefs.current.set(track.id, el);
+                  else trackRefs.current.delete(track.id);
+                }}
+                className="card"
+                style={{ padding: 0 }}
+              >
                 {/* Track header */}
                 <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', cursor: 'pointer' }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                  }}
                   onClick={() => toggleExpand(track.id)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="color-dot" style={{ background: track.color }} />
                     <strong>{track.name}</strong>
-                    <span className="muted small-text">({vars.length} variation{vars.length !== 1 ? 's' : ''})</span>
+                    <span className="muted small-text">
+                      ({vars.length} variation{vars.length !== 1 ? 's' : ''})
+                    </span>
                   </div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <RowActionMenu items={[
-                      { icon: faPen, label: 'Edit', onClick: () => startEditTrack(track) },
-                      { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDeleteTrack(track) },
-                    ]} />
-                    <span className="muted" style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}>{isExpanded ? '\u25B2' : '\u25BC'}</span>
+                    <RowActionMenu
+                      items={[
+                        { icon: faPen, label: 'Edit', onClick: () => startEditTrack(track) },
+                        {
+                          icon: faTrash,
+                          label: 'Delete',
+                          danger: true,
+                          onClick: () => handleDeleteTrack(track),
+                        },
+                      ]}
+                    />
+                    <span
+                      className="muted"
+                      style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}
+                    >
+                      {isExpanded ? '\u25B2' : '\u25BC'}
+                    </span>
                   </div>
                 </div>
 
@@ -434,115 +663,226 @@ export default function LocationDetailView() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <div className="section-title" style={{ marginBottom: 0 }}>Variations</div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 8,
+                      }}
+                    >
+                      <div className="section-title" style={{ marginBottom: 0 }}>
+                        Variations
+                      </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button className="ghost small" onClick={() => toggleTrackImages(track.id)}>
                           {showTrackImages.has(track.id) ? 'Hide Images' : 'Show Images'}
                         </button>
-                        <button className="primary small" onClick={() => startAddVar(track.id)}>+ Add</button>
+                        <button className="primary small" onClick={() => startAddVar(track.id)}>
+                          + Add
+                        </button>
                       </div>
                     </div>
 
                     {/* Variation form */}
-                    {showVarForm === track.id && (() => {
-                      const hasStart = varForm.startLat !== '' && varForm.startLng !== '';
-                      const hasEnd = varForm.endLat !== '' && varForm.endLng !== '';
-                      const startPos: [number, number] | null = hasStart ? [parseFloat(varForm.startLat), parseFloat(varForm.startLng)] : null;
-                      const endPos: [number, number] | null = hasEnd ? [parseFloat(varForm.endLat), parseFloat(varForm.endLng)] : null;
-                      const handleMapPlace = (lat: number, lng: number) => {
-                        if (placingPin === 'start') {
-                          setVarForm(f => ({ ...f, startLat: lat.toFixed(6), startLng: lng.toFixed(6) }));
-                          setPlacingPin(hasEnd ? null : 'end');
-                        } else if (placingPin === 'end') {
-                          setVarForm(f => ({ ...f, endLat: lat.toFixed(6), endLng: lng.toFixed(6) }));
-                          setPlacingPin(null);
-                        } else if (!hasStart) {
-                          setVarForm(f => ({ ...f, startLat: lat.toFixed(6), startLng: lng.toFixed(6) }));
-                          setPlacingPin('end');
-                        } else if (!hasEnd) {
-                          setVarForm(f => ({ ...f, endLat: lat.toFixed(6), endLng: lng.toFixed(6) }));
-                          setPlacingPin(null);
-                        }
-                      };
-                      return (
-                        <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: 12, marginBottom: 8 }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div>
-                              <label className="input-label">Name *</label>
-                              <input type="text" value={varForm.name} onChange={e => setVarForm(f => ({ ...f, name: e.target.value }))} className="input" autoFocus />
-                            </div>
-                            <div>
-                              <label className="input-label">Description</label>
-                              <textarea value={varForm.description} onChange={e => setVarForm(f => ({ ...f, description: e.target.value }))} className="input" rows={3} style={{ resize: 'vertical' }} />
-                            </div>
+                    {showVarForm === track.id &&
+                      (() => {
+                        const hasStart = varForm.startLat !== '' && varForm.startLng !== '';
+                        const hasEnd = varForm.endLat !== '' && varForm.endLng !== '';
+                        const startPos: [number, number] | null = hasStart
+                          ? [parseFloat(varForm.startLat), parseFloat(varForm.startLng)]
+                          : null;
+                        const endPos: [number, number] | null = hasEnd
+                          ? [parseFloat(varForm.endLat), parseFloat(varForm.endLng)]
+                          : null;
+                        const handleMapPlace = (lat: number, lng: number) => {
+                          if (placingPin === 'start') {
+                            setVarForm((f) => ({
+                              ...f,
+                              startLat: lat.toFixed(6),
+                              startLng: lng.toFixed(6),
+                            }));
+                            setPlacingPin(hasEnd ? null : 'end');
+                          } else if (placingPin === 'end') {
+                            setVarForm((f) => ({
+                              ...f,
+                              endLat: lat.toFixed(6),
+                              endLng: lng.toFixed(6),
+                            }));
+                            setPlacingPin(null);
+                          } else if (!hasStart) {
+                            setVarForm((f) => ({
+                              ...f,
+                              startLat: lat.toFixed(6),
+                              startLng: lng.toFixed(6),
+                            }));
+                            setPlacingPin('end');
+                          } else if (!hasEnd) {
+                            setVarForm((f) => ({
+                              ...f,
+                              endLat: lat.toFixed(6),
+                              endLng: lng.toFixed(6),
+                            }));
+                            setPlacingPin(null);
+                          }
+                        };
+                        return (
+                          <div
+                            style={{
+                              background: 'var(--bg)',
+                              borderRadius: 'var(--radius)',
+                              padding: 12,
+                              marginBottom: 8,
+                            }}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div>
+                                <label className="input-label">Name *</label>
+                                <input
+                                  type="text"
+                                  value={varForm.name}
+                                  onChange={(e) =>
+                                    setVarForm((f) => ({ ...f, name: e.target.value }))
+                                  }
+                                  className="input"
+                                  autoFocus
+                                />
+                              </div>
+                              <div>
+                                <label className="input-label">Description</label>
+                                <textarea
+                                  value={varForm.description}
+                                  onChange={(e) =>
+                                    setVarForm((f) => ({ ...f, description: e.target.value }))
+                                  }
+                                  className="input"
+                                  rows={3}
+                                  style={{ resize: 'vertical' }}
+                                />
+                              </div>
 
-                            {/* Pin placement map */}
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <label className="input-label" style={{ marginBottom: 0 }}>Drop pins on the map</label>
-                                <button
-                                  className={`ghost small ${placingPin === 'start' ? 'pin-active-start' : ''}`}
-                                  onClick={() => setPlacingPin(placingPin === 'start' ? null : 'start')}
-                                  style={placingPin === 'start' ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' } : {}}
+                              {/* Pin placement map */}
+                              <div>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    marginBottom: 6,
+                                  }}
                                 >
-                                  {hasStart ? 'Move Start' : 'Place Start'}
-                                </button>
-                                <button
-                                  className={`ghost small ${placingPin === 'end' ? 'pin-active-end' : ''}`}
-                                  onClick={() => setPlacingPin(placingPin === 'end' ? null : 'end')}
-                                  style={placingPin === 'end' ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' } : {}}
+                                  <label className="input-label" style={{ marginBottom: 0 }}>
+                                    Drop pins on the map
+                                  </label>
+                                  <button
+                                    className={`ghost small ${placingPin === 'start' ? 'pin-active-start' : ''}`}
+                                    onClick={() =>
+                                      setPlacingPin(placingPin === 'start' ? null : 'start')
+                                    }
+                                    style={
+                                      placingPin === 'start'
+                                        ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                                        : {}
+                                    }
+                                  >
+                                    {hasStart ? 'Move Start' : 'Place Start'}
+                                  </button>
+                                  <button
+                                    className={`ghost small ${placingPin === 'end' ? 'pin-active-end' : ''}`}
+                                    onClick={() =>
+                                      setPlacingPin(placingPin === 'end' ? null : 'end')
+                                    }
+                                    style={
+                                      placingPin === 'end'
+                                        ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' }
+                                        : {}
+                                    }
+                                  >
+                                    {hasEnd ? 'Move End' : 'Place End'}
+                                  </button>
+                                </div>
+                                {placingPin && (
+                                  <div
+                                    className="small-text"
+                                    style={{
+                                      marginBottom: 4,
+                                      color: placingPin === 'start' ? '#22c55e' : '#ef4444',
+                                    }}
+                                  >
+                                    Click on the map to place the {placingPin} pin
+                                  </div>
+                                )}
+                                {!placingPin && !hasStart && (
+                                  <div className="small-text muted" style={{ marginBottom: 4 }}>
+                                    Click on the map to place the start pin
+                                  </div>
+                                )}
+                                <div className="location-map-container">
+                                  <MapContainer
+                                    center={mapPositions.length > 0 ? mapPositions[0] : [0, 0]}
+                                    zoom={14}
+                                    style={{
+                                      height: 280,
+                                      width: '100%',
+                                      borderRadius: 'var(--radius)',
+                                      border: '1px solid var(--border)',
+                                      cursor: placingPin ? 'crosshair' : '',
+                                    }}
+                                  >
+                                    <TileLayer
+                                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    />
+                                    <MapClickHandler onPlace={handleMapPlace} />
+                                    {startPos && <Marker position={startPos} icon={START_ICON} />}
+                                    {endPos && <Marker position={endPos} icon={END_ICON} />}
+                                    {startPos && endPos && (
+                                      <Polyline
+                                        positions={[startPos, endPos]}
+                                        pathOptions={{
+                                          color: track.color,
+                                          weight: 3,
+                                          dashArray: '6 4',
+                                        }}
+                                      />
+                                    )}
+                                  </MapContainer>
+                                </div>
+                                {/* Coordinate readout */}
+                                <div
+                                  style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: 8,
+                                    marginTop: 6,
+                                    fontSize: '0.75rem',
+                                  }}
                                 >
-                                  {hasEnd ? 'Move End' : 'Place End'}
-                                </button>
-                              </div>
-                              {placingPin && (
-                                <div className="small-text" style={{ marginBottom: 4, color: placingPin === 'start' ? '#22c55e' : '#ef4444' }}>
-                                  Click on the map to place the {placingPin} pin
-                                </div>
-                              )}
-                              {!placingPin && !hasStart && (
-                                <div className="small-text muted" style={{ marginBottom: 4 }}>
-                                  Click on the map to place the start pin
-                                </div>
-                              )}
-                              <div className="location-map-container">
-                                <MapContainer
-                                  center={mapPositions.length > 0 ? mapPositions[0] : [0, 0]}
-                                  zoom={14}
-                                  style={{ height: 280, width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border)', cursor: placingPin ? 'crosshair' : '' }}
-                                >
-                                  <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                  />
-                                  <MapClickHandler onPlace={handleMapPlace} />
-                                  {startPos && <Marker position={startPos} icon={START_ICON} />}
-                                  {endPos && <Marker position={endPos} icon={END_ICON} />}
-                                  {startPos && endPos && (
-                                    <Polyline positions={[startPos, endPos]} pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }} />
-                                  )}
-                                </MapContainer>
-                              </div>
-                              {/* Coordinate readout */}
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6, fontSize: '0.75rem' }}>
-                                <div className="muted">
-                                  Start: {hasStart ? `${varForm.startLat}, ${varForm.startLng}` : 'not set'}
-                                </div>
-                                <div className="muted">
-                                  End: {hasEnd ? `${varForm.endLat}, ${varForm.endLng}` : 'not set'}
+                                  <div className="muted">
+                                    Start:{' '}
+                                    {hasStart
+                                      ? `${varForm.startLat}, ${varForm.startLng}`
+                                      : 'not set'}
+                                  </div>
+                                  <div className="muted">
+                                    End:{' '}
+                                    {hasEnd ? `${varForm.endLat}, ${varForm.endLng}` : 'not set'}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div style={{ display: 'flex', gap: 8 }}>
-                              <button className="primary small" onClick={handleVarSubmit}>{editingVarId ? 'Save' : 'Add'}</button>
-                              <button className="ghost small" onClick={resetVarForm}>Cancel</button>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button className="primary small" onClick={handleVarSubmit}>
+                                  {editingVarId ? 'Save' : 'Add'}
+                                </button>
+                                <button className="ghost small" onClick={resetVarForm}>
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
 
                     {/* Variation list */}
                     <table className="data-table">
@@ -555,25 +895,46 @@ export default function LocationDetailView() {
                       </thead>
                       <tbody>
                         {vars.map((tv: TrackVariation) => (
-                          <tr key={String(tv.id)} style={{ cursor: 'pointer' }} onClick={() => setExpandedVarImages(expandedVarImages === tv.id ? null : tv.id)}>
+                          <tr
+                            key={String(tv.id)}
+                            style={{ cursor: 'pointer' }}
+                            onClick={() =>
+                              setExpandedVarImages(expandedVarImages === tv.id ? null : tv.id)
+                            }
+                          >
                             <td>{tv.name}</td>
                             <td className="muted small-text">{tv.description || '—'}</td>
                             <td>
                               {tv.name !== 'Default' ? (
-                                <RowActionMenu items={[
-                                  { icon: faPen, label: 'Edit', onClick: () => startEditVar(tv) },
-                                  ...(vars.length > 1 ? [{ icon: faTrash, label: 'Delete', danger: true as const, onClick: () => handleDeleteVar(tv) }] : []),
-                                ]} />
+                                <RowActionMenu
+                                  items={[
+                                    { icon: faPen, label: 'Edit', onClick: () => startEditVar(tv) },
+                                    ...(vars.length > 1
+                                      ? [
+                                          {
+                                            icon: faTrash,
+                                            label: 'Delete',
+                                            danger: true as const,
+                                            onClick: () => handleDeleteVar(tv),
+                                          },
+                                        ]
+                                      : []),
+                                  ]}
+                                />
                               ) : (
                                 <span className="muted small-text">Default</span>
                               )}
                             </td>
                           </tr>
                         ))}
-                        {expandedVarImages && vars.some(v => v.id === expandedVarImages) && (
+                        {expandedVarImages && vars.some((v) => v.id === expandedVarImages) && (
                           <tr>
                             <td colSpan={3} style={{ padding: 12 }}>
-                              <ImageCarousel entityType="track_variation" entityId={expandedVarImages} canEdit={hasAccess} />
+                              <ImageCarousel
+                                entityType="track_variation"
+                                entityId={expandedVarImages}
+                                canEdit={hasAccess}
+                              />
                             </td>
                           </tr>
                         )}

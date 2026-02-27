@@ -59,31 +59,9 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 - Table accessor names in `connection.db` match the schema keys (e.g., `connection.db.event`).
 - Generated bindings are in `client/src/module_bindings/` — regenerate with `spacetime generate`.
 
-### Connection config
-
-The client reads env vars to determine where to connect:
-
-| Variable | Values | Effect |
-|----------|--------|--------|
-| `VITE_STDB_ENV` | `cloud` / `local` | `cloud`: connect to `wss://<CLOUD_HOST>`. `local`: connect through Vite proxy to `localhost:3000` |
-| `VITE_STDB_CLOUD_HOST` | hostname | Default: `maincloud.spacetimedb.com` |
-| `VITE_STDB_DATABASE` | database name | e.g., `racetimetracker-dev` |
-
-For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSocket) to `localhost:3000`.
-
-## Database Targets
-
-`spacetime.json` defaults to the local server with database `racetimetracker-dev`. Cloud publish uses `--no-config` with explicit server flags.
-
-| Target | Server | Database | Command |
-|--------|--------|----------|---------|
-| local (dev) | `localhost:3000` | `racetimetracker-dev` | `npm run dev:spacetime` |
-| cloud (dev) | `maincloud.spacetimedb.com` | `racetimetracker-dev` | `npm run publish` |
-| cloud (prod) | `maincloud.spacetimedb.com` | `racetimetracker-prod` | `npm run publish` (change db name) |
-
 ## Auth & RBAC
 
-- Google OAuth Client ID is in the root `.env` file and hardcoded in `spacetimedb/src/index.ts` for server-side validation.
+- Google OAuth Client ID is in the root `.env` file.
 - Permission hierarchy: super_admin > org admin > org manager > event organizer > event timekeeper.
 - Permission helpers in `client/src/auth.tsx`: `canManageOrg()`, `canManageOrgEvents()`, `canOrganizeEvent()`, `canTimekeep()`.
 - Anonymous users can view the public leaderboard display at `/event/:slug/leaderboard` or `/:orgSlug/event/:slug/leaderboard`. The event view requires auth. Track timing controls require auth + role.
@@ -96,6 +74,7 @@ For local dev, the Vite proxy in `vite.config.ts` forwards `/v1/*` (HTTP + WebSo
 ## Code Conventions
 
 - TypeScript strict mode in both client and server.
+- ESLint + Prettier for linting and formatting. Run `npm run lint` and `npm run format` before committing.
 - No CSS modules — all styles in `client/src/index.css`.
 - No component library — plain HTML elements with CSS classes.
 - `bigint` for all SpacetimeDB IDs (auto-increment u64).
@@ -111,6 +90,7 @@ All icons use FontAwesome via `client/src/icons.ts`. Import from `../icons` — 
 Entity-level actions (rename, share, manage, delete, etc.) go in a **dropdown menu** triggered by a vertical dots icon (`faEllipsisVertical`). This is the standard pattern used across the app (events, organizations, member rows).
 
 Implementation pattern:
+
 - The title row containing the entity name and the trigger button must use `alignItems: 'baseline'` to align the icon with the text.
 - Trigger button: `<FontAwesomeIcon icon={faEllipsisVertical} />` in a `ghost small` button
 - Dropdown: absolutely positioned `div` with `background: var(--surface)`, border, shadow, `zIndex: 50`
@@ -125,6 +105,7 @@ Implementation pattern:
 Show error messages in a **dismissable banner** using the `ErrorBanner` component (`client/src/components/ErrorBanner.tsx`).
 
 Implementation pattern:
+
 - Import: `import ErrorBanner from '../components/ErrorBanner';`
 - Props: `message` (string), `onDismiss` (callback), `noMargin` (optional, for use inside modals)
 - Place the banner near the relevant context (e.g. below a section header, inside a modal)
@@ -136,6 +117,7 @@ Implementation pattern:
 Use the `Modal` component (`client/src/components/Modal.tsx`) for forms and dialogs that require user input or confirmation. Prefer modals over inline forms for add/edit flows (invite member, create entity, etc.).
 
 Implementation pattern:
+
 - Import: `import Modal from '../components/Modal';`
 - Props: `open`, `onClose`, `title`, `children`
 - Close on Escape key and overlay click (handled by Modal)
@@ -148,6 +130,7 @@ Implementation pattern:
 Use pagination for tables that expect over 10 entries. This reduces DOM nodes and improves performance.
 
 Implementation pattern:
+
 - **State:** `page` (0-based), `pageSize` (default 10, persisted in localStorage)
 - **Options:** `PAGE_SIZE_OPTIONS = [10, 20, 50, 100]`
 - **localStorage key:** `racetimetracker-<entity>-page-size` (e.g. `racetimetracker-riders-page-size`)
@@ -206,6 +189,15 @@ spacetime call --server local racetimetracker-dev seed_demo_data
 
 ```bash
 spacetime sql --server local racetimetracker-dev "SELECT * FROM event"
+```
+
+### Lint and format
+
+```bash
+npm run lint          # Check for lint errors
+npm run lint:fix      # Auto-fix lint issues
+npm run format        # Format with Prettier
+npm run format:check  # Check formatting (CI)
 ```
 
 ## Cursor Cloud specific instructions

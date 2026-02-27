@@ -6,7 +6,7 @@ import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
-import type { Venue, Track, Organization } from '../module_bindings/types';
+import type { Venue, Organization } from '../module_bindings/types';
 
 export default function LocationsView() {
   const oid = useActiveOrg();
@@ -27,7 +27,9 @@ export default function LocationsView() {
   const hasAccess = canManageOrgEvents(oid);
 
   const orgLocations = useMemo(() => {
-    return locations.filter((v: Venue) => v.orgId === oid).sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
+    return locations
+      .filter((v: Venue) => v.orgId === oid)
+      .sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
   }, [locations, oid]);
 
   const trackCounts = useMemo(() => {
@@ -56,9 +58,17 @@ export default function LocationsView() {
 
   const handleCreate = async () => {
     setError('');
-    if (!form.name.trim()) { setError('Name is required'); return; }
+    if (!form.name.trim()) {
+      setError('Name is required');
+      return;
+    }
     try {
-      await createVenue({ orgId: oid, name: form.name.trim(), description: form.description.trim(), address: form.address.trim() });
+      await createVenue({
+        orgId: oid,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        address: form.address.trim(),
+      });
       resetForm();
     } catch (e: any) {
       setError(e?.message || 'Failed to create location');
@@ -76,24 +86,61 @@ export default function LocationsView() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
         <h1 style={{ marginBottom: 0 }}>Locations</h1>
         {!showForm && (
-          <button className="primary small" onClick={() => setShowForm(true)}>+ New Location</button>
+          <button className="primary small" onClick={() => setShowForm(true)}>
+            + New Location
+          </button>
         )}
       </div>
 
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>New Location</div>
-          {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
+          <div className="section-title" style={{ marginBottom: 8 }}>
+            New Location
+          </div>
+          {error && (
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input type="text" placeholder="Location name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && handleCreate()} autoFocus className="input" />
-            <input type="text" placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="input" />
-            <input type="text" placeholder="Address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="input" />
+            <input
+              type="text"
+              placeholder="Location name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              autoFocus
+              className="input"
+            />
+            <input
+              type="text"
+              placeholder="Description (optional)"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              className="input"
+            />
+            <input
+              type="text"
+              placeholder="Address"
+              value={form.address}
+              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+              className="input"
+            />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={handleCreate}>Create</button>
-              <button className="ghost small" onClick={resetForm}>Cancel</button>
+              <button className="primary small" onClick={handleCreate}>
+                Create
+              </button>
+              <button className="ghost small" onClick={resetForm}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -116,21 +163,37 @@ export default function LocationsView() {
             {orgLocations.map((v: Venue) => (
               <tr key={String(v.id)}>
                 <td>
-                  <Link to={`/location/${v.id}`} className="table-link">{v.name}</Link>
+                  <Link to={`/location/${v.id}`} className="table-link">
+                    {v.name}
+                  </Link>
                 </td>
                 <td className="muted small-text">{v.description || '—'}</td>
                 <td>{trackCounts.get(v.id) ?? 0}</td>
                 <td className="small-text">
                   {v.address ? (
-                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.address)}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--accent)' }}
+                    >
                       {v.address}
                     </a>
-                  ) : <span className="muted">—</span>}
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
                 </td>
                 <td>
-                  <RowActionMenu items={[
-                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDelete(v) },
-                  ]} />
+                  <RowActionMenu
+                    items={[
+                      {
+                        icon: faTrash,
+                        label: 'Delete',
+                        danger: true,
+                        onClick: () => handleDelete(v),
+                      },
+                    ]}
+                  />
                 </td>
               </tr>
             ))}

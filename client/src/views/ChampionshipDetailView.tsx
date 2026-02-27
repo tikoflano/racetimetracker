@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
@@ -7,7 +7,13 @@ import { useActiveOrg } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faThumbtack, faTrash } from '../icons';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
-import type { Championship, Event, Venue, Organization, PinnedEvent } from '../module_bindings/types';
+import type {
+  Championship,
+  Event,
+  Venue,
+  Organization,
+  PinnedEvent,
+} from '../module_bindings/types';
 
 type EventStatus = 'in_progress' | 'not_started' | 'completed';
 
@@ -22,8 +28,16 @@ function getEventStatus(e: Event, today: string): EventStatus {
   return 'in_progress';
 }
 
-const STATUS_LABEL: Record<EventStatus, string> = { in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
-const STATUS_BADGE: Record<EventStatus, string> = { in_progress: 'running', not_started: 'queued', completed: 'finished' };
+const STATUS_LABEL: Record<EventStatus, string> = {
+  in_progress: 'In Progress',
+  not_started: 'Not Started',
+  completed: 'Completed',
+};
+const STATUS_BADGE: Record<EventStatus, string> = {
+  in_progress: 'running',
+  not_started: 'queued',
+  completed: 'finished',
+};
 
 export default function ChampionshipDetailView() {
   const { champId } = useParams<{ champId: string }>();
@@ -47,7 +61,7 @@ export default function ChampionshipDetailView() {
   const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(
-      pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map(f => f.eventId)
+      pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map((f) => f.eventId)
     );
   }, [user, pinnedEvents]);
 
@@ -98,11 +112,16 @@ export default function ChampionshipDetailView() {
 
   const filteredEventRows = useMemo(() => {
     if (statusFilter === 'all') return eventRows;
-    return eventRows.filter(r => r.status === statusFilter);
+    return eventRows.filter((r) => r.status === statusFilter);
   }, [eventRows, statusFilter]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: eventRows.length, in_progress: 0, not_started: 0, completed: 0 };
+    const counts: Record<string, number> = {
+      all: eventRows.length,
+      in_progress: 0,
+      not_started: 0,
+      completed: 0,
+    };
     for (const r of eventRows) counts[r.status]++;
     return counts;
   }, [eventRows]);
@@ -123,7 +142,8 @@ export default function ChampionshipDetailView() {
     if (championships.length === 0) return null;
     return <div className="empty">Championship not found.</div>;
   }
-  if (!hasAccess) return <div className="empty">You don't have access to manage this championship.</div>;
+  if (!hasAccess)
+    return <div className="empty">You don't have access to manage this championship.</div>;
 
   const startEditing = () => {
     setEditName(champ.name);
@@ -136,9 +156,17 @@ export default function ChampionshipDetailView() {
   const handleSave = async () => {
     setEditError('');
     const trimmed = editName.trim();
-    if (!trimmed) { setEditError('Name cannot be empty'); return; }
+    if (!trimmed) {
+      setEditError('Name cannot be empty');
+      return;
+    }
     try {
-      await updateChampionship({ championshipId: cid, name: trimmed, description: editDesc.trim(), color: editColor });
+      await updateChampionship({
+        championshipId: cid,
+        name: trimmed,
+        description: editDesc.trim(),
+        color: editColor,
+      });
       setEditing(false);
     } catch (e: any) {
       setEditError(e?.message || 'Failed to update');
@@ -147,11 +175,23 @@ export default function ChampionshipDetailView() {
 
   const handleAddEvent = async () => {
     setEvtError('');
-    if (!evtName.trim()) { setEvtError('Event name is required'); return; }
-    if (!evtStart) { setEvtError('Start date is required'); return; }
-    if (!evtEnd) { setEvtError('End date is required'); return; }
+    if (!evtName.trim()) {
+      setEvtError('Event name is required');
+      return;
+    }
+    if (!evtStart) {
+      setEvtError('Start date is required');
+      return;
+    }
+    if (!evtEnd) {
+      setEvtError('End date is required');
+      return;
+    }
     const venueId = evtVenueId ? BigInt(evtVenueId) : 0n;
-    if (!venueId) { setEvtError('Select a location'); return; }
+    if (!venueId) {
+      setEvtError('Select a location');
+      return;
+    }
     try {
       await createEvent({
         orgId: oid,
@@ -182,7 +222,10 @@ export default function ChampionshipDetailView() {
   const handleSaveEventName = async (e: Event) => {
     setEditEventError('');
     const trimmed = editEventName.trim();
-    if (!trimmed) { setEditEventError('Name cannot be empty'); return; }
+    if (!trimmed) {
+      setEditEventError('Name cannot be empty');
+      return;
+    }
     try {
       await updateEvent({
         eventId: e.id,
@@ -199,7 +242,9 @@ export default function ChampionshipDetailView() {
 
   return (
     <div>
-      <Link to="/championships" className="back-link">&larr; Championships</Link>
+      <Link to="/championships" className="back-link">
+        &larr; Championships
+      </Link>
 
       {/* Championship name + description — editable */}
       {editing ? (
@@ -209,7 +254,10 @@ export default function ChampionshipDetailView() {
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') setEditing(false);
+              }}
               autoFocus
               className="input"
               style={{ fontSize: '1.4rem', fontWeight: 700 }}
@@ -218,38 +266,75 @@ export default function ChampionshipDetailView() {
               type="text"
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') setEditing(false);
+              }}
               placeholder="Description"
               className="input"
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label className="input-label" style={{ marginBottom: 0 }}>Color</label>
-              <input type="color" value={editColor} onChange={(e) => setEditColor(e.target.value)} className="color-input" />
+              <label className="input-label" style={{ marginBottom: 0 }}>
+                Color
+              </label>
+              <input
+                type="color"
+                value={editColor}
+                onChange={(e) => setEditColor(e.target.value)}
+                className="color-input"
+              />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={handleSave}>Save</button>
-              <button className="ghost small" onClick={() => setEditing(false)}>Cancel</button>
+              <button className="primary small" onClick={handleSave}>
+                Save
+              </button>
+              <button className="ghost small" onClick={() => setEditing(false)}>
+                Cancel
+              </button>
             </div>
           </div>
-          {editError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>{editError}</div>}
+          {editError && (
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>
+              {editError}
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ marginBottom: 4 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span className="color-dot" style={{ background: champ.color, width: 14, height: 14, alignSelf: 'center' }} />
+            <span
+              className="color-dot"
+              style={{ background: champ.color, width: 14, height: 14, alignSelf: 'center' }}
+            />
             <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
             <ActionMenu
               open={menuOpen}
               onToggle={() => setMenuOpen(!menuOpen)}
               onClose={() => setMenuOpen(false)}
               items={[
-                { icon: faPen, label: 'Edit', onClick: () => { setMenuOpen(false); startEditing(); } },
-                { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
-                  setMenuOpen(false);
-                  if (confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) {
-                    deleteChampionship({ championshipId: cid }).then(() => navigate('/championships'));
-                  }
-                }},
+                {
+                  icon: faPen,
+                  label: 'Edit',
+                  onClick: () => {
+                    setMenuOpen(false);
+                    startEditing();
+                  },
+                },
+                {
+                  icon: faTrash,
+                  label: 'Delete',
+                  danger: true,
+                  onClick: () => {
+                    setMenuOpen(false);
+                    if (
+                      confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)
+                    ) {
+                      deleteChampionship({ championshipId: cid }).then(() =>
+                        navigate('/championships')
+                      );
+                    }
+                  },
+                },
               ]}
             />
           </div>
@@ -259,18 +344,34 @@ export default function ChampionshipDetailView() {
 
       {/* Events section */}
       <div className="section" style={{ marginTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div className="section-title" style={{ marginBottom: 0 }}>Events ({champEvents.length})</div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <div className="section-title" style={{ marginBottom: 0 }}>
+            Events ({champEvents.length})
+          </div>
           {!showEventForm && (
-            <button className="primary small" onClick={() => setShowEventForm(true)}>+ Add Event</button>
+            <button className="primary small" onClick={() => setShowEventForm(true)}>
+              + Add Event
+            </button>
           )}
         </div>
 
         {/* Status filter */}
         {eventRows.length > 0 && (
           <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-            {(['all', 'in_progress', 'not_started', 'completed'] as const).map(f => {
-              const labels: Record<string, string> = { all: 'All', in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
+            {(['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
+              const labels: Record<string, string> = {
+                all: 'All',
+                in_progress: 'In Progress',
+                not_started: 'Not Started',
+                completed: 'Completed',
+              };
               return (
                 <button
                   key={f}
@@ -286,7 +387,11 @@ export default function ChampionshipDetailView() {
 
         {showEventForm && (
           <div className="card" style={{ marginBottom: 12 }}>
-            {evtError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{evtError}</div>}
+            {evtError && (
+              <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+                {evtError}
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input
                 type="text"
@@ -306,11 +411,21 @@ export default function ChampionshipDetailView() {
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <label className="input-label">Start date</label>
-                  <input type="date" value={evtStart} onChange={(e) => setEvtStart(e.target.value)} className="input" />
+                  <input
+                    type="date"
+                    value={evtStart}
+                    onChange={(e) => setEvtStart(e.target.value)}
+                    className="input"
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <label className="input-label">End date</label>
-                  <input type="date" value={evtEnd} onChange={(e) => setEvtEnd(e.target.value)} className="input" />
+                  <input
+                    type="date"
+                    value={evtEnd}
+                    onChange={(e) => setEvtEnd(e.target.value)}
+                    className="input"
+                  />
                 </div>
               </div>
               <div>
@@ -322,13 +437,25 @@ export default function ChampionshipDetailView() {
                 >
                   <option value="">Select location...</option>
                   {venues.map((v: Venue) => (
-                    <option key={String(v.id)} value={String(v.id)}>{v.name}</option>
+                    <option key={String(v.id)} value={String(v.id)}>
+                      {v.name}
+                    </option>
                   ))}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="primary small" onClick={handleAddEvent}>Create Event</button>
-                <button className="ghost small" onClick={() => { setShowEventForm(false); setEvtError(''); }}>Cancel</button>
+                <button className="primary small" onClick={handleAddEvent}>
+                  Create Event
+                </button>
+                <button
+                  className="ghost small"
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setEvtError('');
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -371,8 +498,8 @@ export default function ChampionshipDetailView() {
                         <input
                           type="text"
                           value={editEventName}
-                          onChange={ev => setEditEventName(ev.target.value)}
-                          onKeyDown={ev => {
+                          onChange={(ev) => setEditEventName(ev.target.value)}
+                          onKeyDown={(ev) => {
                             if (ev.key === 'Enter') handleSaveEventName(e);
                             if (ev.key === 'Escape') setEditingEventId(null);
                           }}
@@ -380,22 +507,34 @@ export default function ChampionshipDetailView() {
                           className="input"
                           style={{ padding: '4px 8px', fontSize: '0.875rem' }}
                         />
-                        <button className="primary small" onClick={() => handleSaveEventName(e)}>Save</button>
-                        <button className="ghost small" onClick={() => setEditingEventId(null)}>Cancel</button>
-                        {editEventError && <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>{editEventError}</span>}
+                        <button className="primary small" onClick={() => handleSaveEventName(e)}>
+                          Save
+                        </button>
+                        <button className="ghost small" onClick={() => setEditingEventId(null)}>
+                          Cancel
+                        </button>
+                        {editEventError && (
+                          <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>
+                            {editEventError}
+                          </span>
+                        )}
                       </div>
                     ) : (
-                      <Link to={`/event/${e.slug}`} className="table-link">{e.name}</Link>
+                      <Link to={`/event/${e.slug}`} className="table-link">
+                        {e.name}
+                      </Link>
                     )}
                   </td>
-                  <td><span className={`badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span></td>
+                  <td>
+                    <span className={`badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span>
+                  </td>
                   <td>{venueMap.get(e.venueId)?.name ?? '—'}</td>
                   <td>{e.startDate}</td>
                   <td>{e.endDate}</td>
                   <td>
-                    <RowActionMenu items={[
-                      { icon: faPen, label: 'Rename', onClick: () => startEditEvent(e) },
-                    ]} />
+                    <RowActionMenu
+                      items={[{ icon: faPen, label: 'Rename', onClick: () => startEditEvent(e) }]}
+                    />
                   </td>
                 </tr>
               ))}

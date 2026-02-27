@@ -4,7 +4,17 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
-import { FontAwesomeIcon, faPen, faPlus, faRightFromBracket, faEllipsisVertical, faEnvelope, faArrowRightArrowLeft, faUser, faTrash } from '../icons';
+import {
+  FontAwesomeIcon,
+  faPen,
+  faPlus,
+  faRightFromBracket,
+  faEllipsisVertical,
+  faEnvelope,
+  faArrowRightArrowLeft,
+  faUser,
+  faTrash,
+} from '../icons';
 import Modal from '../components/Modal';
 import ErrorBanner from '../components/ErrorBanner';
 import type { Organization, OrgMember, User } from '../module_bindings/types';
@@ -42,7 +52,9 @@ export default function OrgMembersView() {
   const [renameError, setRenameError] = useState('');
 
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'owner' | 'admin' | 'manager' | 'timekeeper'>('all');
+  const [roleFilter, setRoleFilter] = useState<
+    'all' | 'owner' | 'admin' | 'manager' | 'timekeeper'
+  >('all');
 
   const org = orgs.find((o: Organization) => o.id === oid);
   const isOwner = isOrgOwner(oid);
@@ -68,7 +80,9 @@ export default function OrgMembersView() {
     return members
       .filter((m) => m.member.role === 'admin' && m.member.userId !== user.id)
       .filter((m) => m.user && !m.user.googleSub?.startsWith('pending:'))
-      .sort((a, b) => (a.user?.name || a.user?.email || '').localeCompare(b.user?.name || b.user?.email || ''));
+      .sort((a, b) =>
+        (a.user?.name || a.user?.email || '').localeCompare(b.user?.name || b.user?.email || '')
+      );
   }, [members, user]);
 
   const filteredRows = useMemo(() => {
@@ -79,7 +93,10 @@ export default function OrgMembersView() {
       const email = (u.email || '').toLowerCase();
       return !q || name.includes(q) || email.includes(q);
     };
-    const ownerIncluded = ownerUser && (roleFilter === 'all' || roleFilter === 'owner') && matchesSearch(ownerUser ?? null);
+    const ownerIncluded =
+      ownerUser &&
+      (roleFilter === 'all' || roleFilter === 'owner') &&
+      matchesSearch(ownerUser ?? null);
     const filteredMembers = members.filter(({ member, user: mu }) => {
       if (roleFilter !== 'all' && roleFilter !== member.role) return false;
       return matchesSearch(mu ?? null);
@@ -134,8 +151,14 @@ export default function OrgMembersView() {
   const handleRename = async () => {
     setRenameError('');
     const trimmed = editName.trim();
-    if (!trimmed) { setRenameError('Name cannot be empty'); return; }
-    if (trimmed === org.name) { setEditing(false); return; }
+    if (!trimmed) {
+      setRenameError('Name cannot be empty');
+      return;
+    }
+    if (trimmed === org.name) {
+      setEditing(false);
+      return;
+    }
     try {
       await renameOrganization({ orgId: oid, name: trimmed });
       setEditing(false);
@@ -152,7 +175,12 @@ export default function OrgMembersView() {
       return;
     }
     try {
-      await inviteOrgMember({ orgId: oid, email: trimmed, name: inviteName.trim(), role: inviteRole });
+      await inviteOrgMember({
+        orgId: oid,
+        email: trimmed,
+        name: inviteName.trim(),
+        role: inviteRole,
+      });
       setInviteEmail('');
       setInviteName('');
       setShowInviteForm(false);
@@ -163,7 +191,8 @@ export default function OrgMembersView() {
 
   const handleTransferOwnership = async () => {
     if (transferTargetUserId === '') return;
-    if (!confirm('Are you sure you want to transfer ownership? You will become a regular admin.')) return;
+    if (!confirm('Are you sure you want to transfer ownership? You will become a regular admin.'))
+      return;
     setError('');
     try {
       await transferOrgOwnership({ orgId: oid, newOwnerUserId: transferTargetUserId });
@@ -201,15 +230,26 @@ export default function OrgMembersView() {
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditing(false); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRename();
+                if (e.key === 'Escape') setEditing(false);
+              }}
               autoFocus
               className="input"
               style={{ flex: 1, fontSize: '1.4rem', fontWeight: 700 }}
             />
-            <button className="primary small" onClick={handleRename}>Save</button>
-            <button className="ghost small" onClick={() => setEditing(false)}>Cancel</button>
+            <button className="primary small" onClick={handleRename}>
+              Save
+            </button>
+            <button className="ghost small" onClick={() => setEditing(false)}>
+              Cancel
+            </button>
           </div>
-          {renameError && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>{renameError}</div>}
+          {renameError && (
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>
+              {renameError}
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
@@ -218,8 +258,15 @@ export default function OrgMembersView() {
             open={orgMenuOpen}
             onToggle={() => setOrgMenuOpen(!orgMenuOpen)}
             onClose={() => setOrgMenuOpen(false)}
-            onRename={() => { setOrgMenuOpen(false); startEditing(); }}
-            onInvite={() => { setOrgMenuOpen(false); setError(''); setShowInviteForm(true); }}
+            onRename={() => {
+              setOrgMenuOpen(false);
+              startEditing();
+            }}
+            onInvite={() => {
+              setOrgMenuOpen(false);
+              setError('');
+              setShowInviteForm(true);
+            }}
             onTransferOwnership={() => {
               setOrgMenuOpen(false);
               if (adminCandidates.length === 0) {
@@ -230,21 +277,34 @@ export default function OrgMembersView() {
                 setTransferTargetUserId('');
               }
             }}
-            onLeave={() => { setOrgMenuOpen(false); handleLeave(); }}
+            onLeave={() => {
+              setOrgMenuOpen(false);
+              handleLeave();
+            }}
             willDeleteOrg={willDeleteOrg}
             isAdmin={hasAccess}
             isOwner={isOwner}
           />
         </div>
       )}
-      <p className="muted small-text" style={{ marginBottom: 20 }}>Organization members and permissions</p>
+      <p className="muted small-text" style={{ marginBottom: 20 }}>
+        Organization members and permissions
+      </p>
       {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
 
       {/* Members table */}
       <div className="section">
         <div className="section-title">Members</div>
         {(ownerUser || members.length > 0) && (
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 16,
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}
+          >
             <input
               type="text"
               placeholder="Search by name or email..."
@@ -255,7 +315,13 @@ export default function OrgMembersView() {
             />
             <div style={{ display: 'flex', gap: 4 }}>
               {(['all', 'owner', 'admin', 'manager', 'timekeeper'] as const).map((f) => {
-                const labels: Record<string, string> = { all: 'All', owner: 'Owner', admin: 'Admin', manager: 'Manager', timekeeper: 'Timekeeper' };
+                const labels: Record<string, string> = {
+                  all: 'All',
+                  owner: 'Owner',
+                  admin: 'Admin',
+                  manager: 'Manager',
+                  timekeeper: 'Timekeeper',
+                };
                 const counts: Record<string, number> = {
                   all: (ownerUser ? 1 : 0) + members.length,
                   owner: ownerUser ? 1 : 0,
@@ -290,10 +356,21 @@ export default function OrgMembersView() {
             {/* Owner row */}
             {filteredRows.ownerIncluded && (
               <tr>
-                <td>{filteredRows.ownerUser ? (filteredRows.ownerUser.name || filteredRows.ownerUser.email) : 'No owner'}</td>
+                <td>
+                  {filteredRows.ownerUser
+                    ? filteredRows.ownerUser.name || filteredRows.ownerUser.email
+                    : 'No owner'}
+                </td>
                 <td className="muted">{filteredRows.ownerUser?.email || ''}</td>
                 <td></td>
-                <td><span className="badge" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>owner/admin</span></td>
+                <td>
+                  <span
+                    className="badge"
+                    style={{ background: 'var(--green-bg)', color: 'var(--green)' }}
+                  >
+                    owner/admin
+                  </span>
+                </td>
                 {isOwner && <td></td>}
               </tr>
             )}
@@ -305,14 +382,26 @@ export default function OrgMembersView() {
               return (
                 <tr key={String(member.id)}>
                   <td style={isPending ? { opacity: 0.7 } : undefined}>
-                    {memberUser ? (memberUser.name || memberUser.email) : `User #${member.userId}`}
+                    {memberUser ? memberUser.name || memberUser.email : `User #${member.userId}`}
                   </td>
                   <td className="muted">{memberUser?.email || ''}</td>
                   <td>
-                    {isPending && <span className="badge" style={{ background: 'var(--yellow-bg, #fef3c7)', color: 'var(--yellow, #d97706)' }}>Pending</span>}
+                    {isPending && (
+                      <span
+                        className="badge"
+                        style={{
+                          background: 'var(--yellow-bg, #fef3c7)',
+                          color: 'var(--yellow, #d97706)',
+                        }}
+                      >
+                        Pending
+                      </span>
+                    )}
                   </td>
                   <td>
-                    <span className={`badge ${member.role === 'admin' ? 'running' : 'queued'}`}>{member.role}</span>
+                    <span className={`badge ${member.role === 'admin' ? 'running' : 'queued'}`}>
+                      {member.role}
+                    </span>
                   </td>
                   {isOwner && (
                     <td>
@@ -322,9 +411,18 @@ export default function OrgMembersView() {
                         onClose={() => setOpenMenuId(null)}
                         showImpersonate={!!showImpersonate}
                         showResend={isPending}
-                        onImpersonate={() => { setOpenMenuId(null); if (memberUser) startImpersonation({ targetUserId: memberUser.id }); }}
-                        onResend={() => { setOpenMenuId(null); handleResend(member.id); }}
-                        onRemove={() => { setOpenMenuId(null); handleRemove(member.id); }}
+                        onImpersonate={() => {
+                          setOpenMenuId(null);
+                          if (memberUser) startImpersonation({ targetUserId: memberUser.id });
+                        }}
+                        onResend={() => {
+                          setOpenMenuId(null);
+                          handleResend(member.id);
+                        }}
+                        onRemove={() => {
+                          setOpenMenuId(null);
+                          handleRemove(member.id);
+                        }}
                       />
                     </td>
                   )}
@@ -345,15 +443,20 @@ export default function OrgMembersView() {
       {/* Transfer ownership modal */}
       {showTransferModal && (
         <div className="card" style={{ marginBottom: 20, maxWidth: 400 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>Transfer ownership</div>
+          <div className="section-title" style={{ marginBottom: 8 }}>
+            Transfer ownership
+          </div>
           <p className="muted small-text" style={{ marginBottom: 12 }}>
-            Transfer this organization to another admin. You will become a regular admin after the transfer.
+            Transfer this organization to another admin. You will become a regular admin after the
+            transfer.
           </p>
           {adminCandidates.length > 0 && (
             <>
               <select
                 value={transferTargetUserId === '' ? '' : String(transferTargetUserId)}
-                onChange={(e) => setTransferTargetUserId(e.target.value === '' ? '' : BigInt(e.target.value))}
+                onChange={(e) =>
+                  setTransferTargetUserId(e.target.value === '' ? '' : BigInt(e.target.value))
+                }
                 className="input"
                 style={{ width: '100%', marginBottom: 12 }}
               >
@@ -372,7 +475,13 @@ export default function OrgMembersView() {
                 >
                   Transfer
                 </button>
-                <button className="ghost small" onClick={() => { setShowTransferModal(false); setTransferTargetUserId(''); }}>
+                <button
+                  className="ghost small"
+                  onClick={() => {
+                    setShowTransferModal(false);
+                    setTransferTargetUserId('');
+                  }}
+                >
                   Cancel
                 </button>
               </div>
@@ -385,7 +494,10 @@ export default function OrgMembersView() {
       {hasAccess && (
         <Modal
           open={showInviteForm}
-          onClose={() => { setShowInviteForm(false); setError(''); }}
+          onClose={() => {
+            setShowInviteForm(false);
+            setError('');
+          }}
           title="Invite Member"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -428,8 +540,18 @@ export default function OrgMembersView() {
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button className="primary" onClick={handleInvite}>Invite</button>
-              <button className="ghost small" onClick={() => { setShowInviteForm(false); setError(''); }}>Cancel</button>
+              <button className="primary" onClick={handleInvite}>
+                Invite
+              </button>
+              <button
+                className="ghost small"
+                onClick={() => {
+                  setShowInviteForm(false);
+                  setError('');
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </Modal>
@@ -438,7 +560,18 @@ export default function OrgMembersView() {
   );
 }
 
-function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onTransferOwnership, onLeave, willDeleteOrg, isAdmin, isOwner }: {
+function OrgActionMenu({
+  open,
+  onToggle,
+  onClose,
+  onRename,
+  onInvite,
+  onTransferOwnership,
+  onLeave,
+  willDeleteOrg,
+  isAdmin,
+  isOwner,
+}: {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -462,14 +595,24 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onTransfer
   }, [open, onClose]);
 
   const itemStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-    gap: 10, width: '100%',
-    padding: '9px 14px', border: 'none', background: 'none',
-    color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 10,
+    width: '100%',
+    padding: '9px 14px',
+    border: 'none',
+    background: 'none',
+    color: 'var(--text)',
+    fontSize: '0.85rem',
+    textAlign: 'left',
+    cursor: 'pointer',
     whiteSpace: 'nowrap',
   };
   const iconStyle: React.CSSProperties = {
-    width: 16, textAlign: 'center', flexShrink: 0,
+    width: 16,
+    textAlign: 'center',
+    flexShrink: 0,
   };
 
   return (
@@ -483,41 +626,70 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onTransfer
         <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', left: 0, top: '100%', marginTop: 4,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          minWidth: 220, zIndex: 50, overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '100%',
+            marginTop: 4,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            minWidth: 220,
+            zIndex: 50,
+            overflow: 'hidden',
+          }}
+        >
           {isAdmin && (
-            <button onClick={onRename} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            <button
+              onClick={onRename}
+              style={itemStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename</span>
+              <span style={iconStyle}>
+                <FontAwesomeIcon icon={faPen} />
+              </span>
+              <span>Rename</span>
             </button>
           )}
           {isAdmin && (
-            <button onClick={onInvite} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            <button
+              onClick={onInvite}
+              style={itemStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faPlus} /></span><span>Invite member</span>
+              <span style={iconStyle}>
+                <FontAwesomeIcon icon={faPlus} />
+              </span>
+              <span>Invite member</span>
             </button>
           )}
           {isOwner && (
-            <button onClick={onTransferOwnership} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            <button
+              onClick={onTransferOwnership}
+              style={itemStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faArrowRightArrowLeft} /></span><span>Transfer ownership</span>
+              <span style={iconStyle}>
+                <FontAwesomeIcon icon={faArrowRightArrowLeft} />
+              </span>
+              <span>Transfer ownership</span>
             </button>
           )}
-          <button onClick={onLeave} style={{ ...itemStyle, color: 'var(--red, #ef4444)' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          <button
+            onClick={onLeave}
+            style={{ ...itemStyle, color: 'var(--red, #ef4444)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
           >
-            <span style={iconStyle}><FontAwesomeIcon icon={faRightFromBracket} /></span><span>{willDeleteOrg ? 'Leave & delete' : 'Leave'}</span>
+            <span style={iconStyle}>
+              <FontAwesomeIcon icon={faRightFromBracket} />
+            </span>
+            <span>{willDeleteOrg ? 'Leave & delete' : 'Leave'}</span>
           </button>
         </div>
       )}
@@ -525,7 +697,16 @@ function OrgActionMenu({ open, onToggle, onClose, onRename, onInvite, onTransfer
   );
 }
 
-function MemberMenu({ open, onToggle, onClose, showImpersonate, showResend, onImpersonate, onResend, onRemove }: {
+function MemberMenu({
+  open,
+  onToggle,
+  onClose,
+  showImpersonate,
+  showResend,
+  onImpersonate,
+  onResend,
+  onRemove,
+}: {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -557,19 +738,21 @@ function MemberMenu({ open, onToggle, onClose, showImpersonate, showResend, onIm
         <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
-        <div style={{
-          position: 'absolute',
-          right: 0,
-          top: '100%',
-          marginTop: 4,
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          minWidth: 200,
-          zIndex: 50,
-          overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '100%',
+            marginTop: 4,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            minWidth: 200,
+            zIndex: 50,
+            overflow: 'hidden',
+          }}
+        >
           {showImpersonate && (
             <button
               onClick={onImpersonate}
@@ -588,10 +771,12 @@ function MemberMenu({ open, onToggle, onClose, showImpersonate, showResend, onIm
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}><FontAwesomeIcon icon={faUser} /></span>
+              <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
+                <FontAwesomeIcon icon={faUser} />
+              </span>
               Impersonate
             </button>
           )}
@@ -613,10 +798,12 @@ function MemberMenu({ open, onToggle, onClose, showImpersonate, showResend, onIm
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}><FontAwesomeIcon icon={faEnvelope} /></span>
+              <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
+                <FontAwesomeIcon icon={faEnvelope} />
+              </span>
               Resend invitation
             </button>
           )}
@@ -637,10 +824,12 @@ function MemberMenu({ open, onToggle, onClose, showImpersonate, showResend, onIm
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
           >
-            <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}><FontAwesomeIcon icon={faTrash} /></span>
+            <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
+              <FontAwesomeIcon icon={faTrash} />
+            </span>
             Remove
           </button>
         </div>

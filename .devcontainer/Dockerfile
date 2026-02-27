@@ -28,9 +28,11 @@ RUN mkdir -p /etc/apt/keyrings \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Add ~/.local/bin to PATH for SpacetimeDB CLI (installed by post-create)
+# Install SpacetimeDB CLI (installs to ~/.local/bin)
+USER vscode
+RUN curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+
+# Add ~/.local/bin to PATH for SpacetimeDB CLI
 ENV PATH="/home/vscode/.local/bin:${PATH}"
 
-# Switch back to vscode user (inherited from base)
-USER vscode
 WORKDIR /workspaces/racetimetracker

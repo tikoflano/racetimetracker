@@ -21,19 +21,29 @@ interface AddRiderModalProps {
   availableRiders: readonly Rider[];
 }
 
-export default function AddRiderModal({ open, onClose, onAdd, availableRiders }: AddRiderModalProps) {
+export default function AddRiderModal({
+  open,
+  onClose,
+  onAdd,
+  availableRiders,
+}: AddRiderModalProps) {
   const [search, setSearch] = useState('');
   const [minAge, setMinAge] = useState('');
   const [maxAge, setMaxAge] = useState('');
 
-  const handleClose = () => { setSearch(''); setMinAge(''); setMaxAge(''); onClose(); };
+  const handleClose = () => {
+    setSearch('');
+    setMinAge('');
+    setMaxAge('');
+    onClose();
+  };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     const min = minAge !== '' ? parseInt(minAge) : null;
     const max = maxAge !== '' ? parseInt(maxAge) : null;
 
-    return availableRiders.filter(r => {
+    return availableRiders.filter((r) => {
       // Name search
       if (q) {
         const full = `${r.firstName} ${r.lastName}`.toLowerCase();
@@ -58,17 +68,31 @@ export default function AddRiderModal({ open, onClose, onAdd, availableRiders }:
           className="input"
           placeholder="Search by name..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           autoFocus
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
             <label className="input-label">Min Age</label>
-            <input type="number" className="input" min="0" value={minAge} onChange={e => setMinAge(e.target.value)} placeholder="—" />
+            <input
+              type="number"
+              className="input"
+              min="0"
+              value={minAge}
+              onChange={(e) => setMinAge(e.target.value)}
+              placeholder="—"
+            />
           </div>
           <div>
             <label className="input-label">Max Age</label>
-            <input type="number" className="input" min="0" value={maxAge} onChange={e => setMaxAge(e.target.value)} placeholder="—" />
+            <input
+              type="number"
+              className="input"
+              min="0"
+              value={maxAge}
+              onChange={(e) => setMaxAge(e.target.value)}
+              placeholder="—"
+            />
           </div>
         </div>
       </div>
@@ -77,24 +101,48 @@ export default function AddRiderModal({ open, onClose, onAdd, availableRiders }:
         {filtered.length} rider{filtered.length !== 1 ? 's' : ''} found
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          maxHeight: 300,
+          overflowY: 'auto',
+        }}
+      >
         {filtered.length === 0 ? (
           <div className="muted small-text" style={{ padding: 8 }}>
-            {availableRiders.length === 0 ? 'All riders are already assigned.' : 'No riders match your filters.'}
+            {availableRiders.length === 0
+              ? 'All riders are already assigned.'
+              : 'No riders match your filters.'}
           </div>
         ) : (
-          filtered.map(r => {
+          filtered.map((r) => {
             const age = getAge(r.dateOfBirth);
             return (
               <div
                 key={String(r.id)}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', borderRadius: 'var(--radius)' }}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '6px 10px',
+                  borderRadius: 'var(--radius)',
+                }}
               >
                 <div>
-                  <span style={{ fontSize: '0.85rem' }}>{r.firstName} {r.lastName}</span>
-                  {age !== null && <span className="muted small-text" style={{ marginLeft: 8 }}>({age} yrs)</span>}
+                  <span style={{ fontSize: '0.85rem' }}>
+                    {r.firstName} {r.lastName}
+                  </span>
+                  {age !== null && (
+                    <span className="muted small-text" style={{ marginLeft: 8 }}>
+                      ({age} yrs)
+                    </span>
+                  )}
                 </div>
-                <button className="primary small" onClick={() => onAdd(r.id)}>Add</button>
+                <button className="primary small" onClick={() => onAdd(r.id)}>
+                  Add
+                </button>
               </div>
             );
           })

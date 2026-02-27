@@ -39,25 +39,41 @@ export default function ActionMenu({ open, onToggle, onClose, items }: ActionMen
         <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', left: 0, top: '100%', marginTop: 4,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          minWidth: 200, zIndex: 50, overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '100%',
+            marginTop: 4,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            minWidth: 200,
+            zIndex: 50,
+            overflow: 'hidden',
+          }}
+        >
           {items.map((item, i) => (
             <button
               key={i}
               onClick={item.onClick}
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-                gap: 10, width: '100%',
-                padding: '9px 14px', border: 'none', background: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: 10,
+                width: '100%',
+                padding: '9px 14px',
+                border: 'none',
+                background: 'none',
                 color: item.danger ? 'var(--red, #ef4444)' : 'var(--text)',
-                fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+                fontSize: '0.85rem',
+                textAlign: 'left',
+                cursor: 'pointer',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
               <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
                 <FontAwesomeIcon icon={item.icon} />
@@ -85,7 +101,7 @@ export function RowActionMenu({ items }: { items: ActionMenuItem[] }) {
   }, [open]);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+    <div ref={ref} style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
       <button
         className="ghost small"
         onClick={() => setOpen(!open)}
@@ -95,25 +111,44 @@ export function RowActionMenu({ items }: { items: ActionMenuItem[] }) {
         <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', right: 0, top: '100%', marginTop: 2,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          minWidth: 160, zIndex: 50, overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '100%',
+            marginTop: 2,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            minWidth: 160,
+            zIndex: 50,
+            overflow: 'hidden',
+          }}
+        >
           {items.map((item, i) => (
             <button
               key={i}
-              onClick={() => { setOpen(false); item.onClick(); }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-                gap: 10, width: '100%',
-                padding: '8px 12px', border: 'none', background: 'none',
-                color: item.danger ? 'var(--red, #ef4444)' : 'var(--text)',
-                fontSize: '0.8rem', textAlign: 'left', cursor: 'pointer',
+              onClick={() => {
+                setOpen(false);
+                item.onClick();
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: 10,
+                width: '100%',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'none',
+                color: item.danger ? 'var(--red, #ef4444)' : 'var(--text)',
+                fontSize: '0.8rem',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
               <span style={{ width: 14, textAlign: 'center', flexShrink: 0 }}>
                 <FontAwesomeIcon icon={item.icon} />

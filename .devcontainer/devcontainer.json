@@ -3,27 +3,23 @@
 //
 // See https://aka.ms/devcontainer.json for more information.
 {
-	"name": "RaceTimeTracker",
-	"build": {
-		"dockerfile": "Dockerfile",
-		"context": "."
-	},
-	"mounts": [
-		"source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume",
-		"source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume"
-	],
-	"postCreateCommand": "bash .devcontainer/post-create.sh",
-	"postAttachCommand": "npm start",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"esbenp.prettier-vscode",
-				"dbaeumer.vscode-eslint",
-				"ms-vscode.cpptools"
-			]
-		}
-	},
-	"forwardPorts": [
-		5173
-	]
+  "name": "RaceTimeTracker",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "mounts": [
+    "source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume",
+    "source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume"
+  ],
+  "postCreateCommand": "npm install",
+  "postAttachCommand": "npm start",
+  "customizations": {
+    "vscode": {
+      "extensions": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint", "ms-vscode.cpptools"]
+    }
+  },
+  "forwardPorts": [5173]
 }

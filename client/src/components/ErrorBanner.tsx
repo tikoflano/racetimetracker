@@ -9,11 +9,7 @@ interface ErrorBannerProps {
 
 export default function ErrorBanner({ message, onDismiss, noMargin }: ErrorBannerProps) {
   return (
-    <div
-      className="error-banner"
-      role="alert"
-      style={noMargin ? { marginBottom: 0 } : undefined}
-    >
+    <div className="error-banner" role="alert" style={noMargin ? { marginBottom: 0 } : undefined}>
       <span style={{ flex: 1 }}>{message}</span>
       <button
         type="button"

@@ -9,11 +9,23 @@ export default function QRCodeView() {
     <div className="register-page">
       <div className="register-card" style={{ textAlign: 'center' }}>
         <h2 style={{ marginBottom: 16 }}>Rider Registration</h2>
-        <div style={{ background: 'white', padding: 24, borderRadius: 12, display: 'inline-block', marginBottom: 16 }}>
+        <div
+          style={{
+            background: 'white',
+            padding: 24,
+            borderRadius: 12,
+            display: 'inline-block',
+            marginBottom: 16,
+          }}
+        >
           <QRCodeSVG value={url} size={256} level="M" />
         </div>
-        <p className="muted small-text" style={{ wordBreak: 'break-all' }}>{url}</p>
-        <button className="ghost small" style={{ marginTop: 12 }} onClick={() => window.print()}>Print</button>
+        <p className="muted small-text" style={{ wordBreak: 'break-all' }}>
+          {url}
+        </p>
+        <button className="ghost small" style={{ marginTop: 12 }} onClick={() => window.print()}>
+          Print
+        </button>
       </div>
     </div>
   );

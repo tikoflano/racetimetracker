@@ -12,7 +12,13 @@ export default function RegisterView() {
 
   const registerRider = useReducer(reducers.registerRiderWithOrgSlug);
 
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+  });
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -33,7 +39,9 @@ export default function RegisterView() {
       <div className="register-page">
         <div className="register-card">
           <h1>Registration Complete</h1>
-          <p style={{ marginTop: 12 }}>You have been registered successfully. See you at the race!</p>
+          <p style={{ marginTop: 12 }}>
+            You have been registered successfully. See you at the race!
+          </p>
         </div>
       </div>
     );
@@ -45,7 +53,9 @@ export default function RegisterView() {
       <div className="register-page">
         <div className="register-card">
           <h1>Organization Not Found</h1>
-          <p className="muted" style={{ marginTop: 8 }}>This registration link is invalid.</p>
+          <p className="muted" style={{ marginTop: 8 }}>
+            This registration link is invalid.
+          </p>
         </div>
       </div>
     );
@@ -57,7 +67,9 @@ export default function RegisterView() {
       <div className="register-page">
         <div className="register-card">
           <h1>Registration Closed</h1>
-          <p className="muted" style={{ marginTop: 8 }}>Registration is currently disabled for this organization.</p>
+          <p className="muted" style={{ marginTop: 8 }}>
+            Registration is currently disabled for this organization.
+          </p>
         </div>
       </div>
     );
@@ -88,9 +100,15 @@ export default function RegisterView() {
     <div className="register-page">
       <div className="register-card">
         <h1>Rider Registration</h1>
-        {org && <p className="muted" style={{ marginBottom: 16 }}>Register with <strong>{org.name}</strong></p>}
+        {org && (
+          <p className="muted" style={{ marginBottom: 16 }}>
+            Register with <strong>{org.name}</strong>
+          </p>
+        )}
 
-        {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>}
+        {error && (
+          <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
@@ -99,7 +117,7 @@ export default function RegisterView() {
               type="text"
               placeholder="First name"
               value={form.firstName}
-              onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               autoFocus
               className="input"
@@ -111,7 +129,7 @@ export default function RegisterView() {
               type="text"
               placeholder="Last name"
               value={form.lastName}
-              onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="input"
             />
@@ -122,7 +140,7 @@ export default function RegisterView() {
               type="email"
               placeholder="email@example.com"
               value={form.email}
-              onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="input"
             />
@@ -133,7 +151,7 @@ export default function RegisterView() {
               type="tel"
               placeholder="+1-555-0100"
               value={form.phone}
-              onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="input"
             />
@@ -143,12 +161,14 @@ export default function RegisterView() {
             <input
               type="date"
               value={form.dateOfBirth}
-              onChange={(e) => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="input"
             />
           </div>
-          <button className="primary" onClick={handleSubmit} style={{ marginTop: 4 }}>Register</button>
+          <button className="primary" onClick={handleSubmit} style={{ marginTop: 4 }}>
+            Register
+          </button>
         </div>
       </div>
     </div>

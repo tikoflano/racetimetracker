@@ -29,12 +29,23 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function SortTh({ label, sortKey, current, onSort }: { label: string; sortKey: SortKey; current: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void }) {
+function SortTh({
+  label,
+  sortKey,
+  current,
+  onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  current: { key: SortKey; dir: SortDir };
+  onSort: (k: SortKey) => void;
+}) {
   const active = current.key === sortKey;
   const arrow = active ? (current.dir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
   return (
     <th onClick={() => onSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-      {label}<span style={{ fontSize: '0.6rem', opacity: active ? 1 : 0.3 }}>{arrow || ' \u25B2'}</span>
+      {label}
+      <span style={{ fontSize: '0.6rem', opacity: active ? 1 : 0.3 }}>{arrow || ' \u25B2'}</span>
     </th>
   );
 }
@@ -59,10 +70,11 @@ export default function ChampionshipsView() {
   const [statusFilter, setStatusFilter] = useState<ChampStatus | 'all'>('all');
 
   const toggleSort = (key: SortKey) => {
-    setSort(prev => {
-      const next = prev.key === key
-        ? { key, dir: (prev.dir === 'asc' ? 'desc' : 'asc') as SortDir }
-        : { key, dir: 'asc' as SortDir };
+    setSort((prev) => {
+      const next =
+        prev.key === key
+          ? { key, dir: (prev.dir === 'asc' ? 'desc' : 'asc') as SortDir }
+          : { key, dir: 'asc' as SortDir };
       localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
@@ -90,7 +102,10 @@ export default function ChampionshipsView() {
       let status: ChampStatus = 'not_started';
       if (champEvents.length > 0) {
         const firstStart = champEvents.map((e: Event) => e.startDate).sort()[0];
-        const lastEnd = champEvents.map((e: Event) => e.endDate).sort().pop()!;
+        const lastEnd = champEvents
+          .map((e: Event) => e.endDate)
+          .sort()
+          .pop()!;
         if (today < firstStart) status = 'not_started';
         else if (today > lastEnd) status = 'completed';
         else status = 'in_progress';
@@ -109,23 +124,34 @@ export default function ChampionshipsView() {
 
   const filteredRows = useMemo(() => {
     if (statusFilter === 'all') return champRows;
-    return champRows.filter(r => r.status === statusFilter);
+    return champRows.filter((r) => r.status === statusFilter);
   }, [champRows, statusFilter]);
 
-  const STATUS_ORDER: Record<ChampStatus, number> = { in_progress: 0, not_started: 1, completed: 2 };
+  const STATUS_ORDER: Record<ChampStatus, number> = {
+    in_progress: 0,
+    not_started: 1,
+    completed: 2,
+  };
 
   const sortedRows = useMemo(() => {
     const rows = [...filteredRows];
     const dir = sort.dir === 'asc' ? 1 : -1;
     rows.sort((a, b) => {
       switch (sort.key) {
-        case 'name': return dir * a.championship.name.localeCompare(b.championship.name);
-        case 'events': return dir * (a.eventCount - b.eventCount);
-        case 'start': return dir * a.startDate.localeCompare(b.startDate);
-        case 'end': return dir * a.endDate.localeCompare(b.endDate);
-        case 'next': return dir * a.nextEventSort.localeCompare(b.nextEventSort);
-        case 'status': return dir * (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-        default: return 0;
+        case 'name':
+          return dir * a.championship.name.localeCompare(b.championship.name);
+        case 'events':
+          return dir * (a.eventCount - b.eventCount);
+        case 'start':
+          return dir * a.startDate.localeCompare(b.startDate);
+        case 'end':
+          return dir * a.endDate.localeCompare(b.endDate);
+        case 'next':
+          return dir * a.nextEventSort.localeCompare(b.nextEventSort);
+        case 'status':
+          return dir * (STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+        default:
+          return 0;
       }
     });
     return rows;
@@ -137,14 +163,23 @@ export default function ChampionshipsView() {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;
   }
-  if (!hasAccess) return <div className="empty">You don't have access to manage championships.</div>;
+  if (!hasAccess)
+    return <div className="empty">You don't have access to manage championships.</div>;
 
   const handleCreate = async () => {
     setError('');
     const trimmed = newName.trim();
-    if (!trimmed) { setError('Name is required'); return; }
+    if (!trimmed) {
+      setError('Name is required');
+      return;
+    }
     try {
-      await createChampionship({ orgId: oid, name: trimmed, description: newDesc.trim(), color: newColor });
+      await createChampionship({
+        orgId: oid,
+        name: trimmed,
+        description: newDesc.trim(),
+        color: newColor,
+      });
       setNewName('');
       setNewDesc('');
       setNewColor('#3b82f6');
@@ -156,23 +191,37 @@ export default function ChampionshipsView() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
         <h1 style={{ marginBottom: 0 }}>Championships</h1>
         {!showForm && (
-          <button className="primary small" onClick={() => setShowForm(true)}>+ New Championship</button>
+          <button className="primary small" onClick={() => setShowForm(true)}>
+            + New Championship
+          </button>
         )}
       </div>
 
       {/* Status filter */}
       {champRows.length > 0 && (
         <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-          {(['all', 'in_progress', 'not_started', 'completed'] as const).map(f => {
-            const labels: Record<string, string> = { all: 'All', in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
+          {(['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
+            const labels: Record<string, string> = {
+              all: 'All',
+              in_progress: 'In Progress',
+              not_started: 'Not Started',
+              completed: 'Completed',
+            };
             const counts: Record<string, number> = {
               all: champRows.length,
-              in_progress: champRows.filter(r => r.status === 'in_progress').length,
-              not_started: champRows.filter(r => r.status === 'not_started').length,
-              completed: champRows.filter(r => r.status === 'completed').length,
+              in_progress: champRows.filter((r) => r.status === 'in_progress').length,
+              not_started: champRows.filter((r) => r.status === 'not_started').length,
+              completed: champRows.filter((r) => r.status === 'completed').length,
             };
             return (
               <button
@@ -189,8 +238,12 @@ export default function ChampionshipsView() {
 
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>New Championship</div>
-          {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
+          <div className="section-title" style={{ marginBottom: 8 }}>
+            New Championship
+          </div>
+          {error && (
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input
               type="text"
@@ -210,12 +263,29 @@ export default function ChampionshipsView() {
               className="input"
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label className="input-label" style={{ marginBottom: 0 }}>Color</label>
-              <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="color-input" />
+              <label className="input-label" style={{ marginBottom: 0 }}>
+                Color
+              </label>
+              <input
+                type="color"
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                className="color-input"
+              />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={handleCreate}>Create</button>
-              <button className="ghost small" onClick={() => { setShowForm(false); setError(''); }}>Cancel</button>
+              <button className="primary small" onClick={handleCreate}>
+                Create
+              </button>
+              <button
+                className="ghost small"
+                onClick={() => {
+                  setShowForm(false);
+                  setError('');
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -238,43 +308,70 @@ export default function ChampionshipsView() {
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map(({ championship: c, eventCount, startDate, endDate, nextEvent, status }) => {
-              const statusLabel: Record<ChampStatus, string> = { in_progress: 'In Progress', not_started: 'Not Started', completed: 'Completed' };
-              const statusBadge: Record<ChampStatus, string> = { in_progress: 'running', not_started: 'queued', completed: 'finished' };
-              return (
-              <tr key={String(c.id)}>
-                <td><span className="color-dot" style={{ background: c.color }} /></td>
-                <td>
-                  <Link to={`/championship/${c.id}`} className="table-link">
-                    {c.name}
-                  </Link>
-                </td>
-                <td><span className={`badge ${statusBadge[status]}`}>{statusLabel[status]}</span></td>
-                <td>{eventCount}</td>
-                <td>
-                  {nextEvent ? (
-                    <span>
-                      <Link to={`/event/${nextEvent.slug}`} className="table-link">{nextEvent.name}</Link>
-                      <div className="muted small-text">{nextEvent.startDate}</div>
-                    </span>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </td>
-                <td>{startDate}</td>
-                <td>{endDate}</td>
-                <td>
-                  <RowActionMenu items={[
-                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => {
-                      if (confirm(`Delete "${c.name}" and all its events? This cannot be undone.`)) {
-                        deleteChampionship({ championshipId: c.id });
-                      }
-                    }},
-                  ]} />
-                </td>
-              </tr>
-              );
-            })}
+            {sortedRows.map(
+              ({ championship: c, eventCount, startDate, endDate, nextEvent, status }) => {
+                const statusLabel: Record<ChampStatus, string> = {
+                  in_progress: 'In Progress',
+                  not_started: 'Not Started',
+                  completed: 'Completed',
+                };
+                const statusBadge: Record<ChampStatus, string> = {
+                  in_progress: 'running',
+                  not_started: 'queued',
+                  completed: 'finished',
+                };
+                return (
+                  <tr key={String(c.id)}>
+                    <td>
+                      <span className="color-dot" style={{ background: c.color }} />
+                    </td>
+                    <td>
+                      <Link to={`/championship/${c.id}`} className="table-link">
+                        {c.name}
+                      </Link>
+                    </td>
+                    <td>
+                      <span className={`badge ${statusBadge[status]}`}>{statusLabel[status]}</span>
+                    </td>
+                    <td>{eventCount}</td>
+                    <td>
+                      {nextEvent ? (
+                        <span>
+                          <Link to={`/event/${nextEvent.slug}`} className="table-link">
+                            {nextEvent.name}
+                          </Link>
+                          <div className="muted small-text">{nextEvent.startDate}</div>
+                        </span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td>{startDate}</td>
+                    <td>{endDate}</td>
+                    <td>
+                      <RowActionMenu
+                        items={[
+                          {
+                            icon: faTrash,
+                            label: 'Delete',
+                            danger: true,
+                            onClick: () => {
+                              if (
+                                confirm(
+                                  `Delete "${c.name}" and all its events? This cannot be undone.`
+                                )
+                              ) {
+                                deleteChampionship({ championshipId: c.id });
+                              }
+                            },
+                          },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                );
+              }
+            )}
           </tbody>
         </table>
       )}

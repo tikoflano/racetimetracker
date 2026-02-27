@@ -17,9 +17,10 @@ const stdbEnv = import.meta.env.VITE_STDB_ENV || 'local';
 const stdbCloudHost = import.meta.env.VITE_STDB_CLOUD_HOST || 'maincloud.spacetimedb.com';
 const stdbDatabase = import.meta.env.VITE_STDB_DATABASE || 'racetimetracker-dev';
 
-const wsUri = stdbEnv === 'cloud'
-  ? `wss://${stdbCloudHost}`
-  : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+const wsUri =
+  stdbEnv === 'cloud'
+    ? `wss://${stdbCloudHost}`
+    : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
 console.log(`[STDB] env=${stdbEnv} uri=${wsUri} db=${stdbDatabase}`);
 

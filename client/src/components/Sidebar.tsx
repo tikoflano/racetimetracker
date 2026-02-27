@@ -14,7 +14,12 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-export default function Sidebar({ className = '', activeOrg, collapsed, onToggleCollapse }: SidebarProps) {
+export default function Sidebar({
+  className = '',
+  activeOrg,
+  collapsed,
+  onToggleCollapse,
+}: SidebarProps) {
   const { user, isAuthenticated, canManageOrg, canManageOrgEvents } = useAuth();
   const [events] = useTable(tables.event);
   const [pinnedEvents] = useTable(tables.pinned_event);
@@ -24,7 +29,7 @@ export default function Sidebar({ className = '', activeOrg, collapsed, onToggle
   const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(
-      pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map(f => f.eventId)
+      pinnedEvents.filter((f: PinnedEvent) => f.userId === user.id).map((f) => f.eventId)
     );
   }, [user, pinnedEvents]);
 
@@ -109,7 +114,10 @@ export default function Sidebar({ className = '', activeOrg, collapsed, onToggle
       )}
 
       {IS_DEV && isAuthenticated && (
-        <div className="sidebar-section" style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+        <div
+          className="sidebar-section"
+          style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}
+        >
           <NavLink
             to="/dev"
             className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}

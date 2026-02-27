@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+.vite
+client/src/module_bindings
+*.min.js
+package-lock.json

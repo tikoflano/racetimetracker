@@ -17,21 +17,21 @@ Real-time enduro bike race timing app. One person at the start line triggers a r
 
 ## Data Model
 
-| Table | Purpose |
-|-------|---------|
-| `user` | Authenticated users (identity + Google OAuth claims) |
-| `organization` | Org that owns events |
-| `org_member` | Org-level roles: `admin`, `manager` |
-| `event_member` | Event-level roles: `organizer`, `timekeeper` |
-| `championship` | Series grouping events |
-| `venue` | Physical location with coordinates |
-| `event` | A race event at a venue |
-| `track` | A track at a venue |
-| `track_variation` | A specific route on a track (with start/end coordinates) |
-| `event_track` | Links a track variation to an event (with sort order) |
-| `rider` | Rider profile |
-| `event_rider` | Links a rider to an event |
-| `run` | A single timed run: `queued` → `running` → `finished` / `dnf` |
+| Table             | Purpose                                                       |
+| ----------------- | ------------------------------------------------------------- |
+| `user`            | Authenticated users (identity + Google OAuth claims)          |
+| `organization`    | Org that owns events                                          |
+| `org_member`      | Org-level roles: `admin`, `manager`                           |
+| `event_member`    | Event-level roles: `organizer`, `timekeeper`                  |
+| `championship`    | Series grouping events                                        |
+| `venue`           | Physical location with coordinates                            |
+| `event`           | A race event at a venue                                       |
+| `track`           | A track at a venue                                            |
+| `track_variation` | A specific route on a track (with start/end coordinates)      |
+| `event_track`     | Links a track variation to an event (with sort order)         |
+| `rider`           | Rider profile                                                 |
+| `event_rider`     | Links a rider to an event                                     |
+| `run`             | A single timed run: `queued` → `running` → `finished` / `dnf` |
 
 ## Prerequisites
 
@@ -64,7 +64,7 @@ To seed demo data:
 spacetime call --server local racetimetracker-dev seed_demo_data
 ```
 
-Set `client/.env` (copy from `client/.env.local.example`):
+Set `.env` at the project root (copy from `.env.example`):
 
 ```
 VITE_STDB_ENV=local
@@ -87,10 +87,10 @@ This is useful when you want a clean slate — e.g. after schema changes that co
 
 The project has two cloud databases on `maincloud.spacetimedb.com`:
 
-| Target | Database name | Usage |
-|--------|--------------|-------|
-| `dev` | `racetimetracker-dev` | Development/testing |
-| `prod` | `racetimetracker-prod` | Production |
+| Target | Database name          | Usage               |
+| ------ | ---------------------- | ------------------- |
+| `dev`  | `racetimetracker-dev`  | Development/testing |
+| `prod` | `racetimetracker-prod` | Production          |
 
 Publish to cloud:
 
@@ -98,7 +98,7 @@ Publish to cloud:
 spacetime publish racetimetracker-dev --server maincloud -p spacetimedb
 ```
 
-Set `client/.env`:
+Set `.env` at the project root:
 
 ```
 VITE_STDB_ENV=cloud
@@ -123,11 +123,11 @@ Anonymous users can view the leaderboard. Timing controls require authentication
 
 ## Key Reducers
 
-| Reducer | What it does |
-|---------|-------------|
-| `seed_demo_data` | Creates sample org, venue, tracks, event, riders, and queued runs |
-| `start_run` | Sets run status to `running`, records start timestamp |
-| `finish_run` | Sets run status to `finished`, records end timestamp |
-| `dnf_run` | Marks a run as Did Not Finish |
-| `queue_run` | Adds a new run to a track's queue |
-| `create_event`, `create_track`, `create_rider`, ... | CRUD reducers with RBAC checks |
+| Reducer                                             | What it does                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------- |
+| `seed_demo_data`                                    | Creates sample org, venue, tracks, event, riders, and queued runs |
+| `start_run`                                         | Sets run status to `running`, records start timestamp             |
+| `finish_run`                                        | Sets run status to `finished`, records end timestamp              |
+| `dnf_run`                                           | Marks a run as Did Not Finish                                     |
+| `queue_run`                                         | Adds a new run to a track's queue                                 |
+| `create_event`, `create_track`, `create_rider`, ... | CRUD reducers with RBAC checks                                    |

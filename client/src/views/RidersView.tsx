@@ -12,7 +12,7 @@ import type { Rider, Organization } from '../module_bindings/types';
 
 export default function RidersView() {
   const oid = useActiveOrg();
-  const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
+  const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
   const [riders] = useTable(tables.rider);
@@ -24,7 +24,13 @@ export default function RidersView() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<bigint | null>(null);
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+  });
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [ageMin, setAgeMin] = useState('');
@@ -52,16 +58,19 @@ export default function RidersView() {
   const orgRiders = useMemo(() => {
     return riders
       .filter((r: Rider) => r.orgId === oid)
-      .sort((a: Rider, b: Rider) => `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`));
+      .sort((a: Rider, b: Rider) =>
+        `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`)
+      );
   }, [riders, oid]);
 
   const filteredRiders = useMemo(() => {
     let list = orgRiders;
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((r: Rider) =>
-        `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q)
+      list = list.filter(
+        (r: Rider) =>
+          `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
+          r.email.toLowerCase().includes(q)
       );
     }
     const min = parseInt(ageMin);
@@ -95,7 +104,8 @@ export default function RidersView() {
   useEffect(() => {
     if (!ridersMenuOpen) return;
     const handle = (e: MouseEvent) => {
-      if (ridersMenuRef.current && !ridersMenuRef.current.contains(e.target as Node)) setRidersMenuOpen(false);
+      if (ridersMenuRef.current && !ridersMenuRef.current.contains(e.target as Node))
+        setRidersMenuOpen(false);
     };
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
@@ -117,7 +127,13 @@ export default function RidersView() {
   };
 
   const startEdit = (r: Rider) => {
-    setForm({ firstName: r.firstName, lastName: r.lastName, email: r.email, phone: r.phone, dateOfBirth: r.dateOfBirth });
+    setForm({
+      firstName: r.firstName,
+      lastName: r.lastName,
+      email: r.email,
+      phone: r.phone,
+      dateOfBirth: r.dateOfBirth,
+    });
     setEditingId(r.id);
     setShowForm(true);
     setError('');
@@ -168,37 +184,74 @@ export default function RidersView() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: 20,
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <h1 style={{ marginBottom: 0 }}>Riders <span className="muted" style={{ fontSize: '1rem', fontWeight: 400 }}>({orgRiders.length})</span></h1>
+          <h1 style={{ marginBottom: 0 }}>
+            Riders{' '}
+            <span className="muted" style={{ fontSize: '1rem', fontWeight: 400 }}>
+              ({orgRiders.length})
+            </span>
+          </h1>
           <div ref={ridersMenuRef} style={{ position: 'relative' }}>
             <button
               className="ghost small"
-              onClick={() => setRidersMenuOpen(o => !o)}
+              onClick={() => setRidersMenuOpen((o) => !o)}
               title="Riders actions"
               style={{ fontSize: '1rem', padding: '4px 8px' }}
             >
               <FontAwesomeIcon icon={faEllipsisVertical} />
             </button>
             {ridersMenuOpen && (
-              <div style={{
-                position: 'absolute', left: 0, top: '100%', marginTop: 4,
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                minWidth: 200, zIndex: 50, overflow: 'hidden',
-              }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: '100%',
+                  marginTop: 4,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  minWidth: 200,
+                  zIndex: 50,
+                  overflow: 'hidden',
+                }}
+              >
                 <button
-                  onClick={() => { setRidersMenuOpen(false); setRegistrationModalTab('url'); setRegistrationModalOpen(true); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-                    gap: 10, width: '100%',
-                    padding: '9px 14px', border: 'none', background: 'none',
-                    color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+                  onClick={() => {
+                    setRidersMenuOpen(false);
+                    setRegistrationModalTab('url');
+                    setRegistrationModalOpen(true);
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    gap: 10,
+                    width: '100%',
+                    padding: '9px 14px',
+                    border: 'none',
+                    background: 'none',
+                    color: 'var(--text)',
+                    fontSize: '0.85rem',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                 >
-                  <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}><FontAwesomeIcon icon={faShareNodes} /></span>
+                  <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
+                    <FontAwesomeIcon icon={faShareNodes} />
+                  </span>
                   <span>Registration link</span>
                 </button>
               </div>
@@ -207,7 +260,16 @@ export default function RidersView() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {!showForm && (
-            <button className="primary small" onClick={() => { setEditingId(null); setShowForm(true); setError(''); }}>+ Add Rider</button>
+            <button
+              className="primary small"
+              onClick={() => {
+                setEditingId(null);
+                setShowForm(true);
+                setError('');
+              }}
+            >
+              + Add Rider
+            </button>
           )}
         </div>
       </div>
@@ -215,8 +277,12 @@ export default function RidersView() {
       {/* Add / Edit form */}
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>{editingId !== null ? 'Edit Rider' : 'New Rider'}</div>
-          {error && <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>}
+          <div className="section-title" style={{ marginBottom: 8 }}>
+            {editingId !== null ? 'Edit Rider' : 'New Rider'}
+          </div>
+          {error && (
+            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
               <label className="input-label">First Name *</label>
@@ -224,7 +290,7 @@ export default function RidersView() {
                 type="text"
                 placeholder="First name"
                 value={form.firstName}
-                onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 autoFocus
                 className="input"
@@ -236,7 +302,7 @@ export default function RidersView() {
                 type="text"
                 placeholder="Last name"
                 value={form.lastName}
-                onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="input"
               />
@@ -247,7 +313,7 @@ export default function RidersView() {
                 type="email"
                 placeholder="email@example.com"
                 value={form.email}
-                onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="input"
               />
@@ -258,7 +324,7 @@ export default function RidersView() {
                 type="tel"
                 placeholder="+1-555-0100"
                 value={form.phone}
-                onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="input"
               />
@@ -268,22 +334,34 @@ export default function RidersView() {
               <input
                 type="date"
                 value={form.dateOfBirth}
-                onChange={(e) => setForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="input"
               />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button className="primary small" onClick={handleSubmit}>{editingId !== null ? 'Save' : 'Add Rider'}</button>
-            <button className="ghost small" onClick={resetForm}>Cancel</button>
+            <button className="primary small" onClick={handleSubmit}>
+              {editingId !== null ? 'Save' : 'Add Rider'}
+            </button>
+            <button className="ghost small" onClick={resetForm}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {/* Search and filters */}
       {orgRiders.length > 0 && (
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 16,
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            marginBottom: 16,
+          }}
+        >
           <div>
             <label className="input-label">Search</label>
             <input
@@ -302,7 +380,7 @@ export default function RidersView() {
                 type="number"
                 placeholder="—"
                 value={ageMin}
-                onChange={e => setAgeMin(e.target.value)}
+                onChange={(e) => setAgeMin(e.target.value)}
                 className="input"
                 style={{ width: 72 }}
                 min={0}
@@ -315,7 +393,7 @@ export default function RidersView() {
                 type="number"
                 placeholder="—"
                 value={ageMax}
-                onChange={e => setAgeMax(e.target.value)}
+                onChange={(e) => setAgeMax(e.target.value)}
                 className="input"
                 style={{ width: 72 }}
                 min={0}
@@ -327,96 +405,139 @@ export default function RidersView() {
 
       {/* Riders table */}
       {filteredRiders.length === 0 && !showForm ? (
-        <div className="empty">{search || ageMin || ageMax ? 'No riders match your filters.' : 'No riders yet. Add one or share the registration link.'}</div>
+        <div className="empty">
+          {search || ageMin || ageMax
+            ? 'No riders match your filters.'
+            : 'No riders yet. Add one or share the registration link.'}
+        </div>
       ) : (
         <>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>DOB</th>
-              <th>Age</th>
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRiders.map((r: Rider) => (
-              <tr key={String(r.id)}>
-                <td>{r.firstName} {r.lastName}</td>
-                <td className="muted">{r.email || '—'}</td>
-                <td className="muted">{r.phone || '—'}</td>
-                <td>{r.dateOfBirth || '—'}</td>
-                <td className="muted">{r.dateOfBirth ? (() => {
-                  const today = new Date();
-                  const dob = new Date(r.dateOfBirth);
-                  let age = today.getFullYear() - dob.getFullYear();
-                  const m = today.getMonth() - dob.getMonth();
-                  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-                  return age;
-                })() : '—'}</td>
-                <td>
-                  <RowActionMenu items={[
-                    { icon: faPen, label: 'Edit', onClick: () => startEdit(r) },
-                    { icon: faTrash, label: 'Delete', danger: true, onClick: () => handleDelete(r) },
-                  ]} />
-                </td>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>DOB</th>
+                <th>Age</th>
+                <th style={{ width: 40 }}></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredRiders.length > PAGE_SIZE_OPTIONS[0] && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-            <button
-              className="ghost small"
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0}
+            </thead>
+            <tbody>
+              {paginatedRiders.map((r: Rider) => (
+                <tr key={String(r.id)}>
+                  <td>
+                    {r.firstName} {r.lastName}
+                  </td>
+                  <td className="muted">{r.email || '—'}</td>
+                  <td className="muted">{r.phone || '—'}</td>
+                  <td>{r.dateOfBirth || '—'}</td>
+                  <td className="muted">
+                    {r.dateOfBirth
+                      ? (() => {
+                          const today = new Date();
+                          const dob = new Date(r.dateOfBirth);
+                          let age = today.getFullYear() - dob.getFullYear();
+                          const m = today.getMonth() - dob.getMonth();
+                          if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                          return age;
+                        })()
+                      : '—'}
+                  </td>
+                  <td>
+                    <RowActionMenu
+                      items={[
+                        { icon: faPen, label: 'Edit', onClick: () => startEdit(r) },
+                        {
+                          icon: faTrash,
+                          label: 'Delete',
+                          danger: true,
+                          onClick: () => handleDelete(r),
+                        },
+                      ]}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredRiders.length > PAGE_SIZE_OPTIONS[0] && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 12,
+                marginTop: 12,
+                flexWrap: 'wrap',
+              }}
             >
-              Previous
-            </button>
-            <span className="muted small-text">
-              Page {page + 1} of {totalPages} ({filteredRiders.length} riders)
-            </span>
-            <button
-              className="ghost small"
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-            >
-              Next
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <label className="input-label" style={{ marginBottom: 0 }}>Per page</label>
-              <select
-                className="input"
-                value={pageSize}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  setPageSize(n);
-                  try {
-                    localStorage.setItem('racetimetracker-riders-page-size', String(n));
-                  } catch {}
-                }}
-                style={{ width: 72, padding: '6px 8px' }}
+              <button
+                className="ghost small"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
               >
-                {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
+                Previous
+              </button>
+              <span className="muted small-text">
+                Page {page + 1} of {totalPages} ({filteredRiders.length} riders)
+              </span>
+              <button
+                className="ghost small"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                Next
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label className="input-label" style={{ marginBottom: 0 }}>
+                  Per page
+                </label>
+                <select
+                  className="input"
+                  value={pageSize}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setPageSize(n);
+                    try {
+                      localStorage.setItem('racetimetracker-riders-page-size', String(n));
+                    } catch {}
+                  }}
+                  style={{ width: 72, padding: '6px 8px' }}
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </>
       )}
 
       {/* Registration link modal */}
       <Modal
         open={registrationModalOpen}
-        onClose={() => { setRegistrationModalOpen(false); setRegistrationModalTab('url'); }}
+        onClose={() => {
+          setRegistrationModalOpen(false);
+          setRegistrationModalTab('url');
+        }}
         title="Registration link"
       >
-        <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.9rem' }}>
+        <div
+          style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}
+        >
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+            }}
+          >
             <input
               type="checkbox"
               checked={org?.registrationEnabled !== false}
@@ -451,7 +572,9 @@ export default function RidersView() {
         {registrationModalTab === 'url' && (
           <div>
             <div className="small-text" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
-              <a href={registrationUrl} target="_blank" rel="noopener noreferrer">{registrationUrl}</a>
+              <a href={registrationUrl} target="_blank" rel="noopener noreferrer">
+                {registrationUrl}
+              </a>
             </div>
             <button
               className="primary small"
@@ -463,10 +586,19 @@ export default function RidersView() {
         )}
         {registrationModalTab === 'qr' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ background: 'white', padding: 20, borderRadius: 12, display: 'inline-block' }}>
+            <div
+              style={{
+                background: 'white',
+                padding: 20,
+                borderRadius: 12,
+                display: 'inline-block',
+              }}
+            >
               <QRCodeSVG value={registrationUrl} size={200} level="M" />
             </div>
-            <p className="muted small-text" style={{ marginTop: 8 }}>Scan to open registration form</p>
+            <p className="muted small-text" style={{ marginTop: 8 }}>
+              Scan to open registration form
+            </p>
           </div>
         )}
       </Modal>

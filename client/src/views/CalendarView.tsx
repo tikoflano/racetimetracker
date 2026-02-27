@@ -7,8 +7,18 @@ import type { Event, Championship, Organization } from '../module_bindings/types
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function parseDate(s: string): Date | null {
@@ -36,7 +46,7 @@ export default function CalendarView() {
   // User's org IDs
   const userOrgIds = useMemo(() => {
     if (!user) return new Set<bigint>();
-    return new Set(orgs.filter((o: Organization) => o.ownerUserId === user.id).map(o => o.id));
+    return new Set(orgs.filter((o: Organization) => o.ownerUserId === user.id).map((o) => o.id));
   }, [user, orgs]);
 
   // Championships in user's orgs
@@ -47,7 +57,7 @@ export default function CalendarView() {
   // Default: all selected. null means "not yet initialized"
   const activeChampIds = useMemo(() => {
     if (selectedChampIds !== null) return selectedChampIds;
-    return new Set(orgChamps.map(c => c.id));
+    return new Set(orgChamps.map((c) => c.id));
   }, [selectedChampIds, orgChamps]);
 
   const champMap = useMemo(() => {
@@ -57,8 +67,8 @@ export default function CalendarView() {
   }, [orgChamps]);
 
   const toggleChamp = (id: bigint) => {
-    setSelectedChampIds(prev => {
-      const current = prev ?? new Set(orgChamps.map(c => c.id));
+    setSelectedChampIds((prev) => {
+      const current = prev ?? new Set(orgChamps.map((c) => c.id));
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -124,12 +134,16 @@ export default function CalendarView() {
   while (cells.length % 7 !== 0) cells.push(null);
 
   const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
+    if (month === 0) {
+      setMonth(11);
+      setYear((y) => y - 1);
+    } else setMonth((m) => m - 1);
   };
   const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
+    if (month === 11) {
+      setMonth(0);
+      setYear((y) => y + 1);
+    } else setMonth((m) => m + 1);
   };
   const goToday = () => {
     const now = new Date();
@@ -187,27 +201,51 @@ export default function CalendarView() {
     : noneSelected
       ? 'No Championships'
       : activeChampIds.size === 1
-        ? champMap.get([...activeChampIds][0])?.name ?? '1 selected'
+        ? (champMap.get([...activeChampIds][0])?.name ?? '1 selected')
         : `${activeChampIds.size} Championships`;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
         <h1 style={{ marginBottom: 0 }}>Calendar</h1>
 
         {/* Multi-select championship dropdown */}
         <div ref={dropdownRef} style={{ position: 'relative' }}>
           <button
             className="input"
-            onClick={() => setDropdownOpen(o => !o)}
-            style={{ width: 'auto', minWidth: 200, textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, cursor: 'pointer' }}
+            onClick={() => setDropdownOpen((o) => !o)}
+            style={{
+              width: 'auto',
+              minWidth: 200,
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              cursor: 'pointer',
+            }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {!allSelected && !noneSelected && (
                 <span style={{ display: 'flex', gap: 2 }}>
-                  {[...activeChampIds].slice(0, 4).map(id => {
+                  {[...activeChampIds].slice(0, 4).map((id) => {
                     const c = champMap.get(id);
-                    return c ? <span key={String(id)} className="color-dot" style={{ background: c.color }} /> : null;
+                    return c ? (
+                      <span
+                        key={String(id)}
+                        className="color-dot"
+                        style={{ background: c.color }}
+                      />
+                    ) : null;
                   })}
                 </span>
               )}
@@ -219,18 +257,18 @@ export default function CalendarView() {
           {dropdownOpen && (
             <div className="champ-dropdown">
               <div className="champ-dropdown-actions">
-                <button className="ghost small" onClick={selectAll} disabled={allSelected}>All</button>
-                <button className="ghost small" onClick={selectNone} disabled={noneSelected}>None</button>
+                <button className="ghost small" onClick={selectAll} disabled={allSelected}>
+                  All
+                </button>
+                <button className="ghost small" onClick={selectNone} disabled={noneSelected}>
+                  None
+                </button>
               </div>
               {orgChamps.map((c: Championship) => {
                 const checked = activeChampIds.has(c.id);
                 return (
                   <label key={String(c.id)} className="champ-dropdown-item">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleChamp(c.id)}
-                    />
+                    <input type="checkbox" checked={checked} onChange={() => toggleChamp(c.id)} />
                     <span className="color-dot" style={{ background: c.color }} />
                     <span>{c.name}</span>
                   </label>
@@ -246,20 +284,42 @@ export default function CalendarView() {
 
       {/* Month navigation */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <button className="ghost small" onClick={prevMonth}>&larr;</button>
+        <button className="ghost small" onClick={prevMonth}>
+          &larr;
+        </button>
         <span style={{ fontWeight: 600, fontSize: '1.1rem', minWidth: 160, textAlign: 'center' }}>
           {MONTH_NAMES[month]} {year}
         </span>
-        <button className="ghost small" onClick={nextMonth}>&rarr;</button>
-        <button className="ghost small" onClick={goToday}>Today</button>
-        <button className="ghost small" onClick={goToLastEvent} disabled={!lastEvent} title={lastEvent?.name}>Last event</button>
-        <button className="ghost small" onClick={goToNextEvent} disabled={!nextEvent} title={nextEvent?.name}>Next event</button>
+        <button className="ghost small" onClick={nextMonth}>
+          &rarr;
+        </button>
+        <button className="ghost small" onClick={goToday}>
+          Today
+        </button>
+        <button
+          className="ghost small"
+          onClick={goToLastEvent}
+          disabled={!lastEvent}
+          title={lastEvent?.name}
+        >
+          Last event
+        </button>
+        <button
+          className="ghost small"
+          onClick={goToNextEvent}
+          disabled={!nextEvent}
+          title={nextEvent?.name}
+        >
+          Next event
+        </button>
       </div>
 
       {/* Calendar grid */}
       <div className="cal-grid">
-        {DAYS.map(d => (
-          <div key={d} className="cal-header">{d}</div>
+        {DAYS.map((d) => (
+          <div key={d} className="cal-header">
+            {d}
+          </div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`e${i}`} className="cal-cell empty" />;
@@ -284,9 +344,7 @@ export default function CalendarView() {
                     </Link>
                   );
                 })}
-                {evts.length > 3 && (
-                  <span className="cal-more">+{evts.length - 3} more</span>
-                )}
+                {evts.length > 3 && <span className="cal-more">+{evts.length - 3} more</span>}
               </div>
             </div>
           );

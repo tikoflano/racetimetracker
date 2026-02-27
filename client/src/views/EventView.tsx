@@ -5,7 +5,18 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
-import type { Event, Venue, EventTrack, TrackVariation, Track, Rider, EventRider, Run, PinnedEvent, Organization, EventCategory } from '../module_bindings/types';
+import type {
+  Event,
+  Venue,
+  EventTrack,
+  TrackVariation,
+  Track,
+  Rider,
+  EventRider,
+  PinnedEvent,
+  Organization,
+  EventCategory,
+} from '../module_bindings/types';
 import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical } from '../icons';
 import { formatElapsed } from '../utils';
 
@@ -77,9 +88,7 @@ export default function EventView() {
 
   const eventRiderIds = useMemo(() => {
     return new Set(
-      eventRiders
-        .filter((er: EventRider) => er.eventId === eid)
-        .map((er: EventRider) => er.riderId)
+      eventRiders.filter((er: EventRider) => er.eventId === eid).map((er: EventRider) => er.riderId)
     );
   }, [eventRiders, eid]);
 
@@ -102,7 +111,15 @@ export default function EventView() {
   }, [tracksData]);
 
   type RunDetail = { eventTrackId: bigint; trackName: string; status: string; elapsed: number };
-  type LeaderboardEntry = { riderId: bigint; rider?: Rider; total: number; complete: boolean; dnf: boolean; trackCount: number; runs: RunDetail[] };
+  type LeaderboardEntry = {
+    riderId: bigint;
+    rider?: Rider;
+    total: number;
+    complete: boolean;
+    dnf: boolean;
+    trackCount: number;
+    runs: RunDetail[];
+  };
 
   const riderToCategory = useMemo(() => {
     const m = new Map<bigint, bigint>();
@@ -122,13 +139,17 @@ export default function EventView() {
   const riderNumberMap = useMemo(() => {
     const m = new Map<string, number | null>();
     const catStartMap = new Map<bigint, number>();
-    for (const c of eventCategories) catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
+    for (const c of eventCategories)
+      catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
     for (const er of eventRiders) {
       const e = er as EventRider;
       if (e.eventId !== eid) continue;
-      const num = e.assignedNumber !== 0
-        ? e.assignedNumber
-        : (e.categoryId !== 0n ? (catStartMap.get(e.categoryId) ?? null) : null);
+      const num =
+        e.assignedNumber !== 0
+          ? e.assignedNumber
+          : e.categoryId !== 0n
+            ? (catStartMap.get(e.categoryId) ?? null)
+            : null;
       m.set(`${e.eventId}-${e.riderId}`, num);
     }
     return m;
@@ -139,7 +160,10 @@ export default function EventView() {
   const leaderboardByCategory = useMemo(() => {
     const etIds = new Set(sortedEventTracks.map((et: EventTrack) => et.id));
     const totalTracks = sortedEventTracks.length;
-    const riderData = new Map<bigint, { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }>();
+    const riderData = new Map<
+      bigint,
+      { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }
+    >();
 
     for (const run of runs) {
       if (!etIds.has(run.eventTrackId)) continue;
@@ -163,7 +187,10 @@ export default function EventView() {
       riderData.set(run.riderId, entry);
     }
 
-    const toEntry = (riderId: bigint, data: { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }): LeaderboardEntry => ({
+    const toEntry = (
+      riderId: bigint,
+      data: { total: number; trackCount: number; dnf: boolean; runs: RunDetail[] }
+    ): LeaderboardEntry => ({
       riderId,
       rider: riderMap.get(riderId),
       total: data.total,
@@ -187,8 +214,7 @@ export default function EventView() {
     const result: { categoryId: bigint; categoryName: string; entries: LeaderboardEntry[] }[] = [];
 
     if (categoriesForEvent.length === 0) {
-      const entries = [...riderData.entries()]
-        .map(([riderId, data]) => toEntry(riderId, data));
+      const entries = [...riderData.entries()].map(([riderId, data]) => toEntry(riderId, data));
       result.push({ categoryId: 0n, categoryName: '', entries: sortEntries(entries) });
       return result;
     }
@@ -198,23 +224,34 @@ export default function EventView() {
         .filter(([, cid]) => cid === cat.id)
         .map(([rid]) => rid);
       const entries = riderIdsInCat
-        .filter(rid => riderData.has(rid))
-        .map(rid => toEntry(rid, riderData.get(rid)!));
+        .filter((rid) => riderData.has(rid))
+        .map((rid) => toEntry(rid, riderData.get(rid)!));
       if (entries.length > 0) {
         result.push({ categoryId: cat.id, categoryName: cat.name, entries: sortEntries(entries) });
       }
     }
 
-    const uncatRiderIds = [...riderToCategory.entries()].filter(([, cid]) => cid === 0n).map(([rid]) => rid);
+    const uncatRiderIds = [...riderToCategory.entries()]
+      .filter(([, cid]) => cid === 0n)
+      .map(([rid]) => rid);
     const uncatEntries = uncatRiderIds
-      .filter(rid => riderData.has(rid))
-      .map(rid => toEntry(rid, riderData.get(rid)!));
+      .filter((rid) => riderData.has(rid))
+      .map((rid) => toEntry(rid, riderData.get(rid)!));
     if (uncatEntries.length > 0) {
       result.push({ categoryId: 0n, categoryName: 'Other', entries: sortEntries(uncatEntries) });
     }
 
     return result;
-  }, [runs, sortedEventTracks, eventRiderIds, riderMap, tvMap, trackMap, riderToCategory, categoriesForEvent]);
+  }, [
+    runs,
+    sortedEventTracks,
+    eventRiderIds,
+    riderMap,
+    tvMap,
+    trackMap,
+    riderToCategory,
+    categoriesForEvent,
+  ]);
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -231,7 +268,16 @@ export default function EventView() {
             ? `No event "${eventSlug}" exists in organization "${orgSlug}".`
             : `No event "${eventSlug}" exists in the current organization.`}
         </p>
-        <a href="/" className="primary" style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 'var(--radius)', textDecoration: 'none' }}>
+        <a
+          href="/"
+          className="primary"
+          style={{
+            display: 'inline-block',
+            padding: '8px 20px',
+            borderRadius: 'var(--radius)',
+            textDecoration: 'none',
+          }}
+        >
           Go home
         </a>
       </div>
@@ -245,16 +291,27 @@ export default function EventView() {
           <input
             type="text"
             value={nameValue}
-            onChange={e => setNameValue(e.target.value)}
-            onKeyDown={async e => {
+            onChange={(e) => setNameValue(e.target.value)}
+            onKeyDown={async (e) => {
               if (e.key === 'Enter') {
                 setNameError('');
                 const trimmed = nameValue.trim();
-                if (!trimmed) { setNameError('Name cannot be empty'); return; }
+                if (!trimmed) {
+                  setNameError('Name cannot be empty');
+                  return;
+                }
                 try {
-                  await updateEvent({ eventId: eid, name: trimmed, description: event.description, startDate: event.startDate, endDate: event.endDate });
+                  await updateEvent({
+                    eventId: eid,
+                    name: trimmed,
+                    description: event.description,
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                  });
                   setEditingName(false);
-                } catch (err: any) { setNameError(err?.message || 'Failed'); }
+                } catch (err: any) {
+                  setNameError(err?.message || 'Failed');
+                }
               }
               if (e.key === 'Escape') setEditingName(false);
             }}
@@ -262,20 +319,47 @@ export default function EventView() {
             className="input"
             style={{ fontSize: '1.4rem', fontWeight: 700, flex: 1, maxWidth: 400 }}
           />
-          <button className="primary small" onClick={async () => {
-            setNameError('');
-            const trimmed = nameValue.trim();
-            if (!trimmed) { setNameError('Name cannot be empty'); return; }
-            try {
-              await updateEvent({ eventId: eid, name: trimmed, description: event.description, startDate: event.startDate, endDate: event.endDate });
-              setEditingName(false);
-            } catch (err: any) { setNameError(err?.message || 'Failed'); }
-          }}>Save</button>
-          <button className="ghost small" onClick={() => setEditingName(false)}>Cancel</button>
-          {nameError && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>}
+          <button
+            className="primary small"
+            onClick={async () => {
+              setNameError('');
+              const trimmed = nameValue.trim();
+              if (!trimmed) {
+                setNameError('Name cannot be empty');
+                return;
+              }
+              try {
+                await updateEvent({
+                  eventId: eid,
+                  name: trimmed,
+                  description: event.description,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
+                });
+                setEditingName(false);
+              } catch (err: any) {
+                setNameError(err?.message || 'Failed');
+              }
+            }}
+          >
+            Save
+          </button>
+          <button className="ghost small" onClick={() => setEditingName(false)}>
+            Cancel
+          </button>
+          {nameError && (
+            <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>
+          )}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: 8,
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
             <EventActionMenu
@@ -286,23 +370,51 @@ export default function EventView() {
               isAuthenticated={isAuthenticated}
               isPinned={isPinned}
               hasPublicUrl={!!publicUrl}
-              onRename={() => { setEventMenuOpen(false); setNameValue(event.name); setNameError(''); setEditingName(true); }}
-              onPin={() => { setEventMenuOpen(false); togglePin({ eventId: eid }); }}
-              onShare={() => { setEventMenuOpen(false); setCopied(false); setShareOpen(true); }}
+              onRename={() => {
+                setEventMenuOpen(false);
+                setNameValue(event.name);
+                setNameError('');
+                setEditingName(true);
+              }}
+              onPin={() => {
+                setEventMenuOpen(false);
+                togglePin({ eventId: eid });
+              }}
+              onShare={() => {
+                setEventMenuOpen(false);
+                setCopied(false);
+                setShareOpen(true);
+              }}
             />
           </div>
           {canEdit && (
-            <Link to={`/event/${event.slug}/manage`} className="primary small" style={{ textDecoration: 'none', padding: '4px 12px', borderRadius: 'var(--radius)', background: 'var(--accent)', color: 'white', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+            <Link
+              to={`/event/${event.slug}/manage`}
+              className="primary small"
+              style={{
+                textDecoration: 'none',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius)',
+                background: 'var(--accent)',
+                color: 'white',
+                fontSize: '0.8rem',
+                whiteSpace: 'nowrap',
+              }}
+            >
               Manage
             </Link>
           )}
         </div>
       )}
-      <p className="muted small-text" style={{ marginBottom: 4 }}>{event.description}</p>
+      <p className="muted small-text" style={{ marginBottom: 4 }}>
+        {event.description}
+      </p>
       {venue && (
         <p className="muted small-text" style={{ marginBottom: 16 }}>
-          <Link to={`/location/${venue.id}`} style={{ color: 'inherit' }}>{venue.name}</Link>
-          {' '}&middot; {event.startDate} &ndash; {event.endDate}
+          <Link to={`/location/${venue.id}`} style={{ color: 'inherit' }}>
+            {venue.name}
+          </Link>{' '}
+          &middot; {event.startDate} &ndash; {event.endDate}
         </p>
       )}
 
@@ -315,7 +427,15 @@ export default function EventView() {
           leaderboardByCategory.map(({ categoryId, categoryName, entries }) => (
             <div key={String(categoryId)} style={{ marginBottom: categoryName ? 24 : 0 }}>
               {categoryName && (
-                <div className="muted small-text" style={{ marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div
+                  className="muted small-text"
+                  style={{
+                    marginBottom: 8,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   {categoryName}
                 </div>
               )}
@@ -332,7 +452,14 @@ export default function EventView() {
                 <tbody>
                   {entries.map((entry, idx) => {
                     const pos = idx + 1;
-                    const posClass = pos === 1 ? 'position p1' : pos === 2 ? 'position p2' : pos === 3 ? 'position p3' : 'position';
+                    const posClass =
+                      pos === 1
+                        ? 'position p1'
+                        : pos === 2
+                          ? 'position p2'
+                          : pos === 3
+                            ? 'position p3'
+                            : 'position';
                     const isExpanded = expandedRiderId === entry.riderId;
                     return (
                       <React.Fragment key={entry.rider ? String(entry.rider.id) : idx}>
@@ -340,14 +467,24 @@ export default function EventView() {
                           onClick={() => setExpandedRiderId(isExpanded ? null : entry.riderId)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <td><span className={posClass}>{entry.complete ? pos : '-'}</span></td>
-                          <td className="muted small-text">{getRiderNumber(entry.riderId) ?? '—'}</td>
                           <td>
-                            {entry.rider ? `${entry.rider.firstName} ${entry.rider.lastName}` : 'Unknown'}
+                            <span className={posClass}>{entry.complete ? pos : '-'}</span>
+                          </td>
+                          <td className="muted small-text">
+                            {getRiderNumber(entry.riderId) ?? '—'}
+                          </td>
+                          <td>
+                            {entry.rider
+                              ? `${entry.rider.firstName} ${entry.rider.lastName}`
+                              : 'Unknown'}
                           </td>
                           <td className="muted small-text">
                             {entry.trackCount}/{sortedEventTracks.length}
-                            {entry.dnf && <span className="badge dnf" style={{ marginLeft: 6 }}>DNF</span>}
+                            {entry.dnf && (
+                              <span className="badge dnf" style={{ marginLeft: 6 }}>
+                                DNF
+                              </span>
+                            )}
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             {entry.total > 0 ? (
@@ -359,22 +496,39 @@ export default function EventView() {
                         </tr>
                         {isExpanded && (
                           <tr key={`${entry.riderId}-detail`}>
-                            <td colSpan={5} style={{ padding: '0 12px 12px 52px', background: 'var(--surface-hover, rgba(255,255,255,0.02))' }}>
+                            <td
+                              colSpan={5}
+                              style={{
+                                padding: '0 12px 12px 52px',
+                                background: 'var(--surface-hover, rgba(255,255,255,0.02))',
+                              }}
+                            >
                               <table style={{ width: '100%', fontSize: '0.8rem' }}>
                                 <tbody>
                                   {sortedEventTracks.map((et: EventTrack) => {
                                     const tv = tvMap.get(et.trackVariationId);
                                     const track = tv ? trackMap.get(tv.trackId) : undefined;
-                                    const run = entry.runs.find(r => r.eventTrackId === et.id);
+                                    const run = entry.runs.find((r) => r.eventTrackId === et.id);
                                     return (
-                                      <tr key={String(et.id)} style={{ borderBottom: '1px solid var(--border)' }}>
-                                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>{track?.name ?? 'Track'}</td>
+                                      <tr
+                                        key={String(et.id)}
+                                        style={{ borderBottom: '1px solid var(--border)' }}
+                                      >
+                                        <td
+                                          style={{ padding: '6px 0', color: 'var(--text-muted)' }}
+                                        >
+                                          {track?.name ?? 'Track'}
+                                        </td>
                                         <td style={{ padding: '6px 0', textAlign: 'right' }}>
                                           {run ? (
                                             run.status === 'finished' ? (
-                                              <span className="elapsed">{formatElapsed(run.elapsed)}</span>
+                                              <span className="elapsed">
+                                                {formatElapsed(run.elapsed)}
+                                              </span>
                                             ) : (
-                                              <span className={`badge ${run.status === 'dnf' ? 'dnf' : run.status === 'dns' ? '' : 'running'}`}>
+                                              <span
+                                                className={`badge ${run.status === 'dnf' ? 'dnf' : run.status === 'dns' ? '' : 'running'}`}
+                                              >
                                                 {run.status.toUpperCase()}
                                               </span>
                                             )
@@ -402,7 +556,9 @@ export default function EventView() {
 
       {/* Share modal — leaderboard display URL for big screens */}
       <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Leaderboard Display">
-        <p className="muted small-text" style={{ marginBottom: 12 }}>Use this link to display the leaderboard on a big screen at the event.</p>
+        <p className="muted small-text" style={{ marginBottom: 12 }}>
+          Use this link to display the leaderboard on a big screen at the event.
+        </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             type="text"
@@ -410,7 +566,7 @@ export default function EventView() {
             value={publicUrl ? `${publicUrl}/leaderboard` : ''}
             className="input"
             style={{ flex: 1, fontSize: '0.8rem' }}
-            onFocus={e => e.target.select()}
+            onFocus={(e) => e.target.select()}
           />
           <button
             className="primary"
@@ -427,7 +583,14 @@ export default function EventView() {
             target="_blank"
             rel="noopener noreferrer"
             className="primary"
-            style={{ whiteSpace: 'nowrap', padding: '8px 16px', borderRadius: 'var(--radius)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+            style={{
+              whiteSpace: 'nowrap',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
           >
             Open
           </a>
@@ -437,7 +600,18 @@ export default function EventView() {
   );
 }
 
-function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, isPinned, hasPublicUrl, onRename, onPin, onShare }: {
+function EventActionMenu({
+  open,
+  onToggle,
+  onClose,
+  canEdit,
+  isAuthenticated,
+  isPinned,
+  hasPublicUrl,
+  onRename,
+  onPin,
+  onShare,
+}: {
   open: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -461,47 +635,84 @@ function EventActionMenu({ open, onToggle, onClose, canEdit, isAuthenticated, is
   }, [open, onClose]);
 
   const itemStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-    gap: 10, width: '100%',
-    padding: '9px 14px', border: 'none', background: 'none',
-    color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left', cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 10,
+    width: '100%',
+    padding: '9px 14px',
+    border: 'none',
+    background: 'none',
+    color: 'var(--text)',
+    fontSize: '0.85rem',
+    textAlign: 'left',
+    cursor: 'pointer',
   };
   const iconStyle: React.CSSProperties = { width: 16, textAlign: 'center', flexShrink: 0 };
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button className="ghost small" onClick={onToggle} title="Event actions" style={{ fontSize: '1rem', padding: '4px 8px' }}>
+      <button
+        className="ghost small"
+        onClick={onToggle}
+        title="Event actions"
+        style={{ fontSize: '1rem', padding: '4px 8px' }}
+      >
         <FontAwesomeIcon icon={faEllipsisVertical} />
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', left: 0, top: '100%', marginTop: 4,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          minWidth: 200, zIndex: 50, overflow: 'hidden',
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '100%',
+            marginTop: 4,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            minWidth: 200,
+            zIndex: 50,
+            overflow: 'hidden',
+          }}
+        >
           {canEdit && (
-            <button onClick={onRename} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            <button
+              onClick={onRename}
+              style={itemStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faPen} /></span><span>Rename</span>
+              <span style={iconStyle}>
+                <FontAwesomeIcon icon={faPen} />
+              </span>
+              <span>Rename</span>
             </button>
           )}
           {isAuthenticated && (
-            <button onClick={onPin} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            <button
+              onClick={onPin}
+              style={itemStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faThumbtack} /></span><span>{isPinned ? 'Unpin event' : 'Pin event'}</span>
+              <span style={iconStyle}>
+                <FontAwesomeIcon icon={faThumbtack} />
+              </span>
+              <span>{isPinned ? 'Unpin event' : 'Pin event'}</span>
             </button>
           )}
           {hasPublicUrl && (
-            <button onClick={onShare} style={itemStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            <button
+              onClick={onShare}
+              style={itemStyle}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
-              <span style={iconStyle}><FontAwesomeIcon icon={faLink} /></span><span>Share</span>
+              <span style={iconStyle}>
+                <FontAwesomeIcon icon={faLink} />
+              </span>
+              <span>Share</span>
             </button>
           )}
         </div>

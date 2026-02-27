@@ -12,7 +12,15 @@ interface AddTrackModalProps {
   usedVariationIds: Set<bigint>;
 }
 
-export default function AddTrackModal({ open, onClose, onConfirm, venueName, venueTracks, allVariations, usedVariationIds }: AddTrackModalProps) {
+export default function AddTrackModal({
+  open,
+  onClose,
+  onConfirm,
+  venueName,
+  venueTracks,
+  allVariations,
+  usedVariationIds,
+}: AddTrackModalProps) {
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [selectedVariation, setSelectedVariation] = useState<TrackVariation | null>(null);
   const [trackSearch, setTrackSearch] = useState('');
@@ -25,29 +33,34 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
     setVarSearch('');
   };
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
   const availableTracks = useMemo(() => {
-    return venueTracks.filter(track => {
-      return allVariations.some(tv => tv.trackId === track.id && !usedVariationIds.has(tv.id));
+    return venueTracks.filter((track) => {
+      return allVariations.some((tv) => tv.trackId === track.id && !usedVariationIds.has(tv.id));
     });
   }, [venueTracks, allVariations, usedVariationIds]);
 
   const filteredTracks = useMemo(() => {
     const q = trackSearch.toLowerCase().trim();
     if (!q) return availableTracks;
-    return availableTracks.filter(t => t.name.toLowerCase().includes(q));
+    return availableTracks.filter((t) => t.name.toLowerCase().includes(q));
   }, [availableTracks, trackSearch]);
 
   const availableVariations = useMemo(() => {
     if (!selectedTrack) return [];
-    return allVariations.filter(tv => tv.trackId === selectedTrack.id && !usedVariationIds.has(tv.id));
+    return allVariations.filter(
+      (tv) => tv.trackId === selectedTrack.id && !usedVariationIds.has(tv.id)
+    );
   }, [selectedTrack, allVariations, usedVariationIds]);
 
   const filteredVariations = useMemo(() => {
     const q = varSearch.toLowerCase().trim();
     if (!q) return availableVariations;
-    return availableVariations.filter(tv => tv.name.toLowerCase().includes(q));
+    return availableVariations.filter((tv) => tv.name.toLowerCase().includes(q));
   }, [availableVariations, varSearch]);
 
   const handleConfirm = () => {
@@ -58,7 +71,6 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
 
   return (
     <Modal open={open} onClose={handleClose} title={`Add Track from ${venueName}`}>
-
       {/* Step 1: Select track */}
       {!selectedTrack && (
         <div>
@@ -67,28 +79,53 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
             className="input"
             placeholder="Search tracks..."
             value={trackSearch}
-            onChange={e => setTrackSearch(e.target.value)}
+            onChange={(e) => setTrackSearch(e.target.value)}
             autoFocus
           />
-          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
+          <div
+            style={{
+              marginTop: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              maxHeight: 300,
+              overflowY: 'auto',
+            }}
+          >
             {filteredTracks.length === 0 ? (
               <div className="muted small-text" style={{ padding: 8 }}>
-                {availableTracks.length === 0 ? 'No tracks available from this location.' : 'No tracks match your search.'}
+                {availableTracks.length === 0
+                  ? 'No tracks available from this location.'
+                  : 'No tracks match your search.'}
               </div>
             ) : (
               filteredTracks.map((track, i) => (
                 <button
                   key={String(track.id)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                    textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius)',
-                    border: 'none', cursor: 'pointer', fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
                     background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
                     color: 'var(--text)',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')}
-                  onClick={() => { setSelectedTrack(track); setVarSearch(''); setSelectedVariation(null); }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background =
+                      i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')
+                  }
+                  onClick={() => {
+                    setSelectedTrack(track);
+                    setVarSearch('');
+                    setSelectedVariation(null);
+                  }}
                 >
                   <span className="color-dot" style={{ background: track.color }} />
                   <strong>{track.name}</strong>
@@ -102,7 +139,11 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
       {/* Step 2: Select variation */}
       {selectedTrack && !selectedVariation && (
         <div>
-          <button className="ghost small" onClick={() => setSelectedTrack(null)} style={{ marginBottom: 8 }}>
+          <button
+            className="ghost small"
+            onClick={() => setSelectedTrack(null)}
+            style={{ marginBottom: 8 }}
+          >
             &larr; Back to tracks
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -114,31 +155,54 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
             className="input"
             placeholder="Search variations..."
             value={varSearch}
-            onChange={e => setVarSearch(e.target.value)}
+            onChange={(e) => setVarSearch(e.target.value)}
             autoFocus
           />
-          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 300, overflowY: 'auto' }}>
+          <div
+            style={{
+              marginTop: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              maxHeight: 300,
+              overflowY: 'auto',
+            }}
+          >
             {filteredVariations.length === 0 ? (
               <div className="muted small-text" style={{ padding: 8 }}>
-                {availableVariations.length === 0 ? 'No variations available.' : 'No variations match your search.'}
+                {availableVariations.length === 0
+                  ? 'No variations available.'
+                  : 'No variations match your search.'}
               </div>
             ) : (
               filteredVariations.map((tv, i) => (
                 <button
                   key={String(tv.id)}
                   style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '10px 12px', borderRadius: 'var(--radius)',
-                    border: 'none', cursor: 'pointer', fontSize: '0.875rem',
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
                     background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
                     color: 'var(--text)',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--border)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background =
+                      i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')
+                  }
                   onClick={() => setSelectedVariation(tv)}
                 >
                   <strong>{tv.name}</strong>
-                  {tv.description && <div className="muted small-text" style={{ marginTop: 2 }}>{tv.description}</div>}
+                  {tv.description && (
+                    <div className="muted small-text" style={{ marginTop: 2 }}>
+                      {tv.description}
+                    </div>
+                  )}
                 </button>
               ))
             )}
@@ -149,7 +213,11 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
       {/* Step 3: Confirm */}
       {selectedTrack && selectedVariation && (
         <div>
-          <button className="ghost small" onClick={() => setSelectedVariation(null)} style={{ marginBottom: 8 }}>
+          <button
+            className="ghost small"
+            onClick={() => setSelectedVariation(null)}
+            style={{ marginBottom: 8 }}
+          >
             &larr; Back to variations
           </button>
           <div className="card" style={{ marginBottom: 16 }}>
@@ -164,8 +232,12 @@ export default function AddTrackModal({ open, onClose, onConfirm, venueName, ven
             )}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="primary small" onClick={handleConfirm}>Add Track</button>
-            <button className="ghost small" onClick={handleClose}>Cancel</button>
+            <button className="primary small" onClick={handleConfirm}>
+              Add Track
+            </button>
+            <button className="ghost small" onClick={handleClose}>
+              Cancel
+            </button>
           </div>
         </div>
       )}

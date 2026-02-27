@@ -2,7 +2,14 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTable } from 'spacetimedb/react';
 import { tables } from '../module_bindings';
-import type { Event, EventTrack, Rider, EventRider, Run, Organization, EventCategory } from '../module_bindings/types';
+import type {
+  Event,
+  EventTrack,
+  Rider,
+  EventRider,
+  Organization,
+  EventCategory,
+} from '../module_bindings/types';
 import { formatElapsed } from '../utils';
 
 const PAUSE_AT_TOP_SECONDS = 3;
@@ -40,9 +47,7 @@ export default function LeaderboardView() {
 
   const eventRiderIds = useMemo(() => {
     return new Set(
-      eventRiders
-        .filter((er: EventRider) => er.eventId === eid)
-        .map((er: EventRider) => er.riderId)
+      eventRiders.filter((er: EventRider) => er.eventId === eid).map((er: EventRider) => er.riderId)
     );
   }, [eventRiders, eid]);
 
@@ -52,7 +57,14 @@ export default function LeaderboardView() {
     return m;
   }, [riders]);
 
-  type LeaderboardEntry = { riderId: bigint; rider?: Rider; total: number; complete: boolean; dnf: boolean; trackCount: number };
+  type LeaderboardEntry = {
+    riderId: bigint;
+    rider?: Rider;
+    total: number;
+    complete: boolean;
+    dnf: boolean;
+    trackCount: number;
+  };
 
   const riderToCategory = useMemo(() => {
     const m = new Map<bigint, bigint>();
@@ -72,13 +84,17 @@ export default function LeaderboardView() {
   const riderNumberMap = useMemo(() => {
     const m = new Map<string, number | null>();
     const catStartMap = new Map<bigint, number>();
-    for (const c of eventCategories) catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
+    for (const c of eventCategories)
+      catStartMap.set((c as EventCategory).id, (c as EventCategory).numberRangeStart);
     for (const er of eventRiders) {
       const e = er as EventRider;
       if (e.eventId !== eid) continue;
-      const num = e.assignedNumber !== 0
-        ? e.assignedNumber
-        : (e.categoryId !== 0n ? (catStartMap.get(e.categoryId) ?? null) : null);
+      const num =
+        e.assignedNumber !== 0
+          ? e.assignedNumber
+          : e.categoryId !== 0n
+            ? (catStartMap.get(e.categoryId) ?? null)
+            : null;
       m.set(`${e.eventId}-${e.riderId}`, num);
     }
     return m;
@@ -107,7 +123,10 @@ export default function LeaderboardView() {
       riderData.set(run.riderId, entry);
     }
 
-    const toEntry = (riderId: bigint, data: { total: number; trackCount: number; dnf: boolean }): LeaderboardEntry => ({
+    const toEntry = (
+      riderId: bigint,
+      data: { total: number; trackCount: number; dnf: boolean }
+    ): LeaderboardEntry => ({
       riderId,
       rider: riderMap.get(riderId),
       total: data.total,
@@ -140,17 +159,19 @@ export default function LeaderboardView() {
         .filter(([, cid]) => cid === cat.id)
         .map(([rid]) => rid);
       const entries = riderIdsInCat
-        .filter(rid => riderData.has(rid))
-        .map(rid => toEntry(rid, riderData.get(rid)!));
+        .filter((rid) => riderData.has(rid))
+        .map((rid) => toEntry(rid, riderData.get(rid)!));
       if (entries.length > 0) {
         result.push({ categoryId: cat.id, categoryName: cat.name, entries: sortEntries(entries) });
       }
     }
 
-    const uncatRiderIds = [...riderToCategory.entries()].filter(([, cid]) => cid === 0n).map(([rid]) => rid);
+    const uncatRiderIds = [...riderToCategory.entries()]
+      .filter(([, cid]) => cid === 0n)
+      .map(([rid]) => rid);
     const uncatEntries = uncatRiderIds
-      .filter(rid => riderData.has(rid))
-      .map(rid => toEntry(rid, riderData.get(rid)!));
+      .filter((rid) => riderData.has(rid))
+      .map((rid) => toEntry(rid, riderData.get(rid)!));
     if (uncatEntries.length > 0) {
       result.push({ categoryId: 0n, categoryName: 'Other', entries: sortEntries(uncatEntries) });
     }
@@ -183,15 +204,15 @@ export default function LeaderboardView() {
     const goToNext = () => {
       if (cancelledRef.current) return;
       if (leaderboardByCategory.length > 1) {
-        setCategoryIndex(i => (i + 1) % leaderboardByCategory.length);
+        setCategoryIndex((i) => (i + 1) % leaderboardByCategory.length);
       } else {
-        setCycleKey(k => k + 1);
+        setCycleKey((k) => k + 1);
       }
     };
 
     const cancelAutoScroll = () => {
       cancelledRef.current = true;
-      timeoutsRef.current.forEach(t => clearTimeout(t));
+      timeoutsRef.current.forEach((t) => clearTimeout(t));
       timeoutsRef.current = [];
       const maxScroll = el.scrollHeight - el.clientHeight;
       if (maxScroll > 0) {
@@ -296,19 +317,29 @@ export default function LeaderboardView() {
       el.removeEventListener('scroll', onScroll);
       el.removeEventListener('wheel', onUserScrollIntent);
       el.removeEventListener('touchstart', onUserScrollIntent);
-      timeoutsRef.current.forEach(t => clearTimeout(t));
+      timeoutsRef.current.forEach((t) => clearTimeout(t));
     };
   }, [categoryIndex, cycleKey, currentCategory, leaderboardByCategory.length]);
 
   if (!event) {
     return (
-      <div className="leaderboard-fullscreen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div
+        className="leaderboard-fullscreen"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+        }}
+      >
         <div style={{ textAlign: 'center', padding: 48 }}>
           {events.length === 0 ? (
             <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Loading...</p>
           ) : (
             <>
-              <div style={{ fontSize: '3rem', fontWeight: 700, opacity: 0.3, marginBottom: 16 }}>404</div>
+              <div style={{ fontSize: '3rem', fontWeight: 700, opacity: 0.3, marginBottom: 16 }}>
+                404
+              </div>
               <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Event not found</p>
             </>
           )}
@@ -320,47 +351,57 @@ export default function LeaderboardView() {
   return (
     <div className="leaderboard-fullscreen">
       {(currentCategory?.entries.length ?? 0) > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 6,
-          background: 'var(--border)',
-          zIndex: 10,
-        }}>
-          <div style={{
-            height: '100%',
-            width: `${scrollProgress}%`,
-            background: 'var(--accent)',
-          }} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 6,
+            background: 'var(--border)',
+            zIndex: 10,
+          }}
+        >
+          <div
+            style={{
+              height: '100%',
+              width: `${scrollProgress}%`,
+              background: 'var(--accent)',
+            }}
+          />
         </div>
       )}
-      <div style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: 'clamp(24px, 4vw, 48px)',
-        boxSizing: 'border-box',
-        minHeight: 0,
-      }}>
+      <div
+        style={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 'clamp(24px, 4vw, 48px)',
+          boxSizing: 'border-box',
+          minHeight: 0,
+        }}
+      >
         <header style={{ marginBottom: 'clamp(12px, 2vw, 24px)', textAlign: 'center' }}>
-          <h1 style={{
-            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-            fontWeight: 700,
-            marginBottom: 8,
-            letterSpacing: '-0.02em',
-          }}>
+          <h1
+            style={{
+              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+              fontWeight: 700,
+              marginBottom: 8,
+              letterSpacing: '-0.02em',
+            }}
+          >
             {event.name}
           </h1>
           {currentCategory?.categoryName && (
-            <p style={{
-              fontSize: 'clamp(1.25rem, 3vw, 2rem)',
-              color: 'var(--accent)',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-            }}>
+            <p
+              style={{
+                fontSize: 'clamp(1.25rem, 3vw, 2rem)',
+                color: 'var(--accent)',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+              }}
+            >
               {currentCategory.categoryName}
             </p>
           )}
@@ -380,51 +421,144 @@ export default function LeaderboardView() {
           }}
         >
           {!currentCategory || currentCategory.entries.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'clamp(1.25rem, 2.5vw, 2rem)' }}>
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                fontSize: 'clamp(1.25rem, 2.5vw, 2rem)',
+              }}
+            >
               No results yet.
             </div>
           ) : (
-            <table style={{
-              width: '100%',
-              maxWidth: 900,
-              margin: '0 auto',
-              borderCollapse: 'collapse',
-              fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
-            }}>
+            <table
+              style={{
+                width: '100%',
+                maxWidth: 900,
+                margin: '0 auto',
+                borderCollapse: 'collapse',
+                fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
+              }}
+            >
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  <th style={{ width: 80, padding: '16px 12px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600 }}>Pos</th>
-                  <th style={{ width: 60, padding: '16px 12px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600 }}>#</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600 }}>Rider</th>
-                  <th style={{ width: 80, padding: '16px 12px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>Runs</th>
-                  <th style={{ width: 120, padding: '16px 12px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 600 }}>Time</th>
+                  <th
+                    style={{
+                      width: 80,
+                      padding: '16px 12px',
+                      textAlign: 'left',
+                      color: 'var(--text-muted)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Pos
+                  </th>
+                  <th
+                    style={{
+                      width: 60,
+                      padding: '16px 12px',
+                      textAlign: 'left',
+                      color: 'var(--text-muted)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    #
+                  </th>
+                  <th
+                    style={{
+                      padding: '16px 12px',
+                      textAlign: 'left',
+                      color: 'var(--text-muted)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Rider
+                  </th>
+                  <th
+                    style={{
+                      width: 80,
+                      padding: '16px 12px',
+                      textAlign: 'center',
+                      color: 'var(--text-muted)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Runs
+                  </th>
+                  <th
+                    style={{
+                      width: 120,
+                      padding: '16px 12px',
+                      textAlign: 'right',
+                      color: 'var(--text-muted)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Time
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {currentCategory.entries.map((entry, idx) => {
                   const pos = idx + 1;
-                  const posClass = pos === 1 ? 'position p1' : pos === 2 ? 'position p2' : pos === 3 ? 'position p3' : '';
+                  const posClass =
+                    pos === 1
+                      ? 'position p1'
+                      : pos === 2
+                        ? 'position p2'
+                        : pos === 3
+                          ? 'position p3'
+                          : '';
                   return (
-                    <tr key={String(entry.riderId)} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <tr
+                      key={String(entry.riderId)}
+                      style={{ borderBottom: '1px solid var(--border)' }}
+                    >
                       <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }}>
-                        <span className={posClass} style={{
-                          fontSize: pos <= 3 ? '1.2em' : '1em',
-                          fontWeight: pos <= 3 ? 700 : 500,
-                        }}>
+                        <span
+                          className={posClass}
+                          style={{
+                            fontSize: pos <= 3 ? '1.2em' : '1em',
+                            fontWeight: pos <= 3 ? 700 : 500,
+                          }}
+                        >
                           {entry.complete ? pos : '-'}
                         </span>
                       </td>
-                      <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px', color: 'var(--text-muted)' }}>
+                      <td
+                        style={{
+                          padding: 'clamp(12px, 2vw, 20px) 12px',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
                         {getRiderNumber(entry.riderId) ?? '—'}
                       </td>
                       <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }}>
-                        {entry.rider ? `${entry.rider.firstName} ${entry.rider.lastName}` : 'Unknown'}
-                        {entry.dnf && <span className="badge dnf" style={{ marginLeft: 12, fontSize: '0.6em' }}>DNF</span>}
+                        {entry.rider
+                          ? `${entry.rider.firstName} ${entry.rider.lastName}`
+                          : 'Unknown'}
+                        {entry.dnf && (
+                          <span className="badge dnf" style={{ marginLeft: 12, fontSize: '0.6em' }}>
+                            DNF
+                          </span>
+                        )}
                       </td>
-                      <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <td
+                        style={{
+                          padding: 'clamp(12px, 2vw, 20px) 12px',
+                          textAlign: 'center',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
                         {entry.trackCount}/{sortedEventTracks.length}
                       </td>
-                      <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      <td
+                        style={{
+                          padding: 'clamp(12px, 2vw, 20px) 12px',
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
                         {entry.total > 0 ? (
                           <span className="elapsed">{formatElapsed(entry.total)}</span>
                         ) : (
@@ -440,12 +574,14 @@ export default function LeaderboardView() {
         </main>
 
         {leaderboardByCategory.length > 1 && (
-          <footer style={{
-            marginTop: 'clamp(24px, 4vw, 48px)',
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 8,
-          }}>
+          <footer
+            style={{
+              marginTop: 'clamp(24px, 4vw, 48px)',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
             {leaderboardByCategory.map((_, i) => (
               <button
                 key={i}
@@ -462,10 +598,10 @@ export default function LeaderboardView() {
                   opacity: i === categoryIndex ? 1 : 0.5,
                   cursor: 'pointer',
                 }}
-                onMouseEnter={e => {
+                onMouseEnter={(e) => {
                   if (i !== categoryIndex) e.currentTarget.style.opacity = '0.8';
                 }}
-                onMouseLeave={e => {
+                onMouseLeave={(e) => {
                   if (i !== categoryIndex) e.currentTarget.style.opacity = '0.5';
                 }}
               />

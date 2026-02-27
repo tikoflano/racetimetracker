@@ -28,8 +28,10 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
     if (modalIndex === null) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setModalIndex(null);
-      if (e.key === 'ArrowLeft') setModalIndex(i => i !== null && i > 0 ? i - 1 : entityImages.length - 1);
-      if (e.key === 'ArrowRight') setModalIndex(i => i !== null && i < entityImages.length - 1 ? i + 1 : 0);
+      if (e.key === 'ArrowLeft')
+        setModalIndex((i) => (i !== null && i > 0 ? i - 1 : entityImages.length - 1));
+      if (e.key === 'ArrowRight')
+        setModalIndex((i) => (i !== null && i < entityImages.length - 1 ? i + 1 : 0));
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -76,11 +78,7 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
       {/* Thumbnail strip */}
       <div className="img-thumbs">
         {entityImages.map((img: Image, i: number) => (
-          <div
-            key={String(img.id)}
-            className="img-thumb"
-            onClick={() => setModalIndex(i)}
-          >
+          <div key={String(img.id)} className="img-thumb" onClick={() => setModalIndex(i)}>
             <img src={img.data} alt={img.caption || 'Image'} />
           </div>
         ))}
@@ -104,9 +102,11 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
       {/* Modal viewer */}
       {modalIndex !== null && modalImage && (
         <div className="img-modal-overlay" onClick={() => setModalIndex(null)}>
-          <div className="img-modal" onClick={e => e.stopPropagation()}>
+          <div className="img-modal" onClick={(e) => e.stopPropagation()}>
             {/* Close */}
-            <button className="img-modal-close" onClick={() => setModalIndex(null)}>&times;</button>
+            <button className="img-modal-close" onClick={() => setModalIndex(null)}>
+              &times;
+            </button>
 
             {/* Image */}
             <div className="img-modal-main">
@@ -114,14 +114,22 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
                 <button
                   className="img-carousel-arrow left"
                   onClick={() => setModalIndex(idx > 0 ? idx - 1 : entityImages.length - 1)}
-                >&lsaquo;</button>
+                >
+                  &lsaquo;
+                </button>
               )}
-              <img src={modalImage.data} alt={modalImage.caption || 'Image'} className="img-modal-img" />
+              <img
+                src={modalImage.data}
+                alt={modalImage.caption || 'Image'}
+                className="img-modal-img"
+              />
               {entityImages.length > 1 && (
                 <button
                   className="img-carousel-arrow right"
                   onClick={() => setModalIndex(idx < entityImages.length - 1 ? idx + 1 : 0)}
-                >&rsaquo;</button>
+                >
+                  &rsaquo;
+                </button>
               )}
             </div>
 
@@ -169,8 +177,13 @@ function resizeImage(file: File, maxSize: number, quality: number): Promise<stri
         let w = img.width;
         let h = img.height;
         if (w > maxSize || h > maxSize) {
-          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-          else { w = Math.round(w * maxSize / h); h = maxSize; }
+          if (w > h) {
+            h = Math.round((h * maxSize) / w);
+            w = maxSize;
+          } else {
+            w = Math.round((w * maxSize) / h);
+            h = maxSize;
+          }
         }
         canvas.width = w;
         canvas.height = h;

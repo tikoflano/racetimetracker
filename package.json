@@ -6,8 +6,29 @@
     "client"
   ],
   "scripts": {
-    "start": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev",
+    "start": "npm run dev",
+    "dev": "tmux has-session -t dev 2>/dev/null || tmux new-session -d -s dev 'npm run dev:foreground'",
+    "dev:foreground": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev",
+    "dev:attach": "tmux attach -t dev",
+    "dev:logs": "tmux capture-pane -t dev -p",
+    "tunnel": "tmux has-session -t tunnel 2>/dev/null || tmux new-session -d -s tunnel 'npm run tunnel:foreground'",
+    "tunnel:foreground": "set -a && . ./.env && set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\"",
+    "tunnel:attach": "tmux attach -t tunnel",
+    "tunnel:logs": "tmux capture-pane -t tunnel -p",
     "reset": "kill $(pgrep -f spacetime) 2>/dev/null; sleep 1; spacetime server clear -y; spacetime logout",
-    "tunnel": "set -a && . ./.env && set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\""
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript-eslint": "^8.18.0"
   }
 }
