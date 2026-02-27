@@ -1,4 +1,4 @@
-import { schema, table, t, SenderError } from 'spacetimedb/server';
+import { schema, table, t, SenderError, type ReducerCtx } from 'spacetimedb/server';
 import { Identity } from 'spacetimedb';
 
 // Replace with your Google OAuth Client ID
@@ -264,6 +264,8 @@ const spacetimedb = schema({
   ),
 });
 
+type Ctx = ReducerCtx<typeof spacetimedb.schemaType>;
+
 export default spacetimedb;
 
 function placeholderIdentity(email: string): Identity {
@@ -283,7 +285,7 @@ function slugify(text: string): string {
   );
 }
 
-function uniqueOrgSlug(ctx: any, base: string): string {
+function uniqueOrgSlug(ctx: Ctx, base: string): string {
   let candidate = base;
   let n = 1;
   while (true) {
@@ -299,7 +301,7 @@ function uniqueOrgSlug(ctx: any, base: string): string {
   }
 }
 
-function uniqueEventSlug(ctx: any, orgId: bigint, base: string, excludeId?: bigint): string {
+function uniqueEventSlug(ctx: Ctx, orgId: bigint, base: string, excludeId?: bigint): string {
   let candidate = base;
   let n = 1;
   while (true) {
@@ -319,7 +321,7 @@ function uniqueEventSlug(ctx: any, orgId: bigint, base: string, excludeId?: bigi
 
 // Returns the real user for ctx.sender (no impersonation).
 // Used by clientConnected and impersonation management.
-function getRealUser(ctx: any) {
+function getRealUser(ctx: Ctx) {
   for (const u of ctx.db.user.iter()) {
     if (u.identity.isEqual(ctx.sender)) return u;
   }
@@ -328,7 +330,7 @@ function getRealUser(ctx: any) {
 
 // Returns the effective user: the impersonated user if an active
 // impersonation exists for this caller, otherwise the real user.
-function getUser(ctx: any) {
+function getUser(ctx: Ctx) {
   for (const imp of ctx.db.impersonation.iter()) {
     if (imp.admin_identity.isEqual(ctx.sender)) {
       const target = ctx.db.user.id.find(imp.target_user_id);
@@ -338,21 +340,21 @@ function getUser(ctx: any) {
   return getRealUser(ctx);
 }
 
-function requireUser(ctx: any) {
+function requireUser(ctx: Ctx) {
   const user = getUser(ctx);
   if (!user) throw new SenderError('Not authenticated');
   return user;
 }
 
 // Check if user is the org owner
-function isOrgOwner(ctx: any, userId: bigint, orgId: bigint): boolean {
+function isOrgOwner(ctx: Ctx, userId: bigint, orgId: bigint): boolean {
   const org = ctx.db.organization.id.find(orgId);
   return org !== null && org.owner_user_id === userId;
 }
 
 // Check if user has org-level role (admin or manager) for a given org.
 // Org owners are implicitly treated as 'admin'.
-function getOrgRole(ctx: any, userId: bigint, orgId: bigint): string | null {
+function getOrgRole(ctx: Ctx, userId: bigint, orgId: bigint): string | null {
   if (isOrgOwner(ctx, userId, orgId)) return 'admin';
   for (const m of ctx.db.org_member.iter()) {
     if (m.user_id === userId && m.org_id === orgId) return m.role;
@@ -361,7 +363,7 @@ function getOrgRole(ctx: any, userId: bigint, orgId: bigint): string | null {
 }
 
 // Check if user has event-level role for a given event
-function getEventRole(ctx: any, userId: bigint, eventId: bigint): string | null {
+function getEventRole(ctx: Ctx, userId: bigint, eventId: bigint): string | null {
   for (const m of ctx.db.event_member.iter()) {
     if (m.user_id === userId && m.event_id === eventId) return m.role;
   }
@@ -369,7 +371,7 @@ function getEventRole(ctx: any, userId: bigint, eventId: bigint): string | null 
 }
 
 // Can the user manage this org? (admin only)
-function requireOrgAdmin(ctx: any, orgId: bigint) {
+function requireOrgAdmin(ctx: Ctx, orgId: bigint) {
   const user = requireUser(ctx);
   if (user.is_super_admin) return user;
   const role = getOrgRole(ctx, user.id, orgId);
@@ -378,7 +380,7 @@ function requireOrgAdmin(ctx: any, orgId: bigint) {
 }
 
 // Can the user transfer ownership? (org owner only)
-function requireOrgOwner(ctx: any, orgId: bigint) {
+function requireOrgOwner(ctx: Ctx, orgId: bigint) {
   const user = requireUser(ctx);
   if (user.is_super_admin) return user;
   if (!isOrgOwner(ctx, user.id, orgId))
@@ -387,7 +389,7 @@ function requireOrgOwner(ctx: any, orgId: bigint) {
 }
 
 // Can the user manage events in this org? (admin or manager)
-function requireOrgEventManager(ctx: any, orgId: bigint) {
+function requireOrgEventManager(ctx: Ctx, orgId: bigint) {
   const user = requireUser(ctx);
   if (user.is_super_admin) return user;
   const role = getOrgRole(ctx, user.id, orgId);
@@ -397,7 +399,7 @@ function requireOrgEventManager(ctx: any, orgId: bigint) {
 }
 
 // Can the user manage this specific event? (org admin/manager OR event organizer)
-function requireEventOrganizer(ctx: any, eventId: bigint) {
+function requireEventOrganizer(ctx: Ctx, eventId: bigint) {
   const user = requireUser(ctx);
   if (user.is_super_admin) return user;
   const evt = ctx.db.event.id.find(eventId);
@@ -410,7 +412,7 @@ function requireEventOrganizer(ctx: any, eventId: bigint) {
 }
 
 // Can the user do timekeeping? (org role OR event organizer/timekeeper)
-function requireTimekeeper(ctx: any, eventId: bigint) {
+function requireTimekeeper(ctx: Ctx, eventId: bigint) {
   const user = requireUser(ctx);
   if (user.is_super_admin) return user;
   const evt = ctx.db.event.id.find(eventId);
@@ -423,7 +425,7 @@ function requireTimekeeper(ctx: any, eventId: bigint) {
 }
 
 // Resolve event_id from a run via event_track
-function getEventIdFromRun(ctx: any, runId: bigint): bigint {
+function getEventIdFromRun(ctx: Ctx, runId: bigint): bigint {
   const run = ctx.db.run.id.find(runId);
   if (!run) throw new SenderError('Run not found');
   const et = ctx.db.event_track.id.find(run.event_track_id);
@@ -431,7 +433,7 @@ function getEventIdFromRun(ctx: any, runId: bigint): bigint {
   return et.event_id;
 }
 
-function getEventIdFromEventTrack(ctx: any, eventTrackId: bigint): bigint {
+function getEventIdFromEventTrack(ctx: Ctx, eventTrackId: bigint): bigint {
   const et = ctx.db.event_track.id.find(eventTrackId);
   if (!et) throw new SenderError('Event track not found');
   return et.event_id;
@@ -440,7 +442,7 @@ function getEventIdFromEventTrack(ctx: any, eventTrackId: bigint): bigint {
 // ─── Lifecycle: upsert user on connect ──────────────────────────────────────
 
 // Generate a unique org name by appending a suffix if needed
-function generateUniqueOrgName(ctx: any, baseName: string): string {
+function generateUniqueOrgName(ctx: Ctx, baseName: string): string {
   let candidate = baseName;
   let attempt = 0;
   while (true) {
@@ -1061,7 +1063,7 @@ export const toggle_pin_event = spacetimedb.reducer({ event_id: t.u64() }, (ctx,
 
 // ─── Track (org event manager+ via venue) ───────────────────────────────────
 
-function requireVenueManager(ctx: any, venueId: bigint) {
+function requireVenueManager(ctx: Ctx, venueId: bigint) {
   const venue = ctx.db.venue.id.find(venueId);
   if (!venue) throw new SenderError('Venue not found');
   return requireOrgEventManager(ctx, venue.org_id);
@@ -1332,7 +1334,7 @@ export const remove_track_from_event = spacetimedb.reducer(
 // Check if a number range overlaps with any existing category in the event.
 // excludeId allows skipping the category being updated.
 function checkCategoryRangeOverlap(
-  ctx: any,
+  ctx: Ctx,
   eventId: bigint,
   rangeStart: number,
   rangeEnd: number,
@@ -2020,7 +2022,7 @@ export const dns_run = spacetimedb.reducer({ run_id: t.u64() }, (ctx, { run_id }
 // ─── Images ─────────────────────────────────────────────────────────────────
 
 // Resolve entity to its venue's org_id for permission checks
-function getEntityOrgId(ctx: any, entityType: string, entityId: bigint): bigint {
+function getEntityOrgId(ctx: Ctx, entityType: string, entityId: bigint): bigint {
   if (entityType === 'venue') {
     const venue = ctx.db.venue.id.find(entityId);
     if (!venue) throw new SenderError('Venue not found');

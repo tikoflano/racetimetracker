@@ -6,6 +6,7 @@ import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
+import { getErrorMessage } from '../utils';
 import type { Venue, Organization } from '../module_bindings/types';
 
 export default function LocationsView() {
@@ -70,8 +71,8 @@ export default function LocationsView() {
         address: form.address.trim(),
       });
       resetForm();
-    } catch (e: any) {
-      setError(e?.message || 'Failed to create location');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to create location'));
     }
   };
 
@@ -79,8 +80,8 @@ export default function LocationsView() {
     if (!confirm(`Delete "${v.name}" and all its tracks?`)) return;
     try {
       await deleteVenue({ venueId: v.id });
-    } catch (e: any) {
-      setError(e?.message || 'Failed to delete location');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to delete location'));
     }
   };
 

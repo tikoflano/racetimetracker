@@ -14,6 +14,7 @@ import type {
   Rider,
   EventRider,
   EventCategory,
+  TimekeeperAssignment,
 } from '../module_bindings/types';
 
 export default function TimekeepView() {
@@ -65,8 +66,8 @@ export default function TimekeepView() {
   const myAssignments = useMemo(() => {
     if (!user) return [];
     return assignments
-      .filter((a: any) => a.userId === user.id)
-      .map((a: any) => {
+      .filter((a: TimekeeperAssignment) => a.userId === user.id)
+      .map((a: TimekeeperAssignment) => {
         const et = eventTracks.find((et: EventTrack) => et.id === a.eventTrackId);
         const event = et ? events.find((e: Event) => e.id === et.eventId) : undefined;
         const tv = et

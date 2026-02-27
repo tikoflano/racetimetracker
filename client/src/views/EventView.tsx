@@ -18,7 +18,7 @@ import type {
   EventCategory,
 } from '../module_bindings/types';
 import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical } from '../icons';
-import { formatElapsed } from '../utils';
+import { formatElapsed, getErrorMessage } from '../utils';
 
 export default function EventView() {
   const { eventSlug, orgSlug } = useParams<{ eventSlug: string; orgSlug?: string }>();
@@ -309,8 +309,8 @@ export default function EventView() {
                     endDate: event.endDate,
                   });
                   setEditingName(false);
-                } catch (err: any) {
-                  setNameError(err?.message || 'Failed');
+                } catch (err: unknown) {
+                  setNameError(getErrorMessage(err, 'Failed'));
                 }
               }
               if (e.key === 'Escape') setEditingName(false);
@@ -337,8 +337,8 @@ export default function EventView() {
                   endDate: event.endDate,
                 });
                 setEditingName(false);
-              } catch (err: any) {
-                setNameError(err?.message || 'Failed');
+              } catch (err: unknown) {
+                setNameError(getErrorMessage(err, 'Failed'));
               }
             }}
           >

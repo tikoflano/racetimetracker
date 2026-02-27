@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
+import { getErrorMessage } from '../utils';
 import type { Organization } from '../module_bindings/types';
 
 export default function RegisterView() {
@@ -91,8 +92,8 @@ export default function RegisterView() {
         dateOfBirth: form.dateOfBirth,
       });
       setSubmitted(true);
-    } catch (e: any) {
-      setError(e?.message || 'Registration failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Registration failed'));
     }
   };
 

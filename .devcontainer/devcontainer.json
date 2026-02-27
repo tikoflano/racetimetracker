@@ -18,8 +18,15 @@
   "postAttachCommand": "npm start",
   "customizations": {
     "vscode": {
-      "extensions": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint", "ms-vscode.cpptools"]
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.cpptools",
+        "mhutchie.git-graph"
+      ]
     }
   },
-  "forwardPorts": [5173]
+  "forwardPorts": [
+    5173
+  ]
 }

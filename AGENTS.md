@@ -24,7 +24,7 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 │   │   ├── views/               Page-level components (EventView, TrackView)
 │   │   ├── components/          Reusable components (ElapsedTimer, LoginButton, Skeleton)
 │   │   ├── module_bindings/     Auto-generated (DO NOT EDIT) — run spacetime generate
-│   │   ├── utils.ts             Shared utilities (formatElapsed)
+│   │   ├── utils.ts             Shared utilities (formatElapsed, getErrorMessage)
 │   │   └── index.css            All styles (single file, no CSS modules)
 │   └── vite.config.ts           Dev server config, Vite proxy for local SpacetimeDB (envDir points to root)
 ├── spacetimedb/                 Server module
@@ -79,6 +79,7 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 - No component library — plain HTML elements with CSS classes.
 - `bigint` for all SpacetimeDB IDs (auto-increment u64).
 - `formatElapsed(ms)` in `utils.ts` for time display.
+- `getErrorMessage(e, fallback)` in `utils.ts` for extracting user-facing messages from caught errors.
 - `ElapsedTimer` component for live-updating timers (polls every 50ms).
 
 ### Icons

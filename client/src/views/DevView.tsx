@@ -5,6 +5,7 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import { IS_DEV } from '../env';
+import { getErrorMessage } from '../utils';
 import type { Organization } from '../module_bindings/types';
 
 export default function DevView() {
@@ -41,8 +42,8 @@ export default function DevView() {
         localStorage.clear();
         window.location.href = '/';
       }, 1000);
-    } catch (e: any) {
-      setSeedStatus(`Error: ${e?.message || 'Failed to seed data'}`);
+    } catch (e: unknown) {
+      setSeedStatus(`Error: ${getErrorMessage(e, 'Failed to seed data')}`);
     }
   };
 
@@ -61,8 +62,8 @@ export default function DevView() {
       await transferOwnership({ orgId: oid, email: transferEmail.trim() });
       setTransferStatus('Ownership transferred successfully.');
       setTransferEmail('');
-    } catch (e: any) {
-      setTransferStatus(`Error: ${e?.message || 'Failed to transfer'}`);
+    } catch (e: unknown) {
+      setTransferStatus(`Error: ${getErrorMessage(e, 'Failed to transfer')}`);
     }
   };
 

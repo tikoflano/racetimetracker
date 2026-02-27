@@ -17,6 +17,7 @@ import {
 } from '../icons';
 import Modal from '../components/Modal';
 import ErrorBanner from '../components/ErrorBanner';
+import { getErrorMessage } from '../utils';
 import type { Organization, OrgMember, User } from '../module_bindings/types';
 
 export default function OrgMembersView() {
@@ -123,8 +124,8 @@ export default function OrgMembersView() {
     try {
       await leaveOrganization({ orgId: oid });
       navigate('/');
-    } catch (e: any) {
-      setError(e?.message || 'Failed to leave organization');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to leave organization'));
     }
   };
 
@@ -162,8 +163,8 @@ export default function OrgMembersView() {
     try {
       await renameOrganization({ orgId: oid, name: trimmed });
       setEditing(false);
-    } catch (e: any) {
-      setRenameError(e?.message || 'Failed to rename');
+    } catch (e: unknown) {
+      setRenameError(getErrorMessage(e, 'Failed to rename'));
     }
   };
 
@@ -184,8 +185,8 @@ export default function OrgMembersView() {
       setInviteEmail('');
       setInviteName('');
       setShowInviteForm(false);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to invite member');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to invite member'));
     }
   };
 
@@ -198,8 +199,8 @@ export default function OrgMembersView() {
       await transferOrgOwnership({ orgId: oid, newOwnerUserId: transferTargetUserId });
       setShowTransferModal(false);
       setTransferTargetUserId('');
-    } catch (e: any) {
-      setError(e?.message || 'Failed to transfer ownership');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to transfer ownership'));
     }
   };
 
@@ -207,16 +208,16 @@ export default function OrgMembersView() {
     setError('');
     try {
       await resendOrgInvitation({ orgMemberId: memberId });
-    } catch (e: any) {
-      setError(e?.message || 'Failed to resend invitation');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to resend invitation'));
     }
   };
 
   const handleRemove = async (memberId: bigint) => {
     try {
       await removeOrgMember({ orgMemberId: memberId });
-    } catch (e: any) {
-      setError(e?.message || 'Failed to remove member');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to remove member'));
     }
   };
 

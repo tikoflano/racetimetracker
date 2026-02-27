@@ -9,6 +9,7 @@ import { FontAwesomeIcon, faPen, faTrash, faEllipsisVertical, faShareNodes } fro
 import { RowActionMenu } from '../components/ActionMenu';
 import Modal from '../components/Modal';
 import type { Rider, Organization } from '../module_bindings/types';
+import { getErrorMessage } from '../utils';
 
 export default function RidersView() {
   const oid = useActiveOrg();
@@ -166,8 +167,8 @@ export default function RidersView() {
         });
       }
       resetForm();
-    } catch (e: any) {
-      setError(e?.message || 'Failed to save rider');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to save rider'));
     }
   };
 
@@ -175,8 +176,8 @@ export default function RidersView() {
     if (!confirm(`Remove ${r.firstName} ${r.lastName}?`)) return;
     try {
       await deleteRider({ riderId: r.id });
-    } catch (e: any) {
-      setError(e?.message || 'Failed to delete rider');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to delete rider'));
     }
   };
 

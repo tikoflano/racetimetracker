@@ -30,6 +30,7 @@ import {
   faArrowRightArrowLeft,
 } from './icons';
 import Modal from './components/Modal';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import type { Organization } from './module_bindings/types';
 
 const ACTIVE_ORG_KEY = 'active_org_id';
@@ -398,7 +399,7 @@ function AvatarMenuItem({
   onClick,
   danger,
 }: {
-  icon: any;
+  icon: IconDefinition;
   label: string;
   onClick: () => void;
   danger?: boolean;

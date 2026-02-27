@@ -6,12 +6,19 @@ import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
+import { getErrorMessage } from '../utils';
 import type { Championship, Event, Organization } from '../module_bindings/types';
 
 type ChampStatus = 'in_progress' | 'not_started' | 'completed';
 type SortKey = 'name' | 'events' | 'start' | 'end' | 'next' | 'status';
 type SortDir = 'asc' | 'desc';
 const SORT_STORAGE_KEY = 'champ_sort';
+
+const STATUS_ORDER: Record<ChampStatus, number> = {
+  in_progress: 0,
+  not_started: 1,
+  completed: 2,
+};
 
 function loadSort(): { key: SortKey; dir: SortDir } {
   try {
@@ -127,12 +134,6 @@ export default function ChampionshipsView() {
     return champRows.filter((r) => r.status === statusFilter);
   }, [champRows, statusFilter]);
 
-  const STATUS_ORDER: Record<ChampStatus, number> = {
-    in_progress: 0,
-    not_started: 1,
-    completed: 2,
-  };
-
   const sortedRows = useMemo(() => {
     const rows = [...filteredRows];
     const dir = sort.dir === 'asc' ? 1 : -1;
@@ -184,8 +185,8 @@ export default function ChampionshipsView() {
       setNewDesc('');
       setNewColor('#3b82f6');
       setShowForm(false);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to create championship');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to create championship'));
     }
   };
 

@@ -20,6 +20,7 @@ import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
+import { getErrorMessage } from '../utils';
 
 function pinIcon(color: string, label: string) {
   return L.divIcon({
@@ -206,8 +207,8 @@ export default function LocationDetailView() {
         address: venueForm.address.trim(),
       });
       setEditingVenue(false);
-    } catch (e: any) {
-      setError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -241,16 +242,16 @@ export default function LocationDetailView() {
         await createTrack({ venueId: vid, name: trackForm.name.trim(), color: trackForm.color });
       }
       resetTrackForm();
-    } catch (e: any) {
-      setError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed'));
     }
   };
   const handleDeleteTrack = async (t: Track) => {
     if (!confirm(`Delete "${t.name}" and all its variations?`)) return;
     try {
       await deleteTrack({ trackId: t.id });
-    } catch (e: any) {
-      setError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -304,16 +305,16 @@ export default function LocationDetailView() {
         await createVariation({ trackId: showVarForm!, ...data });
       }
       resetVarForm();
-    } catch (e: any) {
-      setError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed'));
     }
   };
   const handleDeleteVar = async (tv: TrackVariation) => {
     if (!confirm(`Delete variation "${tv.name}"?`)) return;
     try {
       await deleteVariation({ variationId: tv.id });
-    } catch (e: any) {
-      setError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed'));
     }
   };
 

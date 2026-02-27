@@ -23,7 +23,9 @@ import type {
   EventTrackSchedule,
   User,
   OrgMember,
+  TimekeeperAssignment,
 } from '../module_bindings/types';
+import { getErrorMessage } from '../utils';
 
 export default function EventManageView() {
   const { eventSlug } = useParams<{ eventSlug: string }>();
@@ -271,8 +273,8 @@ export default function EventManageView() {
       if ((m as OrgMember).orgId === event.orgId) memberIds.add((m as OrgMember).userId);
     }
     return users
-      .filter((u: any) => memberIds.has(u.id))
-      .sort((a: any, b: any) => (a.name || a.email).localeCompare(b.name || b.email)) as User[];
+      .filter((u: User) => memberIds.has(u.id))
+      .sort((a: User, b: User) => (a.name || a.email).localeCompare(b.name || b.email)) as User[];
   }, [event, orgMembers, users]);
   const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers' | 'runs'>('tracks');
   const [scheduleError, setScheduleError] = useState('');
@@ -360,8 +362,8 @@ export default function EventManageView() {
         });
       }
       resetCatForm();
-    } catch (e: any) {
-      setCatError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setCatError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -369,8 +371,8 @@ export default function EventManageView() {
     if (!confirm(`Delete category "${cat.name}"?`)) return;
     try {
       await deleteCategory({ categoryId: cat.id });
-    } catch (e: any) {
-      setCatError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setCatError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -378,8 +380,8 @@ export default function EventManageView() {
     setCategoryTrackError('');
     try {
       await addTrackToCategory({ categoryId, eventTrackId });
-    } catch (e: any) {
-      setCategoryTrackError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setCategoryTrackError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -387,8 +389,8 @@ export default function EventManageView() {
     setCategoryTrackError('');
     try {
       await removeTrackFromCategory({ categoryTrackId });
-    } catch (e: any) {
-      setCategoryTrackError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setCategoryTrackError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -397,8 +399,8 @@ export default function EventManageView() {
     try {
       await importCategories({ targetEventId: eid, sourceEventId });
       setShowImport(false);
-    } catch (e: any) {
-      setImportError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setImportError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -406,8 +408,8 @@ export default function EventManageView() {
     setRiderError('');
     try {
       await addRiderToEvent({ eventId: eid, riderId });
-    } catch (e: any) {
-      setRiderError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setRiderError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -416,8 +418,8 @@ export default function EventManageView() {
     try {
       await importRiders({ targetEventId: eid, sourceEventId });
       setShowImportRiders(false);
-    } catch (e: any) {
-      setImportRiderError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setImportRiderError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -430,8 +432,8 @@ export default function EventManageView() {
         checkedIn: !er.checkedIn,
         assignedNumber: er.assignedNumber,
       });
-    } catch (e: any) {
-      setRiderError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setRiderError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -449,8 +451,8 @@ export default function EventManageView() {
         checkedIn: true,
         assignedNumber,
       });
-    } catch (e: any) {
-      setRiderError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setRiderError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -463,8 +465,8 @@ export default function EventManageView() {
         checkedIn: er.checkedIn,
         assignedNumber: er.assignedNumber,
       });
-    } catch (e: any) {
-      setRiderError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setRiderError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -477,8 +479,8 @@ export default function EventManageView() {
           : 1;
       await addTrackToEvent({ eventId: eid, trackVariationId: tvId, sortOrder: nextOrder });
       setShowAddTrackModal(false);
-    } catch (e: any) {
-      setAddTrackError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setAddTrackError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -489,8 +491,8 @@ export default function EventManageView() {
     if (!confirm(`Remove "${label}" from this event? Associated runs will be deleted.`)) return;
     try {
       await removeTrackFromEvent({ eventTrackId: et.id });
-    } catch (e: any) {
-      setAddTrackError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setAddTrackError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -563,8 +565,8 @@ export default function EventManageView() {
         startTime: BigInt(startMs),
         intervalSeconds,
       });
-    } catch (e: any) {
-      setScheduleError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setScheduleError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -576,8 +578,8 @@ export default function EventManageView() {
     setScheduleError('');
     try {
       await clearTrackSchedule({ eventTrackId: et.id });
-    } catch (e: any) {
-      setScheduleError(e?.message || 'Failed');
+    } catch (e: unknown) {
+      setScheduleError(getErrorMessage(e, 'Failed'));
     }
   };
 
@@ -1449,8 +1451,8 @@ export default function EventManageView() {
                             startUserId,
                             endUserId,
                           });
-                        } catch (e: any) {
-                          setTkAssignError(e?.message || 'Failed');
+                        } catch (e: unknown) {
+                          setTkAssignError(getErrorMessage(e, 'Failed'));
                         }
                       }}
                       error={tkAssignError}
@@ -1508,13 +1510,13 @@ function TimekeeperSection({
   error,
 }: {
   eventTrackId: bigint;
-  assignments: readonly any[];
+  assignments: readonly TimekeeperAssignment[];
   assignableUsers: User[];
   onSave: (startUserId: bigint, endUserId: bigint) => void;
   error: string;
 }) {
   const trackAssignments = useMemo(
-    () => assignments.filter((a: any) => a.eventTrackId === eventTrackId),
+    () => assignments.filter((a: TimekeeperAssignment) => a.eventTrackId === eventTrackId),
     [assignments, eventTrackId]
   );
 

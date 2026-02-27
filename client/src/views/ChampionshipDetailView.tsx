@@ -5,6 +5,7 @@ import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrg } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faThumbtack, faTrash } from '../icons';
+import { getErrorMessage } from '../utils';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import type {
@@ -168,8 +169,8 @@ export default function ChampionshipDetailView() {
         color: editColor,
       });
       setEditing(false);
-    } catch (e: any) {
-      setEditError(e?.message || 'Failed to update');
+    } catch (e: unknown) {
+      setEditError(getErrorMessage(e, 'Failed to update'));
     }
   };
 
@@ -208,8 +209,8 @@ export default function ChampionshipDetailView() {
       setEvtEnd('');
       setEvtVenueId('');
       setShowEventForm(false);
-    } catch (e: any) {
-      setEvtError(e?.message || 'Failed to create event');
+    } catch (e: unknown) {
+      setEvtError(getErrorMessage(e, 'Failed to create event'));
     }
   };
 
@@ -235,8 +236,8 @@ export default function ChampionshipDetailView() {
         endDate: e.endDate,
       });
       setEditingEventId(null);
-    } catch (err: any) {
-      setEditEventError(err?.message || 'Failed to rename');
+    } catch (err: unknown) {
+      setEditEventError(getErrorMessage(err, 'Failed to rename'));
     }
   };
 
