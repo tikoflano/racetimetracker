@@ -1900,6 +1900,14 @@ export const set_track_timekeepers = spacetimedb.reducer(
   (ctx, args) => {
     const eventId = getEventIdFromEventTrack(ctx, args.event_track_id);
     requireEventOrganizer(ctx, eventId);
+    for (const uid of [args.start_user_id, args.end_user_id]) {
+      if (uid !== 0n) {
+        const u = ctx.db.user.id.find(uid);
+        if (!u) throw new SenderError('User not found');
+        if (u.google_sub.startsWith('pending:'))
+          throw new SenderError('Pending members cannot be assigned as timekeepers');
+      }
+    }
     // Clear existing
     for (const a of ctx.db.timekeeper_assignment.iter()) {
       if (a.event_track_id === args.event_track_id) ctx.db.timekeeper_assignment.id.delete(a.id);

@@ -273,7 +273,7 @@ export default function EventManageView() {
       if ((m as OrgMember).orgId === event.orgId) memberIds.add((m as OrgMember).userId);
     }
     return users
-      .filter((u: User) => memberIds.has(u.id))
+      .filter((u: User) => memberIds.has(u.id) && !u.googleSub?.startsWith('pending:'))
       .sort((a: User, b: User) => (a.name || a.email).localeCompare(b.name || b.email)) as User[];
   }, [event, orgMembers, users]);
   const [activeTab, setActiveTab] = useState<'tracks' | 'categories' | 'racers' | 'runs'>('tracks');
