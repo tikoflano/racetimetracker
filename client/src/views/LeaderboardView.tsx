@@ -301,12 +301,17 @@ export default function LeaderboardView() {
   }, [categoryIndex, cycleKey, currentCategory, leaderboardByCategory.length]);
 
   if (!event) {
-    if (events.length === 0) return null;
     return (
       <div className="leaderboard-fullscreen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center', padding: 48 }}>
-          <div style={{ fontSize: '3rem', fontWeight: 700, opacity: 0.3, marginBottom: 16 }}>404</div>
-          <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Event not found</p>
+          {events.length === 0 ? (
+            <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Loading...</p>
+          ) : (
+            <>
+              <div style={{ fontSize: '3rem', fontWeight: 700, opacity: 0.3, marginBottom: 16 }}>404</div>
+              <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Event not found</p>
+            </>
+          )}
         </div>
       </div>
     );
