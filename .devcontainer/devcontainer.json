@@ -4,7 +4,10 @@
 // See https://aka.ms/devcontainer.json for more information.
 {
 	"name": "RaceTimeTracker",
-	"image": "mcr.microsoft.com/devcontainers/universal:4.0.1-noble",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "."
+	},
 	"mounts": [
 		"source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume",
 		"source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume"
