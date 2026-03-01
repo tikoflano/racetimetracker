@@ -1,6 +1,6 @@
 {
   "dev": {
-    "run": "npm run dev -w client"
+    "run": "spacetime login show --token && npm run dev -w client"
   },
   "module_path": "spacetimedb",
   "database": "racetimetracker-dev",

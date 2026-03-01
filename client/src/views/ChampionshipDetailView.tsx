@@ -3,7 +3,7 @@ import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import { useActiveOrg } from '../OrgContext';
+import { useActiveOrgMaybe } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faThumbtack, faTrash } from '../icons';
 import { getErrorMessage } from '../utils';
 import ActionMenu from '../components/ActionMenu';
@@ -43,7 +43,7 @@ const STATUS_BADGE: Record<EventStatus, string> = {
 export default function ChampionshipDetailView() {
   const { champId } = useParams<{ champId: string }>();
   const navigate = useNavigate();
-  const oid = useActiveOrg();
+  const oid = useActiveOrgMaybe();
   const cid = BigInt(champId ?? '0');
   const { user, isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
@@ -92,9 +92,9 @@ export default function ChampionshipDetailView() {
   // Status filter
   const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
 
-  const org = orgs.find((o: Organization) => o.id === oid);
+  const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
   const champ = championships.find((c: Championship) => c.id === cid);
-  const hasAccess = canManageOrgEvents(oid);
+  const hasAccess = oid !== null ? canManageOrgEvents(oid) : false;
 
   const today = todayStr();
 
@@ -135,6 +135,7 @@ export default function ChampionshipDetailView() {
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;

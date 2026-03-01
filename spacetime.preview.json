@@ -1,5 +1,5 @@
 {
-    "module_path": "spacetimedb",
-    "database": "racetimetracker-preview",
-    "server": "maincloud"
+  "module_path": "spacetimedb",
+  "database": "racetimetracker-preview",
+  "server": "maincloud"
 }

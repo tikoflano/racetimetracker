@@ -66,6 +66,19 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 - Permission helpers in `client/src/auth.tsx`: `canManageOrg()`, `canManageOrgEvents()`, `canOrganizeEvent()`, `canTimekeep()`.
 - Anonymous users can view the public leaderboard display at `/event/:slug/leaderboard` or `/:orgSlug/event/:slug/leaderboard`. The event view requires auth. Track timing controls require auth + role.
 
+### Restricted pages and `useActiveOrg`
+
+Views that require an active organization (championships, riders, members, locations, etc.) must **not** use `useActiveOrg()` when they also redirect unauthenticated users. `useActiveOrg()` throws "No active organization" when `activeOrgId` is null — and for unauthenticated users, `activeOrgId` is typically null because `userOrgs` is empty. The throw happens before the auth redirect can run.
+
+**Use `useActiveOrgMaybe()` instead** in any view that redirects unauthenticated users to `/`. Pattern:
+
+1. Use `useActiveOrgMaybe()` (returns `bigint | null`) instead of `useActiveOrg()` (throws when null).
+2. Early returns in this order: `!isReady` → `!isAuthenticated` (redirect to `/`) → `!oid` (return null).
+3. Guard derived values: `org = oid ? orgs.find(...) : null`, `hasAccess = oid !== null ? canManageOrgEvents(oid) : false`.
+4. In `useMemo` hooks that filter by `oid`, return early when `!oid` (e.g. `if (!oid) return []`).
+
+Reference: `ChampionshipsView.tsx`, `RidersView.tsx`, `OrgMembersView.tsx`, `LocationsView.tsx`, `ChampionshipDetailView.tsx`, `LocationDetailView.tsx`.
+
 ## Terminology
 
 - Always use **"rider"** (not "racer") when referring to participants. If a request uses "racer", replace it with "rider" and let the requester know.
@@ -211,18 +224,7 @@ npm run format:check  # Check formatting (CI)
 
 ### Long-running processes
 
-Always use **tmux** for long-running or persistent commands (`npm start`, `cloudflared`, tunnel commands, etc.). This keeps them alive independent of the shell session and makes log inspection easy.
-
-```bash
-# Start the dev stack in a named tmux session
-tmux new-session -d -s dev 'npm start'
-
-# View logs
-tmux attach -t dev        # attach interactively
-tmux capture-pane -t dev -p  # print recent output without attaching
-```
-
-Do **not** run long-lived processes with `&` or as foreground commands — always prefer tmux.
+`npm start` and `npm run tunnel` run in the foreground by default. To run them in the background, wrap in tmux (e.g. `tmux new-session -d -s dev 'npm start'`).
 
 ### Tunneling with Cloudflare Tunnels
 
@@ -230,14 +232,14 @@ Use **cloudflared** with a named tunnel to expose the Vite dev server at `https:
 
 ```bash
 # Start the tunnel (reads token from client/.env.local, routes racetimetracker.tikoflano.work → localhost:5173)
-tmux new-session -d -s tunnel 'npm run tunnel'
+npm run tunnel
 ```
 
-Verify the tunnel is connected by checking `tmux capture-pane -t tunnel -p` for "Registered tunnel connection" messages. The app will then be accessible at `https://racetimetracker.tikoflano.work`.
+Verify the tunnel is connected by checking the output for "Registered tunnel connection" messages. The app will then be accessible at `https://racetimetracker.tikoflano.work`. To run in the background, use tmux: `tmux new-session -d -s tunnel 'npm run tunnel'`.
 
 ### Running locally
 
-1. Run `tmux new-session -d -s dev 'npm start'` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
+1. Run `npm start` — this starts the SpacetimeDB server, publishes the module, and launches `spacetime dev` with Vite.
 2. The Vite client runs on port 5173 and proxies WebSocket/HTTP to SpacetimeDB on port 3000.
 3. Seed data with: `spacetime call --server local racetimetracker-dev seed_demo_data`
 4. To reset everything (kill processes, clear data, logout): `npm run reset`
@@ -250,6 +252,7 @@ Verify the tunnel is connected by checking `tmux capture-pane -t tunnel -p` for 
 - Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
 - The `client/.env` file (committed) has local dev config. For tunneling, create `client/.env.local` from `client/.env.local.example` with your Cloudflare token.
 - Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.
+- Running `spacetime login` for cloud deploys overwrites the local token in `~/.config/spacetime/cli.toml`. See DEPLOYMENT.md for how to restore or reset.
 
 ### Startup verification
 

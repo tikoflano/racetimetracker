@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import { useActiveOrg } from '../OrgContext';
+import { useActiveOrgMaybe } from '../OrgContext';
 import { faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import { getErrorMessage } from '../utils';
@@ -58,7 +58,7 @@ function SortTh({
 }
 
 export default function ChampionshipsView() {
-  const oid = useActiveOrg();
+  const oid = useActiveOrgMaybe();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
@@ -87,12 +87,13 @@ export default function ChampionshipsView() {
     });
   };
 
-  const org = orgs.find((o: Organization) => o.id === oid);
-  const hasAccess = canManageOrgEvents(oid);
+  const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
+  const hasAccess = oid !== null ? canManageOrgEvents(oid) : false;
 
   const today = todayStr();
 
   const champRows = useMemo(() => {
+    if (!oid) return [];
     const orgChamps = championships.filter((c: Championship) => c.orgId === oid);
     return orgChamps.map((c: Championship) => {
       const champEvents = events.filter((e: Event) => e.championshipId === c.id);
@@ -160,6 +161,7 @@ export default function ChampionshipsView() {
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;
