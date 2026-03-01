@@ -3,14 +3,14 @@ import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import { useActiveOrg } from '../OrgContext';
+import { useActiveOrgMaybe } from '../OrgContext';
 import { faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import { getErrorMessage } from '../utils';
 import type { Venue, Organization } from '../module_bindings/types';
 
 export default function LocationsView() {
-  const oid = useActiveOrg();
+  const oid = useActiveOrgMaybe();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
@@ -24,10 +24,11 @@ export default function LocationsView() {
   const [form, setForm] = useState({ name: '', description: '', address: '' });
   const [error, setError] = useState('');
 
-  const org = orgs.find((o: Organization) => o.id === oid);
-  const hasAccess = canManageOrgEvents(oid);
+  const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
+  const hasAccess = oid !== null ? canManageOrgEvents(oid) : false;
 
   const orgLocations = useMemo(() => {
+    if (!oid) return [];
     return locations
       .filter((v: Venue) => v.orgId === oid)
       .sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
@@ -45,6 +46,7 @@ export default function LocationsView() {
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;

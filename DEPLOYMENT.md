@@ -18,6 +18,14 @@ vercel login      # for Vercel deployments
 spacetime login   # for SpacetimeDB publishes
 ```
 
+### Local vs cloud token
+
+Running `spacetime login` for cloud auth overwrites `~/.config/spacetime/cli.toml`. The local dev token (used for `spacetime publish`, `spacetime call`, etc. against the local server) is replaced by the cloud token.
+
+- **Before cloud deploy:** When you run `npm start`, the local token is printed in the dev output. Copy it and save it somewhere safe (e.g. password manager, `client/.env.local`).
+- **Restore local token:** Run `spacetime login --token <your-saved-token>` with the token you saved.
+- **Alternative (reset):** Run `npm run reset` to clear local data and log out. Then run `npm start` again to get a fresh local setup (no token restore needed, but you lose local DB data).
+
 ### Quick links
 
 - [SpacetimeDB Dashboard](https://spacetimedb.com/@tikoflano)
@@ -34,10 +42,10 @@ The base domain `tikoflano.work` is registered and managed in Cloudflare. All DN
 
 Two subdomains are linked to the Vercel project:
 
-| Domain | Environment |
-|--------|-------------|
-| `racetimetracker.tikoflano.work` | Production |
-| `racetimetracker-staging.tikoflano.work` | Preview |
+| Domain                                   | Environment |
+| ---------------------------------------- | ----------- |
+| `racetimetracker.tikoflano.work`         | Production  |
+| `racetimetracker-staging.tikoflano.work` | Preview     |
 
 ### DNS configuration
 
@@ -124,7 +132,7 @@ To visit preview, add the required header to your requests. The easiest way is w
 1. Install [ModHeader](https://modheader.com/) (Chrome/Firefox)
 2. Add a request header:
    - **Name:** `X-tikoflano-work-invite`
-   - **Value:** *(the secret value — obtain from the project maintainer)*
+   - **Value:** _(the secret value — obtain from the project maintainer)_
 3. Enable the extension and navigate to `https://racetimetracker-staging.tikoflano.work`
 
 ---
@@ -133,11 +141,11 @@ To visit preview, add the required header to your requests. The easiest way is w
 
 Separate OAuth 2.0 client credentials exist in Google Cloud Console for each environment:
 
-| OAuth client name | Intended use |
-|-------------------|--------------|
-| `RaceTimeTracker-WebApp-Prod` | Production (`racetimetracker.tikoflano.work`) |
-| `RaceTimeTracker-WebApp-Staging` | Preview (`racetimetracker-staging.tikoflano.work`) |
-| `RaceTimeTracker-WebApp-Dev` | Local development (`localhost`) and `racetimetracker-dev.tikoflano.work` |
+| OAuth client name                | Intended use                                                             |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| `RaceTimeTracker-WebApp-Prod`    | Production (`racetimetracker.tikoflano.work`)                            |
+| `RaceTimeTracker-WebApp-Staging` | Preview (`racetimetracker-staging.tikoflano.work`)                       |
+| `RaceTimeTracker-WebApp-Dev`     | Local development (`localhost`) and `racetimetracker-dev.tikoflano.work` |
 
 Authorized JavaScript origins and redirect URIs are already configured in [Google Cloud Console](https://console.cloud.google.com/apis/credentials?project=racetimetracker-488420) for each client. See [DEVELOPMENT.md](./DEVELOPMENT.md) for more on the dev domain setup.
 
@@ -179,12 +187,12 @@ When `spacetime publish` fails due to schema incompatibility, SpacetimeDB is rej
 
 The client uses these build-time variables (see `client/src/main.tsx`):
 
-| Variable | Purpose |
-|----------|---------|
-| `VITE_STDB_ENV` | `cloud` for deployed; `local` for dev |
-| `VITE_STDB_CLOUD_HOST` | SpacetimeDB host (default: `maincloud.spacetimedb.com`) |
-| `VITE_STDB_DATABASE` | Database name (`racetimetracker-prod`, `racetimetracker-preview`, etc.) |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID for the environment |
+| Variable                | Purpose                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `VITE_STDB_ENV`         | `cloud` for deployed; `local` for dev                                   |
+| `VITE_STDB_CLOUD_HOST`  | SpacetimeDB host (default: `maincloud.spacetimedb.com`)                 |
+| `VITE_STDB_DATABASE`    | Database name (`racetimetracker-prod`, `racetimetracker-preview`, etc.) |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID for the environment                              |
 
 For Vercel deployments, these are set as environment variables in the Vercel project (Settings → Environment Variables), with different values for Production and Preview.
 
@@ -194,10 +202,10 @@ For **local preview builds** (`npm run build:preview`), create `client/.env.prev
 
 ## Summary
 
-| Component | Production | Preview |
-|-----------|------------|---------|
-| **URL** | `https://racetimetracker.tikoflano.work` | `https://racetimetracker-staging.tikoflano.work` |
-| **Vercel** | Same project, production branch | Same project, preview branch |
-| **SpacetimeDB** | `racetimetracker-prod` | `racetimetracker-preview` |
-| **OAuth** | RaceTimeTracker-WebApp-Prod | RaceTimeTracker-WebApp-Staging |
-| **Access** | Public | Requires `X-tikoflano-work-invite` header (ModHeader) |
+| Component       | Production                               | Preview                                               |
+| --------------- | ---------------------------------------- | ----------------------------------------------------- |
+| **URL**         | `https://racetimetracker.tikoflano.work` | `https://racetimetracker-staging.tikoflano.work`      |
+| **Vercel**      | Same project, production branch          | Same project, preview branch                          |
+| **SpacetimeDB** | `racetimetracker-prod`                   | `racetimetracker-preview`                             |
+| **OAuth**       | RaceTimeTracker-WebApp-Prod              | RaceTimeTracker-WebApp-Staging                        |
+| **Access**      | Public                                   | Requires `X-tikoflano-work-invite` header (ModHeader) |

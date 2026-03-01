@@ -4,7 +4,7 @@ import { useTable, useReducer } from 'spacetimedb/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import { useActiveOrg } from '../OrgContext';
+import { useActiveOrgMaybe } from '../OrgContext';
 import { FontAwesomeIcon, faPen, faTrash, faEllipsisVertical, faShareNodes } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import Modal from '../components/Modal';
@@ -12,7 +12,7 @@ import type { Rider, Organization } from '../module_bindings/types';
 import { getErrorMessage } from '../utils';
 
 export default function RidersView() {
-  const oid = useActiveOrg();
+  const oid = useActiveOrgMaybe();
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
   const [orgs] = useTable(tables.organization);
@@ -53,10 +53,11 @@ export default function RidersView() {
   const [ridersMenuOpen, setRidersMenuOpen] = useState(false);
   const ridersMenuRef = useRef<HTMLDivElement>(null);
 
-  const org = orgs.find((o: Organization) => o.id === oid);
-  const hasAccess = canManageOrgEvents(oid);
+  const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
+  const hasAccess = oid !== null ? canManageOrgEvents(oid) : false;
 
   const orgRiders = useMemo(() => {
+    if (!oid) return [];
     return riders
       .filter((r: Rider) => r.orgId === oid)
       .sort((a: Rider, b: Rider) =>
@@ -114,6 +115,7 @@ export default function RidersView() {
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;

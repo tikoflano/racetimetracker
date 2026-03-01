@@ -14,7 +14,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import { useActiveOrg } from '../OrgContext';
+import { useActiveOrgMaybe } from '../OrgContext';
 import { faPen, faTrash } from '../icons';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
@@ -62,7 +62,7 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
 
 export default function LocationDetailView() {
   const { venueId } = useParams<{ venueId: string }>();
-  const oid = useActiveOrg();
+  const oid = useActiveOrgMaybe();
   const vid = BigInt(venueId ?? '0');
   const { isAuthenticated, isReady, canManageOrgEvents } = useAuth();
 
@@ -129,9 +129,9 @@ export default function LocationDetailView() {
     });
   }, []);
 
-  const org = orgs.find((o: Organization) => o.id === oid);
+  const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
   const venue = venues.find((v: Venue) => v.id === vid);
-  const hasAccess = canManageOrgEvents(oid);
+  const hasAccess = oid !== null ? canManageOrgEvents(oid) : false;
 
   const tracks = useMemo(() => {
     return allTracks
@@ -177,6 +177,7 @@ export default function LocationDetailView() {
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
     return <div className="empty">Organization not found.</div>;

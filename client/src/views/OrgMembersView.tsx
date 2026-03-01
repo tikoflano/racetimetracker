@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
-import { useActiveOrg } from '../OrgContext';
+import { useActiveOrgMaybe } from '../OrgContext';
 import {
   FontAwesomeIcon,
   faPen,
@@ -21,7 +21,7 @@ import { getErrorMessage } from '../utils';
 import type { Organization, OrgMember, User } from '../module_bindings/types';
 
 export default function OrgMembersView() {
-  const oid = useActiveOrg();
+  const oid = useActiveOrgMaybe();
   const navigate = useNavigate();
   const { user, isAuthenticated, isReady, canManageOrg, isOrgOwner, canImpersonate } = useAuth();
 
@@ -57,11 +57,12 @@ export default function OrgMembersView() {
     'all' | 'owner' | 'admin' | 'manager' | 'timekeeper'
   >('all');
 
-  const org = orgs.find((o: Organization) => o.id === oid);
-  const isOwner = isOrgOwner(oid);
-  const hasAccess = canManageOrg(oid);
+  const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
+  const isOwner = oid !== null ? isOrgOwner(oid) : false;
+  const hasAccess = oid !== null ? canManageOrg(oid) : false;
 
   const members = useMemo(() => {
+    if (!oid) return [];
     const ownerId = org?.ownerUserId;
     return orgMembers
       .filter((m: OrgMember) => m.orgId === oid && m.userId !== ownerId)
@@ -130,9 +131,8 @@ export default function OrgMembersView() {
   };
 
   if (!isReady) return null;
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (!oid) return null;
 
   if (!org) {
     if (orgs.length === 0) return null;
