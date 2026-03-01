@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build:staging": "tsc && vite build --mode staging",
+    "build:preview": "tsc && vite build --mode preview",
     "build:prod": "tsc && vite build --mode production",
-    "deploy:staging": "vercel deploy",
-    "deploy:prod": "vercel deploy --prod",
+    "deploy:preview": "npm run build:preview && vercel deploy --prebuilt",
+    "deploy:prod": "npm run build:prod && vercel deploy --prod",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -30,6 +30,7 @@
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.4.1",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-vercel": "^9.1.1"
   }
 }
