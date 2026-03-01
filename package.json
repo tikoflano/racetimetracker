@@ -15,7 +15,7 @@
     "tunnel:foreground": "set -a && . ./client/.env && [ -f ./client/.env.local ] && . ./client/.env.local; set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\"",
     "tunnel:attach": "tmux attach -t tunnel",
     "tunnel:logs": "tmux capture-pane -t tunnel -p",
-    "reset": "kill $(pgrep -f spacetime) 2>/dev/null; sleep 1; spacetime server clear -y; spacetime logout",
+    "reset": "kill $(pgrep spacetime) 2>/dev/null || true; sleep 1; spacetime server clear -y; spacetime logout",
     "deploy:preview": "spacetime publish --env preview -y && npm run deploy:preview -w client",
     "deploy:prod": "spacetime publish --env prod -y && npm run deploy:prod -w client",
     "format": "prettier --write .",
