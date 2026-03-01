@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build:preview": "tsc && vite build --mode preview",
     "build:prod": "tsc && vite build --mode production",
-    "deploy:preview": "npm run build:preview && vercel deploy --prebuilt",
+    "deploy:preview": "bash -c 'npm run build:preview && source ./.env.preview && vercel alias set $(vercel deploy --prebuilt) $PREVIEW_DOMAIN'",
     "deploy:prod": "npm run build:prod && vercel deploy --prod",
     "preview": "vite preview"
   },
