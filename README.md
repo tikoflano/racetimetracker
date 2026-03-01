@@ -64,12 +64,7 @@ To seed demo data:
 spacetime call --server local racetimetracker-dev seed_demo_data
 ```
 
-Set `.env` at the project root (copy from `.env.example`):
-
-```
-VITE_STDB_ENV=local
-VITE_STDB_DATABASE=racetimetracker-dev
-```
+`client/.env` is committed with local dev config. For tunneling, create `client/.env.local` from `client/.env.local.example` and add your Cloudflare token.
 
 The Vite proxy forwards `/v1/*` (including WebSocket) to `localhost:3000`.
 
@@ -98,7 +93,7 @@ Publish to cloud:
 spacetime publish racetimetracker-dev --server maincloud -p spacetimedb
 ```
 
-Set `.env` at the project root:
+Set `client/.env`:
 
 ```
 VITE_STDB_ENV=cloud

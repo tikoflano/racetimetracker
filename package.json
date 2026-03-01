@@ -12,10 +12,13 @@
     "dev:attach": "tmux attach -t dev",
     "dev:logs": "tmux capture-pane -t dev -p",
     "tunnel": "tmux has-session -t tunnel 2>/dev/null || tmux new-session -d -s tunnel 'npm run tunnel:foreground'",
-    "tunnel:foreground": "set -a && . ./.env && set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\"",
+    "tunnel:foreground": "set -a && . ./client/.env && [ -f ./client/.env.local ] && . ./client/.env.local; set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\"",
     "tunnel:attach": "tmux attach -t tunnel",
     "tunnel:logs": "tmux capture-pane -t tunnel -p",
     "reset": "kill $(pgrep -f spacetime) 2>/dev/null; sleep 1; spacetime server clear -y; spacetime logout",
+    "deploy": "sh -c 'BRANCH=$(git branch --show-current); if [ \"$BRANCH\" = \"main\" ]; then npm run deploy:prod; elif [ \"$BRANCH\" = \"preview\" ]; then npm run deploy:staging; else echo \"Deploy requires main (prod) or preview (staging) branch. Current: $BRANCH\"; exit 1; fi'",
+    "deploy:staging": "sh -c '[ \"$(git branch --show-current)\" = \"preview\" ] && spacetime publish --env staging -y || (echo \"Deploy to staging requires preview branch\"; exit 1)'",
+    "deploy:prod": "sh -c '[ \"$(git branch --show-current)\" = \"main\" ] && spacetime publish --env prod -y || (echo \"Deploy to prod requires main branch\"; exit 1)'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -29,6 +32,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.14.0",
     "prettier": "^3.4.2",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.18.0"
   }
 }

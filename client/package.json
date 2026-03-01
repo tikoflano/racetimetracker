@@ -1,11 +1,14 @@
 {
-  "name": "bike-race-tracker-client",
+  "name": "racetimetracker-client",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc && vite build",
+    "build:staging": "tsc && vite build --mode staging",
+    "build:prod": "tsc && vite build --mode production",
+    "deploy:preview": "vercel deploy",
+    "deploy:prod": "vercel deploy --prod",
     "preview": "vite preview"
   },
   "dependencies": {

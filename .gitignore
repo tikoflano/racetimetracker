@@ -2,10 +2,9 @@ node_modules/
 dist/
 build/
 .vite/
-.env
-.env.local
 *.log
 .DS_Store
 client/src/module_bindings/
-spacetime.local.json
 .vscode/
+.vercel
+.env*.local

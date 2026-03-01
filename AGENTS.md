@@ -26,11 +26,11 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 │   │   ├── module_bindings/     Auto-generated (DO NOT EDIT) — run spacetime generate
 │   │   ├── utils.ts             Shared utilities (formatElapsed, getErrorMessage)
 │   │   └── index.css            All styles (single file, no CSS modules)
-│   └── vite.config.ts           Dev server config, Vite proxy for local SpacetimeDB (envDir points to root)
+│   ├── vite.config.ts           Dev server config, Vite proxy for local SpacetimeDB
+│   ├── .env                     Runtime config — VITE_* (committed)
+│   └── .env.local.example       Template for .env.local (tunnel token)
 ├── spacetimedb/                 Server module
 │   └── src/index.ts             All tables, reducers, RBAC logic (single file)
-├── .env                         Runtime config — VITE_*, CLOUDFLARE_TUNNEL_TOKEN (gitignored, copy from .env.example)
-├── .env.example                 Template for .env
 ├── spacetime.json               SpacetimeDB project config with database targets
 └── package.json                 npm workspace root
 ```
@@ -61,7 +61,7 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 
 ## Auth & RBAC
 
-- Google OAuth Client ID is in the root `.env` file.
+- Google OAuth Client ID is in `client/.env`.
 - Permission hierarchy: super_admin > org admin > org manager > event organizer > event timekeeper.
 - Permission helpers in `client/src/auth.tsx`: `canManageOrg()`, `canManageOrgEvents()`, `canOrganizeEvent()`, `canTimekeep()`.
 - Anonymous users can view the public leaderboard display at `/event/:slug/leaderboard` or `/:orgSlug/event/:slug/leaderboard`. The event view requires auth. Track timing controls require auth + role.
@@ -226,10 +226,10 @@ Do **not** run long-lived processes with `&` or as foreground commands — alway
 
 ### Tunneling with Cloudflare Tunnels
 
-Use **cloudflared** with a named tunnel to expose the Vite dev server at `https://racetimetracker.tikoflano.work`. The tunnel token is stored in the root `.env` file (gitignored — see `.env.example` for the required variable).
+Use **cloudflared** with a named tunnel to expose the Vite dev server at `https://racetimetracker.tikoflano.work`. The tunnel token goes in `client/.env.local` (gitignored — copy from `client/.env.local.example`).
 
 ```bash
-# Start the tunnel (reads token from .env, routes racetimetracker.tikoflano.work → localhost:5173)
+# Start the tunnel (reads token from client/.env.local, routes racetimetracker.tikoflano.work → localhost:5173)
 tmux new-session -d -s tunnel 'npm run tunnel'
 ```
 
@@ -248,7 +248,7 @@ Verify the tunnel is connected by checking `tmux capture-pane -t tunnel -p` for 
 - The `dev:spacetime` script uses `--no-config` because SpacetimeDB CLI v2.0.1 doesn't support the nested `databases` config format in `spacetime.json`. All flags are passed explicitly.
 - `client/src/module_bindings/` is gitignored and auto-generated. Never edit manually; `spacetime dev` regenerates on each run.
 - Reducer names are `snake_case` in CLI/SQL but `camelCase` in TypeScript code.
-- The root `.env` file (gitignored) must exist with `VITE_STDB_ENV=local` and `VITE_STDB_DATABASE=racetimetracker-dev`. Copy from `.env.example`.
+- The `client/.env` file (committed) has local dev config. For tunneling, create `client/.env.local` from `client/.env.local.example` with your Cloudflare token.
 - Google OAuth "Sign in" won't work on `localhost` without valid OAuth credentials configured for the origin. The app still functions without auth for read-only views.
 
 ### Startup verification
