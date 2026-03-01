@@ -118,6 +118,7 @@ export default function OrgMembersView() {
   }, [org, user, members]);
 
   const handleLeave = async () => {
+    if (!oid) return;
     const msg = willDeleteOrg
       ? 'You are the only admin. Leaving will permanently delete this organization and all its data. Are you sure?'
       : 'Are you sure you want to leave this organization?';
