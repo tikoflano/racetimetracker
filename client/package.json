@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build:staging": "tsc && vite build --mode staging",
     "build:prod": "tsc && vite build --mode production",
-    "deploy:preview": "vercel deploy",
+    "deploy:staging": "vercel deploy",
     "deploy:prod": "vercel deploy --prod",
     "preview": "vite preview"
   },

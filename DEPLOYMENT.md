@@ -65,7 +65,7 @@ From the `client/` directory:
 
 ```bash
 cd client
-npm run deploy:preview   # Preview (staging env vars)
+npm run deploy:staging   # Staging (Vercel labels this as Preview)
 npm run deploy:prod      # Production
 ```
 
@@ -79,7 +79,7 @@ Vercel provides the CNAME target for each domain; that value is used in the Clou
 
 ### Environment variables
 
-Build-time variables (`VITE_*`) are set in Vercel per environment (Production and Preview/staging). See [Environment-specific configuration](#environment-specific-configuration) below.
+Build-time variables (`VITE_*`) are set in Vercel per environment (Production and Staging; Vercel labels Staging as "Preview"). See [Environment-specific configuration](#environment-specific-configuration) below.
 
 ---
 
@@ -90,6 +90,8 @@ A Vercel Firewall rule named **"Invite Only"** restricts access to the staging d
 - **Applies to:** `racetimetracker-staging.tikoflano.work`
 - **Condition:** Requests must include a header `X-tikoflano-work-invite` with a secret value
 - **Effect:** Requests without the header are blocked (403)
+
+There is also a firewall rule that maintains an **IP allowlist** (IPs or CIDRs). Requests from allowlisted IPs bypass the other rules and can access staging without the header. To get your public IP for allowlisting, visit [ifconfig.me](https://ifconfig.me) or run `curl ifconfig.me`.
 
 ### Accessing staging
 
@@ -127,12 +129,12 @@ The backend runs on SpacetimeDB cloud, not on Vercel. The client connects over W
 Publishing the SpacetimeDB module to each database is done via:
 
 ```bash
-npm run deploy          # deploys based on current branch (main → prod, preview → staging)
-npm run deploy:staging  # publishes to racetimetracker-staging (requires preview branch)
+npm run deploy          # deploys based on current branch (main → prod, staging → staging)
+npm run deploy:staging  # publishes to racetimetracker-staging (requires staging branch)
 npm run deploy:prod     # publishes to racetimetracker-prod (requires main branch)
 ```
 
-**Branch requirements:** `deploy` routes to prod when on `main`, to staging when on `preview`. `deploy:staging` and `deploy:prod` enforce these branches and exit with an error if run on the wrong one. Config files: `spacetime.staging.json`, `spacetime.prod.json` in the repo root.
+**Branch requirements:** `deploy` routes to prod when on `main`, to staging when on `staging`. `deploy:staging` and `deploy:prod` enforce these branches and exit with an error if run on the wrong one. Config files: `spacetime.staging.json`, `spacetime.prod.json` in the repo root.
 
 ### TODO: Handling SpacetimeDB publish conflicts
 
@@ -161,7 +163,7 @@ The client uses these build-time variables (see `client/src/main.tsx`):
 | `VITE_STDB_DATABASE` | Database name (`racetimetracker-prod`, `racetimetracker-staging`, etc.) |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID for the environment |
 
-For Vercel deployments, these are set as environment variables in the Vercel project (Settings → Environment Variables), with different values for Production and Preview (staging branch).
+For Vercel deployments, these are set as environment variables in the Vercel project (Settings → Environment Variables), with different values for Production and Staging (Vercel labels Staging as "Preview").
 
 ---
 
@@ -170,7 +172,7 @@ For Vercel deployments, these are set as environment variables in the Vercel pro
 | Component | Production | Staging |
 |-----------|------------|---------|
 | **URL** | `https://racetimetracker.tikoflano.work` | `https://racetimetracker-staging.tikoflano.work` |
-| **Vercel** | Same project, production branch | Same project, preview/staging branch |
+| **Vercel** | Same project, production branch | Same project, staging branch (Vercel labels as Preview) |
 | **SpacetimeDB** | `racetimetracker-prod` | `racetimetracker-staging` |
 | **OAuth** | RaceTimeTracker-WebApp-Prod | RaceTimeTracker-WebApp-Staging |
 | **Access** | Public | Requires `X-tikoflano-work-invite` header (ModHeader) |
