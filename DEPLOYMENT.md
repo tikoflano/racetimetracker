@@ -9,6 +9,15 @@ This document describes how RaceTimeTracker is deployed to production and stagin
 - **Client app:** Deployed from the `client/` directory
 - **Backend:** SpacetimeDB cloud (separate from Vercel; see SpacetimeDB section below)
 
+### Authentication
+
+During deployment, you may be prompted to log in to Vercel and/or SpacetimeDB. If needed, run:
+
+```bash
+vercel login      # for Vercel deployments
+spacetime login   # for SpacetimeDB publishes
+```
+
 ### Quick links
 
 - [SpacetimeDB Dashboard](https://spacetimedb.com/@tikoflano)
