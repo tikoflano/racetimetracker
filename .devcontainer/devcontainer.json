@@ -12,7 +12,8 @@
   },
   "mounts": [
     "source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume",
-    "source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume"
+    "source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume",
+    "source=racetimetracker-cursor-data,target=/home/vscode/.cursor,type=volume"
   ],
   "postCreateCommand": "npm install",
   "postAttachCommand": "npm start",
