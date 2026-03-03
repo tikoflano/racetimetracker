@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
@@ -7,6 +7,7 @@ import { useActiveOrgMaybe } from '../OrgContext';
 import AddRiderModal from '../components/AddRiderModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
+import SearchableSelect from '../components/SearchableSelect';
 import { faPen, faTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import type {
@@ -1554,172 +1555,37 @@ function TimekeeperSection({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label className="input-label">Start line</label>
-          <UserSearchSelect
-            users={assignableUsers}
-            value={currentStart}
-            onChange={(uid) => onSave(uid, currentEnd)}
+          <SearchableSelect<User>
+            items={assignableUsers}
+            value={
+              currentStart === 0n
+                ? null
+                : assignableUsers.find((u) => u.id === currentStart) ?? null
+            }
+            onChange={(u) => onSave(u?.id ?? 0n, currentEnd)}
+            getLabel={(u) => u.name || u.email || ''}
+            getKey={(u) => String(u.id)}
             placeholder="Select timekeeper..."
+            clearLabel="Unassign"
           />
         </div>
         <div>
           <label className="input-label">Finish line</label>
-          <UserSearchSelect
-            users={assignableUsers}
-            value={currentEnd}
-            onChange={(uid) => onSave(currentStart, uid)}
+          <SearchableSelect<User>
+            items={assignableUsers}
+            value={
+              currentEnd === 0n
+                ? null
+                : assignableUsers.find((u) => u.id === currentEnd) ?? null
+            }
+            onChange={(u) => onSave(currentStart, u?.id ?? 0n)}
+            getLabel={(u) => u.name || u.email || ''}
+            getKey={(u) => String(u.id)}
             placeholder="Select timekeeper..."
+            clearLabel="Unassign"
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-function UserSearchSelect({
-  users,
-  value,
-  onChange,
-  placeholder,
-}: {
-  users: User[];
-  value: bigint;
-  onChange: (userId: bigint) => void;
-  placeholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [open]);
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    const list = q ? users.filter((u) => (u.name || u.email).toLowerCase().includes(q)) : users;
-    return list.sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
-  }, [users, search]);
-
-  const selected = value !== 0n ? users.find((u) => u.id === value) : null;
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(!open);
-          setSearch('');
-        }}
-        className="input"
-        style={{
-          width: '100%',
-          textAlign: 'left',
-          cursor: 'pointer',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '6px 8px',
-          fontSize: '0.8rem',
-          color: selected ? 'var(--text)' : 'var(--text-muted)',
-        }}
-      >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selected ? selected.name || selected.email : placeholder}
-        </span>
-        <span style={{ fontSize: '0.6rem', marginLeft: 4 }}>▼</span>
-      </button>
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: '100%',
-            marginTop: 2,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            zIndex: 50,
-            maxHeight: 220,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <input
-            type="text"
-            className="input"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            autoFocus
-            style={{ margin: 6, width: 'calc(100% - 12px)', fontSize: '0.8rem' }}
-          />
-          <div style={{ overflowY: 'auto', flex: 1 }}>
-            {value !== 0n && (
-              <button
-                onClick={() => {
-                  onChange(0n);
-                  setOpen(false);
-                }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '6px 12px',
-                  border: 'none',
-                  background: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.8rem',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontStyle: 'italic',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-              >
-                Unassign
-              </button>
-            )}
-            {filtered.map((u) => (
-              <button
-                key={String(u.id)}
-                onClick={() => {
-                  onChange(u.id);
-                  setOpen(false);
-                }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '6px 12px',
-                  border: 'none',
-                  background: u.id === value ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'none',
-                  color: 'var(--text)',
-                  fontSize: '0.8rem',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background =
-                    u.id === value ? 'var(--accent-bg, rgba(59,130,246,0.1))' : 'none')
-                }
-              >
-                {u.name || u.email}
-              </button>
-            ))}
-            {filtered.length === 0 && (
-              <div className="muted small-text" style={{ padding: '8px 12px' }}>
-                No users found
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
