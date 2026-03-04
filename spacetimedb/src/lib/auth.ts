@@ -1,0 +1,213 @@
+import { SenderError } from 'spacetimedb/server';
+import type { Ctx } from '../schema';
+
+// ─── Slug helpers (ctx-dependent) ───────────────────────────────────────────
+
+export function uniqueOrgSlug(ctx: Ctx, base: string): string {
+  let candidate = base;
+  let n = 1;
+  while (true) {
+    let taken = false;
+    for (const o of ctx.db.organization.iter()) {
+      if (o.slug === candidate) {
+        taken = true;
+        break;
+      }
+    }
+    if (!taken) return candidate;
+    candidate = `${base}-${++n}`;
+  }
+}
+
+export function uniqueEventSlug(ctx: Ctx, orgId: bigint, base: string, excludeId?: bigint): string {
+  let candidate = base;
+  let n = 1;
+  while (true) {
+    let taken = false;
+    for (const e of ctx.db.event.iter()) {
+      if (e.org_id === orgId && e.slug === candidate && e.id !== excludeId) {
+        taken = true;
+        break;
+      }
+    }
+    if (!taken) return candidate;
+    candidate = `${base}-${++n}`;
+  }
+}
+
+export function generateUniqueOrgName(ctx: Ctx, baseName: string): string {
+  let candidate = baseName;
+  let attempt = 0;
+  while (true) {
+    let taken = false;
+    for (const o of ctx.db.organization.iter()) {
+      if (o.name === candidate) {
+        taken = true;
+        break;
+      }
+    }
+    if (!taken) return candidate;
+    attempt++;
+    candidate = `${baseName} ${attempt}`;
+  }
+}
+
+// ─── Auth helpers ───────────────────────────────────────────────────────────
+
+export function getRealUser(ctx: Ctx) {
+  for (const u of ctx.db.user.iter()) {
+    if (u.identity.isEqual(ctx.sender)) return u;
+  }
+  return null;
+}
+
+export function getUser(ctx: Ctx) {
+  for (const imp of ctx.db.impersonation.iter()) {
+    if (imp.admin_identity.isEqual(ctx.sender)) {
+      const target = ctx.db.user.id.find(imp.target_user_id);
+      if (target) return target;
+    }
+  }
+  return getRealUser(ctx);
+}
+
+export function requireUser(ctx: Ctx) {
+  const user = getUser(ctx);
+  if (!user) throw new SenderError('Not authenticated');
+  return user;
+}
+
+export function isOrgOwner(ctx: Ctx, userId: bigint, orgId: bigint): boolean {
+  const org = ctx.db.organization.id.find(orgId);
+  return org !== null && org.owner_user_id === userId;
+}
+
+export function getOrgRole(ctx: Ctx, userId: bigint, orgId: bigint): string | null {
+  if (isOrgOwner(ctx, userId, orgId)) return 'admin';
+  for (const m of ctx.db.org_member.iter()) {
+    if (m.user_id === userId && m.org_id === orgId) return m.role;
+  }
+  return null;
+}
+
+export function getEventRole(ctx: Ctx, userId: bigint, eventId: bigint): string | null {
+  for (const m of ctx.db.event_member.iter()) {
+    if (m.user_id === userId && m.event_id === eventId) return m.role;
+  }
+  return null;
+}
+
+export function requireOrgAdmin(ctx: Ctx, orgId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  const role = getOrgRole(ctx, user.id, orgId);
+  if (role !== 'admin') throw new SenderError('Org admin access required');
+  return user;
+}
+
+export function requireOrgOwner(ctx: Ctx, orgId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  if (!isOrgOwner(ctx, user.id, orgId))
+    throw new SenderError('Only the org owner can transfer ownership');
+  return user;
+}
+
+export function requireOrgEventManager(ctx: Ctx, orgId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  const role = getOrgRole(ctx, user.id, orgId);
+  if (role !== 'admin' && role !== 'manager')
+    throw new SenderError('Org admin or manager access required');
+  return user;
+}
+
+export function requireEventOrganizer(ctx: Ctx, eventId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  const evt = ctx.db.event.id.find(eventId);
+  if (!evt) throw new SenderError('Event not found');
+  const orgRole = getOrgRole(ctx, user.id, evt.org_id);
+  if (orgRole === 'admin' || orgRole === 'manager') return user;
+  const evtRole = getEventRole(ctx, user.id, eventId);
+  if (evtRole === 'organizer') return user;
+  throw new SenderError('Event organizer access required');
+}
+
+export function requireTimekeeper(ctx: Ctx, eventId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  const evt = ctx.db.event.id.find(eventId);
+  if (!evt) throw new SenderError('Event not found');
+  const orgRole = getOrgRole(ctx, user.id, evt.org_id);
+  if (orgRole) return user;
+  const evtRole = getEventRole(ctx, user.id, eventId);
+  if (evtRole === 'organizer' || evtRole === 'timekeeper') return user;
+  throw new SenderError('Timekeeper access required');
+}
+
+export function getEventIdFromRun(ctx: Ctx, runId: bigint): bigint {
+  const run = ctx.db.run.id.find(runId);
+  if (!run) throw new SenderError('Run not found');
+  const et = ctx.db.event_track.id.find(run.event_track_id);
+  if (!et) throw new SenderError('Event track not found');
+  return et.event_id;
+}
+
+export function getEventIdFromEventTrack(ctx: Ctx, eventTrackId: bigint): bigint {
+  const et = ctx.db.event_track.id.find(eventTrackId);
+  if (!et) throw new SenderError('Event track not found');
+  return et.event_id;
+}
+
+// Can the user manage this location? (org event manager+ via venue)
+export function requireLocationManager(ctx: Ctx, venueId: bigint) {
+  const venue = ctx.db.venue.id.find(venueId);
+  if (!venue) throw new SenderError('Venue not found');
+  return requireOrgEventManager(ctx, venue.org_id);
+}
+
+// Check if a number range overlaps with any existing category in the event.
+export function checkCategoryRangeOverlap(
+  ctx: Ctx,
+  eventId: bigint,
+  rangeStart: number,
+  rangeEnd: number,
+  excludeId: bigint | null
+) {
+  for (const cat of ctx.db.event_category.iter()) {
+    if (cat.event_id !== eventId) continue;
+    if (excludeId !== null && cat.id === excludeId) continue;
+    if (rangeStart <= cat.number_range_end && rangeEnd >= cat.number_range_start) {
+      throw new SenderError(
+        `Number range ${rangeStart}–${rangeEnd} overlaps with category "${cat.name}" (${cat.number_range_start}–${cat.number_range_end})`
+      );
+    }
+  }
+}
+
+// Resolve entity to its venue's org_id for permission checks
+export function getEntityOrgId(ctx: Ctx, entityType: string, entityId: bigint): bigint {
+  if (entityType === 'venue') {
+    const venue = ctx.db.venue.id.find(entityId);
+    if (!venue) throw new SenderError('Venue not found');
+    return venue.org_id;
+  }
+  if (entityType === 'track') {
+    const track = ctx.db.track.id.find(entityId);
+    if (!track) throw new SenderError('Track not found');
+    const venue = ctx.db.venue.id.find(track.venue_id);
+    if (!venue) throw new SenderError('Venue not found');
+    return venue.org_id;
+  }
+  if (entityType === 'track_variation') {
+    const tv = ctx.db.track_variation.id.find(entityId);
+    if (!tv) throw new SenderError('Track variation not found');
+    const track = ctx.db.track.id.find(tv.track_id);
+    if (!track) throw new SenderError('Track not found');
+    const venue = ctx.db.venue.id.find(track.venue_id);
+    if (!venue) throw new SenderError('Venue not found');
+    return venue.org_id;
+  }
+  throw new SenderError('Invalid entity type');
+}
