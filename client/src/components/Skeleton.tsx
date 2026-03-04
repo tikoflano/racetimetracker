@@ -1,4 +1,4 @@
-import { Skeleton as MSkeleton, Paper, Table, Stack } from '@mantine/core';
+import { Skeleton as MSkeleton, Paper, Table, Stack, Group } from '@mantine/core';
 
 interface SkeletonProps {
   width?: string;
@@ -123,10 +123,10 @@ export function TrackViewSkeleton() {
 export function AppSkeleton() {
   return (
     <Stack gap="lg">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Group justify="space-between" align="center">
         <MSkeleton height={14} width={90} />
         <MSkeleton height={32} width={80} radius="xl" />
-      </div>
+      </Group>
       <EventViewSkeleton />
     </Stack>
   );

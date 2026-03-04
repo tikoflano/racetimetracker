@@ -13,6 +13,7 @@ import {
   Box,
   ColorInput,
   ActionIcon,
+  Title,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
@@ -20,6 +21,7 @@ import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import { IconPencil, IconPin, IconTrash } from '../icons';
 import { getErrorMessage } from '../utils';
+import BackLink from '../components/BackLink';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import SearchableSelect from '../components/SearchableSelect';
@@ -274,10 +276,8 @@ export default function ChampionshipDetailView() {
   };
 
   return (
-    <div>
-      <Link to="/championships" className="back-link">
-        &larr; Championships
-      </Link>
+    <Stack gap="md">
+      <BackLink to="/championships">&larr; Championships</BackLink>
 
       {/* Championship name + description — editable */}
       {editing ? (
@@ -320,7 +320,7 @@ export default function ChampionshipDetailView() {
         <Box mb="xs">
           <Group gap="xs" align="baseline">
             <Box w={14} h={14} style={{ borderRadius: '50%', background: champ.color, flexShrink: 0 }} />
-            <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
+            <Title order={1}>{champ.name}</Title>
             <ActionMenu
               open={menuOpen}
               onToggle={() => setMenuOpen(!menuOpen)}
@@ -558,6 +558,6 @@ export default function ChampionshipDetailView() {
           </Table>
         )}
       </Stack>
-    </div>
+    </Stack>
   );
 }

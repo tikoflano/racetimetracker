@@ -14,11 +14,13 @@ import {
   Box,
   ActionIcon,
   Tabs,
+  Title,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
+import BackLink from '../components/BackLink';
 import AddRiderModal from '../components/AddRiderModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
@@ -626,10 +628,8 @@ export default function EventManageView() {
 
   return (
     <div>
-      <Link to={`/event/${event.slug}`} className="back-link">
-        &larr; Back to Event
-      </Link>
-      <h1 style={{ marginBottom: 4 }}>Manage: {event.name}</h1>
+      <BackLink to={`/event/${event.slug}`}>&larr; Back to Event</BackLink>
+      <Title order={1} mb={4}>Manage: {event.name}</Title>
       <Text size="sm" c="dimmed" mb="sm">
         {event.description}
       </Text>
@@ -693,18 +693,18 @@ export default function EventManageView() {
                     to={`/event/${event.slug}/track/${et.id}`}
                     style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
                   >
-                    <div className="track-card">
-                      <div>
-                        <h3>
+                    <Group justify="space-between" align="center">
+                      <Stack gap={4}>
+                        <Text fw={600} size="lg">
                           {track?.name ?? 'Unknown Track'}
                           {tv ? ` — ${tv.name}` : ''}
-                        </h3>
+                        </Text>
                         {tv && (
                           <Text size="sm" c="dimmed">
                             {tv.description}
                           </Text>
                         )}
-                      </div>
+                      </Stack>
                       <Group gap="xs" justify="flex-end" style={{ fontSize: '0.8rem' }}>
                         {runningCount > 0 && (
                           <Badge color="green" variant="light" size="sm">
@@ -720,7 +720,7 @@ export default function EventManageView() {
                           {finishedCount} done
                         </Badge>
                       </Group>
-                    </div>
+                    </Group>
                   </Link>
                   <Button
                     variant="subtle"
@@ -805,34 +805,26 @@ export default function EventManageView() {
                   No other events in this organization.
                 </Text>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <Stack gap="xs">
                   {otherEvents
                     .filter((e) => categoriesByEvent.has(e.id))
                     .map((evt: Event) => {
                       const cats = categoriesByEvent.get(evt.id) ?? [];
                       return (
-                        <div
-                          key={String(evt.id)}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '6px 10px',
-                            borderRadius: 'var(--radius)',
-                            background: 'var(--bg)',
-                          }}
-                        >
-                          <div>
-                            <strong style={{ fontSize: '0.85rem' }}>{evt.name}</strong>
+                        <Paper withBorder p="xs" key={String(evt.id)}>
+                          <Group justify="space-between" align="center">
+                            <Stack gap={0}>
+                              <Text fw={600} size="sm">{evt.name}</Text>
                             <Text size="sm" c="dimmed" ml="xs">
                               {cats.length} categor{cats.length === 1 ? 'y' : 'ies'}:{' '}
                               {cats.map((c) => c.name).join(', ')}
                             </Text>
-                          </div>
+                          </Stack>
                           <Button size="xs" onClick={() => handleImport(evt.id)}>
                             Import
                           </Button>
-                        </div>
+                        </Group>
+                        </Paper>
                       );
                     })}
                   {otherEvents.every((e) => !categoriesByEvent.has(e.id)) && (
@@ -840,7 +832,7 @@ export default function EventManageView() {
                       No other events have categories defined.
                     </Text>
                   )}
-                </div>
+                </Stack>
               )}
             </Paper>
           )}
@@ -1100,33 +1092,25 @@ export default function EventManageView() {
                   No other events in this organization.
                 </Text>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <Stack gap="xs">
                   {otherEvents
                     .filter((e) => riderCountByEvent.has(e.id))
                     .map((evt: Event) => {
                       const count = riderCountByEvent.get(evt.id) ?? 0;
                       return (
-                        <div
-                          key={String(evt.id)}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '6px 10px',
-                            borderRadius: 'var(--radius)',
-                            background: 'var(--bg)',
-                          }}
-                        >
-                          <div>
-                            <strong style={{ fontSize: '0.85rem' }}>{evt.name}</strong>
-                            <Text size="sm" c="dimmed" ml="xs">
-                              {count} rider{count !== 1 ? 's' : ''}
-                            </Text>
-                          </div>
-                          <Button size="xs" onClick={() => handleImportRiders(evt.id)}>
-                            Import
-                          </Button>
-                        </div>
+                        <Paper withBorder p="xs" key={String(evt.id)}>
+                          <Group justify="space-between" align="center">
+                            <Stack gap={0}>
+                              <Text fw={600} size="sm">{evt.name}</Text>
+                              <Text size="sm" c="dimmed" ml="xs">
+                                {count} rider{count !== 1 ? 's' : ''}
+                              </Text>
+                            </Stack>
+                            <Button size="xs" onClick={() => handleImportRiders(evt.id)}>
+                              Import
+                            </Button>
+                          </Group>
+                        </Paper>
                       );
                     })}
                   {otherEvents.every((e) => !riderCountByEvent.has(e.id)) && (
@@ -1134,7 +1118,7 @@ export default function EventManageView() {
                       No other events have riders assigned.
                     </Text>
                   )}
-                </div>
+                </Stack>
               )}
             </Paper>
           )}
@@ -1527,7 +1511,7 @@ function TimekeeperSection({
   }, [trackAssignments]);
 
   return (
-    <Box mt="md" pt="sm" style={{ borderTop: '1px solid var(--border)' }}>
+    <Box mt="md" pt="sm" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
       <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
         Timekeepers
       </Text>

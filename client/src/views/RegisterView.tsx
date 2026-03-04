@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
-import { TextInput, Button, Stack, Text } from '@mantine/core';
+import { TextInput, Button, Stack, Text, Box, Paper, Title } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
 import { getErrorMessage } from '../utils';
@@ -29,50 +29,50 @@ export default function RegisterView() {
 
   if (!connState.isActive) {
     return (
-      <div className="register-page">
-        <div className="register-card">
+      <Box mih="100vh" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Paper withBorder p="xl" maw={440} w="100%">
           <Text c="dimmed">Connecting...</Text>
-        </div>
-      </div>
+        </Paper>
+      </Box>
     );
   }
 
   if (submitted) {
     return (
-      <div className="register-page">
-        <div className="register-card">
-          <h1>Registration Complete</h1>
+      <Box mih="100vh" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Paper withBorder p="xl" maw={440} w="100%">
+          <Title order={1}>Registration Complete</Title>
           <Text mt="md">You have been registered successfully. See you at the race!</Text>
-        </div>
-      </div>
+        </Paper>
+      </Box>
     );
   }
 
   // Org not found
   if (orgs.length > 0 && !org) {
     return (
-      <div className="register-page">
-        <div className="register-card">
-          <h1>Organization Not Found</h1>
+      <Box mih="100vh" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Paper withBorder p="xl" maw={440} w="100%">
+          <Title order={1}>Organization Not Found</Title>
           <Text c="dimmed" mt="xs">
             This registration link is invalid.
           </Text>
-        </div>
-      </div>
+        </Paper>
+      </Box>
     );
   }
 
   // Registration disabled for this org
   if (org && org.registrationEnabled === false) {
     return (
-      <div className="register-page">
-        <div className="register-card">
-          <h1>Registration Closed</h1>
+      <Box mih="100vh" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Paper withBorder p="xl" maw={440} w="100%">
+          <Title order={1}>Registration Closed</Title>
           <Text c="dimmed" mt="xs">
             Registration is currently disabled for this organization.
           </Text>
-        </div>
-      </div>
+        </Paper>
+      </Box>
     );
   }
 
@@ -98,9 +98,9 @@ export default function RegisterView() {
   };
 
   return (
-    <div className="register-page">
-      <div className="register-card">
-        <h1>Rider Registration</h1>
+    <Box mih="100vh" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <Paper withBorder p="xl" maw={440} w="100%">
+        <Title order={1}>Rider Registration</Title>
         {org && (
           <Text c="dimmed" mb="md">
             Register with <strong>{org.name}</strong>
@@ -155,7 +155,7 @@ export default function RegisterView() {
             Register
           </Button>
         </Stack>
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 }

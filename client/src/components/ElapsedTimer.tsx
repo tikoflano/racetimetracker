@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import { Text } from '@mantine/core';
 import { formatElapsed } from '../utils';
 
 interface Props {
   startTime: number;
-  className?: string;
+  size?: 'sm' | 'lg';
+  dnf?: boolean;
 }
 
-export default function ElapsedTimer({ startTime, className = 'elapsed' }: Props) {
+export default function ElapsedTimer({ startTime, size = 'sm', dnf }: Props) {
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -15,5 +17,14 @@ export default function ElapsedTimer({ startTime, className = 'elapsed' }: Props
   }, []);
 
   const elapsed = now - startTime;
-  return <span className={className}>{formatElapsed(elapsed)}</span>;
+  return (
+    <Text
+      ff="monospace"
+      fw={600}
+      c={dnf ? 'red' : 'green'}
+      size={size === 'lg' ? '2.5rem' : '1.1rem'}
+    >
+      {formatElapsed(elapsed)}
+    </Text>
+  );
 }

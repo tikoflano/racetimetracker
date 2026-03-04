@@ -64,7 +64,7 @@ function SortTh({
   return (
     <Table.Th onClick={() => onSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none' }}>
       {label}
-      <span style={{ fontSize: '0.6rem', opacity: active ? 1 : 0.3 }}>{arrow || ' \u25B2'}</span>
+      <Text component="span" size="0.6rem" style={{ opacity: active ? 1 : 0.3 }}>{arrow || ' \u25B2'}</Text>
     </Table.Th>
   );
 }

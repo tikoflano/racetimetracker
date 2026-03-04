@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTable } from 'spacetimedb/react';
-import { Badge, Text } from '@mantine/core';
+import { Badge, Text, Box, ScrollArea, Title, UnstyledButton, Table, Group } from '@mantine/core';
 import { tables } from '../module_bindings';
 import type {
   Event,
@@ -324,217 +324,116 @@ export default function LeaderboardView() {
 
   if (!event) {
     return (
-      <div
-        className="leaderboard-fullscreen"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-        }}
+      <Box
+        pos="fixed"
+        inset={0}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
       >
-        <div style={{ textAlign: 'center', padding: 48 }}>
+        <Box ta="center" p={48}>
           {events.length === 0 ? (
-            <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Loading...</p>
+            <Text size="xl" c="dimmed">Loading...</Text>
           ) : (
             <>
-              <div style={{ fontSize: '3rem', fontWeight: 700, opacity: 0.3, marginBottom: 16 }}>
-                404
-              </div>
-              <p style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>Event not found</p>
+              <Text size="3rem" fw={700} opacity={0.3} mb="md">404</Text>
+              <Text size="xl" c="dimmed">Event not found</Text>
             </>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className="leaderboard-fullscreen">
+    <Box pos="fixed" inset={0} bg="dark.7" style={{ zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {(currentCategory?.entries.length ?? 0) > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 6,
-            background: 'var(--border)',
-            zIndex: 10,
-          }}
+        <Box
+          pos="absolute"
+          top={0}
+          left={0}
+          right={0}
+          h={6}
+          bg="dark.4"
+          style={{ zIndex: 10 }}
         >
-          <div
-            style={{
-              height: '100%',
-              width: `${scrollProgress}%`,
-              background: 'var(--accent)',
-            }}
+          <Box
+            h="100%"
+            style={{ width: `${scrollProgress}%`, background: 'var(--mantine-color-blue-6)' }}
           />
-        </div>
+        </Box>
       )}
-      <div
+      <Box
         style={{
-          height: '100%',
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           padding: 'clamp(24px, 4vw, 48px)',
-          boxSizing: 'border-box',
           minHeight: 0,
         }}
       >
-        <header style={{ marginBottom: 'clamp(12px, 2vw, 24px)', textAlign: 'center' }}>
-          <h1
-            style={{
-              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-              fontWeight: 700,
-              marginBottom: 8,
-              letterSpacing: '-0.02em',
-            }}
-          >
+        <Box ta="center" mb="clamp(12px, 2vw, 24px)">
+          <Title order={1} style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', marginBottom: 8 }}>
             {event.name}
-          </h1>
+          </Title>
           {currentCategory?.categoryName && (
-            <p
-              style={{
-                fontSize: 'clamp(1.25rem, 3vw, 2rem)',
-                color: 'var(--accent)',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-              }}
+            <Text
+              size="xl"
+              fw={600}
+              c="blue"
+              tt="uppercase"
+              style={{ fontSize: 'clamp(1.25rem, 3vw, 2rem)', letterSpacing: '0.1em' }}
             >
               {currentCategory.categoryName}
-            </p>
+            </Text>
           )}
-        </header>
+        </Box>
 
-        <main
-          ref={scrollContainerRef}
-          className="leaderboard-scroll-area"
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-          }}
+        <ScrollArea
+          viewportRef={scrollContainerRef}
+          style={{ flex: 1, minHeight: 0 }}
+          type="never"
         >
           {!currentCategory || currentCategory.entries.length === 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                color: 'var(--text-muted)',
-                fontSize: 'clamp(1.25rem, 2.5vw, 2rem)',
-              }}
-            >
+            <Box ta="center" c="dimmed" style={{ fontSize: 'clamp(1.25rem, 2.5vw, 2rem)' }}>
               No results yet.
-            </div>
+            </Box>
           ) : (
-            <table
+            <Table
               style={{
                 width: '100%',
                 maxWidth: 900,
                 margin: '0 auto',
-                borderCollapse: 'collapse',
                 fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
               }}
             >
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  <th
-                    style={{
-                      width: 80,
-                      padding: '16px 12px',
-                      textAlign: 'left',
-                      color: 'var(--text-muted)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Pos
-                  </th>
-                  <th
-                    style={{
-                      width: 60,
-                      padding: '16px 12px',
-                      textAlign: 'left',
-                      color: 'var(--text-muted)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    #
-                  </th>
-                  <th
-                    style={{
-                      padding: '16px 12px',
-                      textAlign: 'left',
-                      color: 'var(--text-muted)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Rider
-                  </th>
-                  <th
-                    style={{
-                      width: 80,
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                      color: 'var(--text-muted)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Runs
-                  </th>
-                  <th
-                    style={{
-                      width: 120,
-                      padding: '16px 12px',
-                      textAlign: 'right',
-                      color: 'var(--text-muted)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ width: 80, color: 'var(--mantine-color-dimmed)', fontWeight: 600 }}>Pos</Table.Th>
+                  <Table.Th style={{ width: 60, color: 'var(--mantine-color-dimmed)', fontWeight: 600 }}>#</Table.Th>
+                  <Table.Th style={{ color: 'var(--mantine-color-dimmed)', fontWeight: 600 }}>Rider</Table.Th>
+                  <Table.Th style={{ width: 80, textAlign: 'center', color: 'var(--mantine-color-dimmed)', fontWeight: 600 }}>Runs</Table.Th>
+                  <Table.Th style={{ width: 120, textAlign: 'right', color: 'var(--mantine-color-dimmed)', fontWeight: 600 }}>Time</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
                 {currentCategory.entries.map((entry, idx) => {
                   const pos = idx + 1;
-                  const posClass =
-                    pos === 1
-                      ? 'position p1'
-                      : pos === 2
-                        ? 'position p2'
-                        : pos === 3
-                          ? 'position p3'
-                          : '';
+                  const posColor = pos === 1 ? 'yellow' : pos === 2 ? 'gray' : pos === 3 ? 'orange' : undefined;
                   return (
-                    <tr
-                      key={String(entry.riderId)}
-                      style={{ borderBottom: '1px solid var(--border)' }}
-                    >
-                      <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }}>
-                        <span
-                          className={posClass}
-                          style={{
-                            fontSize: pos <= 3 ? '1.2em' : '1em',
-                            fontWeight: pos <= 3 ? 700 : 500,
-                          }}
+                    <Table.Tr key={String(entry.riderId)}>
+                      <Table.Td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }}>
+                        <Text
+                          component="span"
+                          fw={pos <= 3 ? 700 : 500}
+                          c={posColor}
+                          style={{ fontSize: pos <= 3 ? '1.2em' : '1em' }}
                         >
                           {entry.complete ? pos : '-'}
-                        </span>
-                      </td>
-                      <td
-                        style={{
-                          padding: 'clamp(12px, 2vw, 20px) 12px',
-                          color: 'var(--text-muted)',
-                        }}
-                      >
+                        </Text>
+                      </Table.Td>
+                      <Table.Td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }} c="dimmed">
                         {getRiderNumber(entry.riderId) ?? '—'}
-                      </td>
-                      <td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }}>
+                      </Table.Td>
+                      <Table.Td style={{ padding: 'clamp(12px, 2vw, 20px) 12px' }}>
                         {entry.rider
                           ? `${entry.rider.firstName} ${entry.rider.lastName}`
                           : 'Unknown'}
@@ -549,75 +448,50 @@ export default function LeaderboardView() {
                             DNF
                           </Badge>
                         )}
-                      </td>
-                      <td
-                        style={{
-                          padding: 'clamp(12px, 2vw, 20px) 12px',
-                          textAlign: 'center',
-                          color: 'var(--text-muted)',
-                        }}
-                      >
+                      </Table.Td>
+                      <Table.Td style={{ padding: 'clamp(12px, 2vw, 20px) 12px', textAlign: 'center' }} c="dimmed">
                         {entry.trackCount}/{sortedEventTracks.length}
-                      </td>
-                      <td
-                        style={{
-                          padding: 'clamp(12px, 2vw, 20px) 12px',
-                          textAlign: 'right',
-                          fontVariantNumeric: 'tabular-nums',
-                        }}
-                      >
+                      </Table.Td>
+                      <Table.Td style={{ padding: 'clamp(12px, 2vw, 20px) 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                         {entry.total > 0 ? (
-                          <span className="elapsed">{formatElapsed(entry.total)}</span>
+                          <Text component="span" ff="monospace" fw={600} c="green">
+                            {formatElapsed(entry.total)}
+                          </Text>
                         ) : (
                           <Text component="span" c="dimmed">
                             --:--
                           </Text>
                         )}
-                      </td>
-                    </tr>
+                      </Table.Td>
+                    </Table.Tr>
                   );
                 })}
-              </tbody>
-            </table>
+              </Table.Tbody>
+            </Table>
           )}
-        </main>
+        </ScrollArea>
 
         {leaderboardByCategory.length > 1 && (
-          <footer
-            style={{
-              marginTop: 'clamp(24px, 4vw, 48px)',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
+          <Group justify="center" gap="xs" mt="xl" style={{ marginTop: 'clamp(24px, 4vw, 48px)' }}>
             {leaderboardByCategory.map((_, i) => (
-              <button
+              <UnstyledButton
                 key={i}
-                type="button"
                 onClick={() => setCategoryIndex(i)}
                 title={`View ${leaderboardByCategory[i].categoryName || 'results'}`}
                 style={{
                   width: 12,
                   height: 12,
                   padding: 0,
-                  border: 'none',
                   borderRadius: '50%',
-                  background: i === categoryIndex ? 'var(--accent)' : 'var(--border)',
+                  background: i === categoryIndex ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-default-border)',
                   opacity: i === categoryIndex ? 1 : 0.5,
                   cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => {
-                  if (i !== categoryIndex) e.currentTarget.style.opacity = '0.8';
-                }}
-                onMouseLeave={(e) => {
-                  if (i !== categoryIndex) e.currentTarget.style.opacity = '0.5';
-                }}
               />
             ))}
-          </footer>
+          </Group>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

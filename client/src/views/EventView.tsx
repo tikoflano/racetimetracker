@@ -457,7 +457,7 @@ export default function EventView() {
                               fw={700}
                               size="lg"
                               style={{
-                                color: posColor ?? 'var(--accent)',
+                                color: posColor ?? 'var(--mantine-color-blue-6)',
                                 minWidth: 28,
                                 textAlign: 'center',
                               }}
@@ -511,7 +511,7 @@ export default function EventView() {
                               colSpan={5}
                               style={{
                                 padding: '0 12px 12px 52px',
-                                background: 'var(--surface-hover, rgba(255,255,255,0.02))',
+                                background: 'var(--mantine-color-dark-6)',
                               }}
                             >
                               <Table>
