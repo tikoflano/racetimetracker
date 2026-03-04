@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
+import { TextInput, Button, Table, Paper, Stack, Group, Text } from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
-import { faTrash } from '../icons';
+import { IconTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import { getErrorMessage } from '../utils';
 import type { Venue, Organization } from '../module_bindings/types';
@@ -49,9 +50,18 @@ export default function LocationsView() {
   if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
-    return <div className="empty">Organization not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Organization not found.
+      </Text>
+    );
   }
-  if (!hasAccess) return <div className="empty">You don't have access to manage locations.</div>;
+  if (!hasAccess)
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        You don't have access to manage locations.
+      </Text>
+    );
 
   const resetForm = () => {
     setForm({ name: '', description: '', address: '' });
@@ -89,119 +99,119 @@ export default function LocationsView() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
+      <Group justify="space-between" align="center" mb="lg">
         <h1 style={{ marginBottom: 0 }}>Locations</h1>
         {!showForm && (
-          <button className="primary small" onClick={() => setShowForm(true)}>
+          <Button size="xs" onClick={() => setShowForm(true)}>
             + New Location
-          </button>
+          </Button>
         )}
-      </div>
+      </Group>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>
+        <Paper withBorder p="md" mb="lg">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
             New Location
-          </div>
+          </Text>
           {error && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>
+            <Text size="sm" c="red" mb="xs">
+              {error}
+            </Text>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input
-              type="text"
+          <Stack gap="sm">
+            <TextInput
               placeholder="Location name"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               autoFocus
-              className="input"
             />
-            <input
-              type="text"
+            <TextInput
               placeholder="Description (optional)"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              className="input"
             />
-            <input
-              type="text"
+            <TextInput
               placeholder="Address"
               value={form.address}
               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-              className="input"
             />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={handleCreate}>
+            <Group gap="xs">
+              <Button size="xs" onClick={handleCreate}>
                 Create
-              </button>
-              <button className="ghost small" onClick={resetForm}>
+              </Button>
+              <Button variant="subtle" size="xs" onClick={resetForm}>
                 Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Group>
+          </Stack>
+        </Paper>
       )}
 
       {orgLocations.length === 0 && !showForm ? (
-        <div className="empty">No locations yet. Create one to get started.</div>
+        <Text c="dimmed" ta="center" py="xl">
+          No locations yet. Create one to get started.
+        </Text>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Tracks</th>
-              <th>Address</th>
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Description</Table.Th>
+              <Table.Th>Tracks</Table.Th>
+              <Table.Th>Address</Table.Th>
+              <Table.Th style={{ width: 40 }}></Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {orgLocations.map((v: Venue) => (
-              <tr key={String(v.id)}>
-                <td>
-                  <Link to={`/location/${v.id}`} className="table-link">
+              <Table.Tr key={String(v.id)}>
+                <Table.Td>
+                  <Text component={Link} to={`/location/${v.id}`} c="blue" td="none">
                     {v.name}
-                  </Link>
-                </td>
-                <td className="muted small-text">{v.description || '—'}</td>
-                <td>{trackCounts.get(v.id) ?? 0}</td>
-                <td className="small-text">
-                  {v.address ? (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: 'var(--accent)' }}
-                    >
-                      {v.address}
-                    </a>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </td>
-                <td>
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {v.description || '—'}
+                  </Text>
+                </Table.Td>
+                <Table.Td>{trackCounts.get(v.id) ?? 0}</Table.Td>
+                <Table.Td>
+                  <Text size="sm">
+                    {v.address ? (
+                      <Text
+                        component="a"
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        c="blue"
+                      >
+                        {v.address}
+                      </Text>
+                    ) : (
+                      <Text span c="dimmed">
+                        —
+                      </Text>
+                    )}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
                   <RowActionMenu
                     items={[
                       {
-                        icon: faTrash,
+                        icon: IconTrash,
                         label: 'Delete',
                         danger: true,
                         onClick: () => handleDelete(v),
                       },
                     ]}
                   />
-                </td>
-              </tr>
+                </Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
-        </table>
+          </Table.Tbody>
+        </Table>
       )}
     </div>
   );

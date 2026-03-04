@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
+import { Button, Paper, Stack, Group, Text } from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
@@ -98,99 +99,83 @@ export default function DevView() {
   return (
     <div>
       <h1>Developer Tools</h1>
-      <p className="muted small-text" style={{ marginBottom: 20 }}>
+      <Text size="sm" c="dimmed" mb="lg">
         These tools are only available in development mode.
-      </p>
+      </Text>
 
       {/* Reset & Seed */}
-      <div className="section">
-        <div className="section-title">Data Management</div>
-        <div
-          className="card"
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-        >
-          <div>
-            <div className="muted small-text">
+      <Stack gap="md" mb="xl">
+        <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+          Data Management
+        </Text>
+        <Paper withBorder p="md">
+          <Group justify="space-between" align="center">
+            <Text size="sm" c="dimmed">
               Wipes all existing data. You will be logged out afterwards.
-            </div>
-          </div>
-          <button className="primary" onClick={handleReset} style={{ whiteSpace: 'nowrap' }}>
-            Reset
-          </button>
-        </div>
+            </Text>
+            <Button onClick={handleReset} style={{ whiteSpace: 'nowrap' }}>
+              Reset
+            </Button>
+          </Group>
+        </Paper>
         <StatusMessage status={resetStatus} />
-        <div
-          className="card"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginTop: 12,
-          }}
-        >
-          <div>
-            <div className="muted small-text">
+        <Paper withBorder p="md">
+          <Group justify="space-between" align="center">
+            <Text size="sm" c="dimmed">
               Creates sample championships, locations, events, riders, and org members.
-            </div>
-          </div>
-          <button className="primary" onClick={handleSeed} style={{ whiteSpace: 'nowrap' }}>
-            Seed
-          </button>
-        </div>
+            </Text>
+            <Button onClick={handleSeed} style={{ whiteSpace: 'nowrap' }}>
+              Seed
+            </Button>
+          </Group>
+        </Paper>
         <StatusMessage status={seedStatus} />
-      </div>
+      </Stack>
 
       {/* Transfer ownership */}
-      <div className="section">
-        <div className="section-title">Transfer Organization Ownership</div>
-        <div className="card">
-          <div className="muted small-text" style={{ marginBottom: 12 }}>
+      <Stack gap="md">
+        <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+          Transfer Organization Ownership
+        </Text>
+        <Paper withBorder p="md">
+          <Text size="sm" c="dimmed" mb="md">
             Transfer ownership to an admin user. No permission checks.
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <label className="input-label">Organization</label>
-              <SearchableSelect<Organization>
-                items={sortedOrgs}
-                value={selectedOrg}
-                onChange={handleOrgChange}
-                getLabel={(o) => o.name}
-                getKey={(o) => String(o.id)}
-                placeholder="Select organization..."
-                filterFn={(o, q) =>
-                  o.name.toLowerCase().includes(q) || o.slug.toLowerCase().includes(q)
-                }
-              />
-            </div>
-            <div>
-              <label className="input-label">New owner (admin)</label>
-              <SearchableSelect<User>
-                items={adminCandidates}
-                value={selectedUser}
-                onChange={setSelectedUser}
-                getLabel={(u) => u.name || u.email || `User #${u.id}`}
-                getKey={(u) => String(u.id)}
-                placeholder={selectedOrg ? 'Select admin...' : 'Select an organization first'}
-                filterFn={(u, q) => {
-                  const name = (u.name || u.email || '').toLowerCase();
-                  const email = (u.email || '').toLowerCase();
-                  return name.includes(q) || email.includes(q);
-                }}
-                disabled={!selectedOrg}
-              />
-            </div>
-            <button
-              className="primary"
-              onClick={handleTransfer}
-              disabled={!selectedOrg || !selectedUser}
-              style={{ gridColumn: '1 / -1' }}
-            >
+          </Text>
+          <Stack gap="md">
+            <SearchableSelect<Organization>
+              label="Organization"
+              items={sortedOrgs}
+              value={selectedOrg}
+              onChange={handleOrgChange}
+              getLabel={(o) => o.name}
+              getKey={(o) => String(o.id)}
+              placeholder="Select organization..."
+              filterFn={(o, q) =>
+                o.name.toLowerCase().includes(q) || o.slug.toLowerCase().includes(q)
+              }
+            />
+            <SearchableSelect<User>
+              label="New owner (admin)"
+              items={adminCandidates}
+              value={selectedUser}
+              onChange={setSelectedUser}
+              getLabel={(u) => u.name || u.email || `User #${u.id}`}
+              getKey={(u) => String(u.id)}
+              placeholder={selectedOrg ? 'Select admin...' : 'Select an organization first'}
+              filterFn={(u, q) => {
+                const name = (u.name || u.email || '').toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                return name.includes(q) || email.includes(q);
+              }}
+              disabled={!selectedOrg}
+            />
+            <Button onClick={handleTransfer} disabled={!selectedOrg || !selectedUser}>
               Transfer
-            </button>
-          </div>
+            </Button>
+          </Stack>
           <StatusMessage status={transferStatus} />
-        </div>
-      </div>
+        </Paper>
+      </Stack>
     </div>
   );
 }

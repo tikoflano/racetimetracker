@@ -12,10 +12,22 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import {
+  TextInput,
+  Textarea,
+  Button,
+  Table,
+  Paper,
+  Stack,
+  Group,
+  Text,
+  Box,
+  ColorInput,
+} from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
-import { faPen, faTrash } from '../icons';
+import { IconPencil, IconTrash } from '../icons';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
@@ -180,12 +192,25 @@ export default function LocationDetailView() {
   if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
-    return <div className="empty">Organization not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Organization not found.
+      </Text>
+    );
   }
-  if (!hasAccess) return <div className="empty">Access denied.</div>;
+  if (!hasAccess)
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Access denied.
+      </Text>
+    );
   if (!venue) {
     if (venues.length === 0) return null;
-    return <div className="empty">Location not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Location not found.
+      </Text>
+    );
   }
 
   // Venue edit
@@ -328,48 +353,38 @@ export default function LocationDetailView() {
 
         {/* Venue header */}
         {editingVenue ? (
-          <div className="card" style={{ marginBottom: 12 }}>
+          <Paper withBorder p="md" mb="sm">
             {error && (
-              <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+              <Text size="sm" c="red" mb="xs">
                 {error}
-              </div>
+              </Text>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input
-                type="text"
+            <Stack gap="sm">
+              <TextInput
                 value={venueForm.name}
                 onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
-                className="input"
                 autoFocus
               />
-              <input
-                type="text"
+              <TextInput
+                placeholder="Description"
                 value={venueForm.description}
                 onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Description"
-                className="input"
               />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="input-label">Address</label>
-                  <input
-                    type="text"
-                    value={venueForm.address}
-                    onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
-                    className="input"
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="primary small" onClick={saveVenue}>
+              <TextInput
+                label="Address"
+                value={venueForm.address}
+                onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
+              />
+              <Group gap="xs">
+                <Button size="xs" onClick={saveVenue}>
                   Save
-                </button>
-                <button className="ghost small" onClick={() => setEditingVenue(false)}>
+                </Button>
+                <Button variant="subtle" size="xs" onClick={() => setEditingVenue(false)}>
                   Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
         ) : (
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -380,7 +395,7 @@ export default function LocationDetailView() {
                 onClose={() => setMenuOpen(false)}
                 items={[
                   {
-                    icon: faPen,
+                    icon: IconPencil,
                     label: 'Edit',
                     onClick: () => {
                       setMenuOpen(false);
@@ -388,7 +403,7 @@ export default function LocationDetailView() {
                     },
                   },
                   {
-                    icon: faTrash,
+                    icon: IconTrash,
                     label: 'Delete',
                     danger: true,
                     onClick: () => {
@@ -403,9 +418,13 @@ export default function LocationDetailView() {
                 ]}
               />
             </div>
-            {venue.description && <p className="muted small-text">{venue.description}</p>}
+            {venue.description && (
+              <Text size="sm" c="dimmed">
+                {venue.description}
+              </Text>
+            )}
             {venue.address && (
-              <p className="small-text">
+              <Text size="sm">
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
                   target="_blank"
@@ -414,7 +433,7 @@ export default function LocationDetailView() {
                 >
                   {venue.address}
                 </a>
-              </p>
+              </Text>
             )}
           </div>
         )}
@@ -424,80 +443,56 @@ export default function LocationDetailView() {
       </div>
 
       {/* Tracks section */}
-      <div className="section" style={{ marginTop: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-            flexWrap: 'wrap',
-            gap: 8,
-          }}
-        >
-          <div className="section-title" style={{ marginBottom: 0 }}>
-            Tracks{' '}
-            <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>
-              ({tracks.length})
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {!showTrackForm && (
-              <button
-                className="primary small"
-                onClick={() => {
-                  setEditingTrackId(null);
-                  setTrackForm({ name: '', color: '#3b82f6' });
-                  setShowTrackForm(true);
-                  setError('');
-                }}
-              >
-                + Add Track
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <Stack gap="md" mt="xl">
+        <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Tracks <Text span inherit size="sm" fw={400}>({tracks.length})</Text>
+          </Text>
+          {!showTrackForm && (
+            <Button
+              size="xs"
+              onClick={() => {
+                setEditingTrackId(null);
+                setTrackForm({ name: '', color: '#3b82f6' });
+                setShowTrackForm(true);
+                setError('');
+              }}
+            >
+              + Add Track
+            </Button>
+          )}
+        </Group>
 
       {error && !editingVenue && (
-        <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>
+        <Text size="sm" c="red" mb="sm">
+          {error}
+        </Text>
       )}
 
       {/* Track create/edit form */}
       {showTrackForm && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>
+        <Paper withBorder p="md" mb="md">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
             {editingTrackId ? 'Edit Track' : 'New Track'}
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 150 }}>
-              <label className="input-label">Name</label>
-              <input
-                type="text"
-                value={trackForm.name}
-                onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
-                className="input"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="input-label">Color</label>
-              <input
-                type="color"
-                value={trackForm.color}
-                onChange={(e) => setTrackForm((f) => ({ ...f, color: e.target.value }))}
-                className="color-input"
-              />
-            </div>
-            <button className="primary small" onClick={handleTrackSubmit}>
+          </Text>
+          <Group gap="xs" align="flex-end" wrap="wrap">
+            <TextInput
+              label="Name"
+              value={trackForm.name}
+              onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
+              onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
+              autoFocus
+              style={{ flex: 1, minWidth: 150 }}
+            />
+            <ColorInput label="Color" value={trackForm.color} onChange={(c) => setTrackForm((f) => ({ ...f, color: c }))} />
+            <Button size="xs" onClick={handleTrackSubmit}>
               {editingTrackId ? 'Save' : 'Create'}
-            </button>
-            <button className="ghost small" onClick={resetTrackForm}>
+            </Button>
+            <Button variant="subtle" size="xs" onClick={resetTrackForm}>
               Cancel
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Group>
+        </Paper>
       )}
 
       {/* Map */}
@@ -584,77 +579,72 @@ export default function LocationDetailView() {
             })}
           </MapContainer>
           {/* Map legend */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+          <Group gap="md" wrap="wrap" mt="xs">
             {tracks.map((t: Track) => (
-              <div
-                key={String(t.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}
-              >
-                <span className="color-dot" style={{ background: t.color }} />
-                <span className="muted">{t.name}</span>
-              </div>
+              <Group key={String(t.id)} gap="xs">
+                <Box w={8} h={8} style={{ borderRadius: '50%', background: t.color }} />
+                <Text size="sm" c="dimmed">
+                  {t.name}
+                </Text>
+              </Group>
             ))}
-          </div>
+          </Group>
         </div>
       )}
 
       {/* List view / Tracks */}
       {tracks.length === 0 && !showTrackForm ? (
-        <div className="empty">No tracks yet. Add one to get started.</div>
+        <Text c="dimmed" ta="center" py="xl">
+          No tracks yet. Add one to get started.
+        </Text>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Stack gap="xs">
           {tracks.map((track: Track) => {
             const vars = variationsByTrack.get(track.id) ?? [];
             const isExpanded = expandedTrack === track.id;
             return (
-              <div
+              <Paper
                 key={String(track.id)}
                 id={`track-${track.id}`}
                 ref={(el) => {
                   if (el) trackRefs.current.set(track.id, el);
                   else trackRefs.current.delete(track.id);
                 }}
-                className="card"
+                withBorder
                 style={{ padding: 0 }}
               >
                 {/* Track header */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    cursor: 'pointer',
-                  }}
+                <Group
+                  justify="space-between"
+                  align="center"
+                  p="sm"
+                  style={{ cursor: 'pointer' }}
                   onClick={() => toggleExpand(track.id)}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="color-dot" style={{ background: track.color }} />
-                    <strong>{track.name}</strong>
-                    <span className="muted small-text">
+                  <Group gap="xs">
+                    <Box w={8} h={8} style={{ borderRadius: '50%', background: track.color }} />
+                    <Text fw={600}>{track.name}</Text>
+                    <Text size="sm" c="dimmed">
                       ({vars.length} variation{vars.length !== 1 ? 's' : ''})
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    </Text>
+                  </Group>
+                  <Group gap="xs" align="center">
                     <RowActionMenu
                       items={[
-                        { icon: faPen, label: 'Edit', onClick: () => startEditTrack(track) },
+                        { icon: IconPencil, label: 'Edit', onClick: () => startEditTrack(track) },
                         {
-                          icon: faTrash,
+                          icon: IconTrash,
                           label: 'Delete',
                           danger: true,
                           onClick: () => handleDeleteTrack(track),
                         },
                       ]}
                     />
-                    <span
-                      className="muted"
-                      style={{ fontSize: '0.7rem', padding: '4px 8px', cursor: 'pointer' }}
-                    >
+                    <Text size="xs" c="dimmed" style={{ padding: '4px 8px', cursor: 'pointer' }}>
                       {isExpanded ? '\u25B2' : '\u25BC'}
-                    </span>
-                  </div>
-                </div>
+                    </Text>
+                  </Group>
+                </Group>
 
                 {/* Expanded: images + variations */}
                 {isExpanded && (
@@ -665,26 +655,23 @@ export default function LocationDetailView() {
                       </div>
                     )}
 
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div className="section-title" style={{ marginBottom: 0 }}>
+                    <Group justify="space-between" align="center" mb="xs">
+                      <Text size="xs" fw={600} c="dimmed" tt="uppercase">
                         Variations
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="ghost small" onClick={() => toggleTrackImages(track.id)}>
+                      </Text>
+                      <Group gap="xs">
+                        <Button
+                          variant="subtle"
+                          size="xs"
+                          onClick={() => toggleTrackImages(track.id)}
+                        >
                           {showTrackImages.has(track.id) ? 'Hide Images' : 'Show Images'}
-                        </button>
-                        <button className="primary small" onClick={() => startAddVar(track.id)}>
+                        </Button>
+                        <Button size="xs" onClick={() => startAddVar(track.id)}>
                           + Add
-                        </button>
-                      </div>
-                    </div>
+                        </Button>
+                      </Group>
+                    </Group>
 
                     {/* Variation form */}
                     {showVarForm === track.id &&
@@ -737,47 +724,34 @@ export default function LocationDetailView() {
                               marginBottom: 8,
                             }}
                           >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              <div>
-                                <label className="input-label">Name *</label>
-                                <input
-                                  type="text"
-                                  value={varForm.name}
-                                  onChange={(e) =>
-                                    setVarForm((f) => ({ ...f, name: e.target.value }))
-                                  }
-                                  className="input"
-                                  autoFocus
-                                />
-                              </div>
-                              <div>
-                                <label className="input-label">Description</label>
-                                <textarea
-                                  value={varForm.description}
-                                  onChange={(e) =>
-                                    setVarForm((f) => ({ ...f, description: e.target.value }))
-                                  }
-                                  className="input"
-                                  rows={3}
-                                  style={{ resize: 'vertical' }}
-                                />
-                              </div>
+                            <Stack gap="sm">
+                              <TextInput
+                                label="Name *"
+                                value={varForm.name}
+                                onChange={(e) =>
+                                  setVarForm((f) => ({ ...f, name: e.target.value }))
+                                }
+                                autoFocus
+                              />
+                              <Textarea
+                                label="Description"
+                                value={varForm.description}
+                                onChange={(e) =>
+                                  setVarForm((f) => ({ ...f, description: e.target.value }))
+                                }
+                                rows={3}
+                                style={{ resize: 'vertical' }}
+                              />
 
                               {/* Pin placement map */}
-                              <div>
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    marginBottom: 6,
-                                  }}
-                                >
-                                  <label className="input-label" style={{ marginBottom: 0 }}>
+                              <Box>
+                                <Group gap="xs" align="center" mb="xs">
+                                  <Text size="sm" fw={500}>
                                     Drop pins on the map
-                                  </label>
-                                  <button
-                                    className={`ghost small ${placingPin === 'start' ? 'pin-active-start' : ''}`}
+                                  </Text>
+                                  <Button
+                                    variant="subtle"
+                                    size="xs"
                                     onClick={() =>
                                       setPlacingPin(placingPin === 'start' ? null : 'start')
                                     }
@@ -788,9 +762,10 @@ export default function LocationDetailView() {
                                     }
                                   >
                                     {hasStart ? 'Move Start' : 'Place Start'}
-                                  </button>
-                                  <button
-                                    className={`ghost small ${placingPin === 'end' ? 'pin-active-end' : ''}`}
+                                  </Button>
+                                  <Button
+                                    variant="subtle"
+                                    size="xs"
                                     onClick={() =>
                                       setPlacingPin(placingPin === 'end' ? null : 'end')
                                     }
@@ -801,23 +776,21 @@ export default function LocationDetailView() {
                                     }
                                   >
                                     {hasEnd ? 'Move End' : 'Place End'}
-                                  </button>
-                                </div>
+                                  </Button>
+                                </Group>
                                 {placingPin && (
-                                  <div
-                                    className="small-text"
-                                    style={{
-                                      marginBottom: 4,
-                                      color: placingPin === 'start' ? '#22c55e' : '#ef4444',
-                                    }}
+                                  <Text
+                                    size="sm"
+                                    mb="xs"
+                                    c={placingPin === 'start' ? 'green' : 'red'}
                                   >
                                     Click on the map to place the {placingPin} pin
-                                  </div>
+                                  </Text>
                                 )}
                                 {!placingPin && !hasStart && (
-                                  <div className="small-text muted" style={{ marginBottom: 4 }}>
+                                  <Text size="sm" c="dimmed" mb="xs">
                                     Click on the map to place the start pin
-                                  </div>
+                                  </Text>
                                 )}
                                 <div className="location-map-container">
                                   <MapContainer
@@ -851,70 +824,66 @@ export default function LocationDetailView() {
                                   </MapContainer>
                                 </div>
                                 {/* Coordinate readout */}
-                                <div
-                                  style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: 8,
-                                    marginTop: 6,
-                                    fontSize: '0.75rem',
-                                  }}
-                                >
-                                  <div className="muted">
+                                <Group gap="md" mt="xs">
+                                  <Text size="xs" c="dimmed">
                                     Start:{' '}
                                     {hasStart
                                       ? `${varForm.startLat}, ${varForm.startLng}`
                                       : 'not set'}
-                                  </div>
-                                  <div className="muted">
+                                  </Text>
+                                  <Text size="xs" c="dimmed">
                                     End:{' '}
                                     {hasEnd ? `${varForm.endLat}, ${varForm.endLng}` : 'not set'}
-                                  </div>
-                                </div>
-                              </div>
+                                  </Text>
+                                </Group>
+                              </Box>
 
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <button className="primary small" onClick={handleVarSubmit}>
+                              <Group gap="xs">
+                                <Button size="xs" onClick={handleVarSubmit}>
                                   {editingVarId ? 'Save' : 'Add'}
-                                </button>
-                                <button className="ghost small" onClick={resetVarForm}>
+                                </Button>
+                                <Button variant="subtle" size="xs" onClick={resetVarForm}>
                                   Cancel
-                                </button>
-                              </div>
-                            </div>
+                                </Button>
+                              </Group>
+                            </Stack>
                           </div>
                         );
                       })()}
 
                     {/* Variation list */}
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Description</th>
-                          <th style={{ width: 80 }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>Name</Table.Th>
+                          <Table.Th>Description</Table.Th>
+                          <Table.Th style={{ width: 80 }}></Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
                         {vars.map((tv: TrackVariation) => (
-                          <tr
+                          <Table.Tr
                             key={String(tv.id)}
                             style={{ cursor: 'pointer' }}
                             onClick={() =>
                               setExpandedVarImages(expandedVarImages === tv.id ? null : tv.id)
                             }
                           >
-                            <td>{tv.name}</td>
-                            <td className="muted small-text">{tv.description || '—'}</td>
-                            <td>
+                            <Table.Td>{tv.name}</Table.Td>
+                            <Table.Td>
+                              <Text size="sm" c="dimmed">
+                                {tv.description || '—'}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
                               {tv.name !== 'Default' ? (
                                 <RowActionMenu
                                   items={[
-                                    { icon: faPen, label: 'Edit', onClick: () => startEditVar(tv) },
+                                    { icon: IconPencil, label: 'Edit', onClick: () => startEditVar(tv) },
                                     ...(vars.length > 1
                                       ? [
                                           {
-                                            icon: faTrash,
+                                            icon: IconTrash,
                                             label: 'Delete',
                                             danger: true as const,
                                             onClick: () => handleDeleteVar(tv),
@@ -924,31 +893,34 @@ export default function LocationDetailView() {
                                   ]}
                                 />
                               ) : (
-                                <span className="muted small-text">Default</span>
+                                <Text size="sm" c="dimmed">
+                                  Default
+                                </Text>
                               )}
-                            </td>
-                          </tr>
+                            </Table.Td>
+                          </Table.Tr>
                         ))}
                         {expandedVarImages && vars.some((v) => v.id === expandedVarImages) && (
-                          <tr>
-                            <td colSpan={3} style={{ padding: 12 }}>
+                          <Table.Tr>
+                            <Table.Td colSpan={3} style={{ padding: 12 }}>
                               <ImageCarousel
                                 entityType="track_variation"
                                 entityId={expandedVarImages}
                                 canEdit={hasAccess}
                               />
-                            </td>
-                          </tr>
+                            </Table.Td>
+                          </Table.Tr>
                         )}
-                      </tbody>
-                    </table>
+                      </Table.Tbody>
+                    </Table>
                   </div>
                 )}
-              </div>
+              </Paper>
             );
           })}
-        </div>
+        </Stack>
       )}
+    </Stack>
     </div>
   );
 }

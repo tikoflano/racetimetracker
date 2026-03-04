@@ -1,4 +1,4 @@
-import { FontAwesomeIcon, faXmark } from '../icons';
+import { Alert } from '@mantine/core';
 
 interface ErrorBannerProps {
   message: string;
@@ -9,17 +9,8 @@ interface ErrorBannerProps {
 
 export default function ErrorBanner({ message, onDismiss, noMargin }: ErrorBannerProps) {
   return (
-    <div className="error-banner" role="alert" style={noMargin ? { marginBottom: 0 } : undefined}>
-      <span style={{ flex: 1 }}>{message}</span>
-      <button
-        type="button"
-        className="error-banner-dismiss"
-        onClick={onDismiss}
-        title="Dismiss"
-        aria-label="Dismiss"
-      >
-        <FontAwesomeIcon icon={faXmark} />
-      </button>
-    </div>
+    <Alert color="red" withCloseButton onClose={onDismiss} mb={noMargin ? 0 : undefined} role="alert">
+      {message}
+    </Alert>
   );
 }

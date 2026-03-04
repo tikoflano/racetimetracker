@@ -1,10 +1,22 @@
 import { useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
+import {
+  TextInput,
+  Button,
+  Table,
+  Paper,
+  Stack,
+  Group,
+  Text,
+  ColorInput,
+  Box,
+  Badge,
+} from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
-import { faTrash } from '../icons';
+import { IconTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import { getErrorMessage } from '../utils';
 import type { Championship, Event, Organization } from '../module_bindings/types';
@@ -50,10 +62,10 @@ function SortTh({
   const active = current.key === sortKey;
   const arrow = active ? (current.dir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
   return (
-    <th onClick={() => onSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+    <Table.Th onClick={() => onSort(sortKey)} style={{ cursor: 'pointer', userSelect: 'none' }}>
       {label}
       <span style={{ fontSize: '0.6rem', opacity: active ? 1 : 0.3 }}>{arrow || ' \u25B2'}</span>
-    </th>
+    </Table.Th>
   );
 }
 
@@ -164,10 +176,18 @@ export default function ChampionshipsView() {
   if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
-    return <div className="empty">Organization not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Organization not found.
+      </Text>
+    );
   }
   if (!hasAccess)
-    return <div className="empty">You don't have access to manage championships.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        You don't have access to manage championships.
+      </Text>
+    );
 
   const handleCreate = async () => {
     setError('');
@@ -194,25 +214,18 @@ export default function ChampionshipsView() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
+      <Group justify="space-between" align="center" mb="lg">
         <h1 style={{ marginBottom: 0 }}>Championships</h1>
         {!showForm && (
-          <button className="primary small" onClick={() => setShowForm(true)}>
+          <Button size="xs" onClick={() => setShowForm(true)}>
             + New Championship
-          </button>
+          </Button>
         )}
-      </div>
+      </Group>
 
       {/* Status filter */}
       {champRows.length > 0 && (
-        <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        <Group gap="xs" mb="md">
           {(['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
             const labels: Record<string, string> = {
               all: 'All',
@@ -227,90 +240,82 @@ export default function ChampionshipsView() {
               completed: champRows.filter((r) => r.status === 'completed').length,
             };
             return (
-              <button
+              <Button
                 key={f}
-                className={statusFilter === f ? 'primary small' : 'ghost small'}
+                size="xs"
+                variant={statusFilter === f ? 'filled' : 'subtle'}
                 onClick={() => setStatusFilter(f)}
               >
                 {labels[f]} ({counts[f]})
-              </button>
+              </Button>
             );
           })}
-        </div>
+        </Group>
       )}
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>
+        <Paper withBorder p="md" mb="lg">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
             New Championship
-          </div>
+          </Text>
           {error && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>
+            <Text size="sm" c="red" mb="xs">
+              {error}
+            </Text>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input
-              type="text"
+          <Stack gap="sm">
+            <TextInput
               placeholder="Championship name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               autoFocus
-              className="input"
             />
-            <input
-              type="text"
+            <TextInput
               placeholder="Description (optional)"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              className="input"
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label className="input-label" style={{ marginBottom: 0 }}>
-                Color
-              </label>
-              <input
-                type="color"
-                value={newColor}
-                onChange={(e) => setNewColor(e.target.value)}
-                className="color-input"
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={handleCreate}>
+            <ColorInput label="Color" value={newColor} onChange={setNewColor} />
+            <Group gap="xs">
+              <Button size="xs" onClick={handleCreate}>
                 Create
-              </button>
-              <button
-                className="ghost small"
+              </Button>
+              <Button
+                variant="subtle"
+                size="xs"
                 onClick={() => {
                   setShowForm(false);
                   setError('');
                 }}
               >
                 Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Group>
+          </Stack>
+        </Paper>
       )}
 
       {champRows.length === 0 && !showForm ? (
-        <div className="empty">No championships yet. Create one to get started.</div>
+        <Text c="dimmed" ta="center" py="xl">
+          No championships yet. Create one to get started.
+        </Text>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: 12 }}></th>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ width: 12 }}></Table.Th>
               <SortTh label="Name" sortKey="name" current={sort} onSort={toggleSort} />
               <SortTh label="Status" sortKey="status" current={sort} onSort={toggleSort} />
               <SortTh label="Events" sortKey="events" current={sort} onSort={toggleSort} />
               <SortTh label="Next Event" sortKey="next" current={sort} onSort={toggleSort} />
               <SortTh label="Start" sortKey="start" current={sort} onSort={toggleSort} />
               <SortTh label="End" sortKey="end" current={sort} onSort={toggleSort} />
-              <th style={{ width: 40 }}></th>
-            </tr>
-          </thead>
-          <tbody>
+              <Table.Th style={{ width: 40 }}></Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {sortedRows.map(
               ({ championship: c, eventCount, startDate, endDate, nextEvent, status }) => {
                 const statusLabel: Record<ChampStatus, string> = {
@@ -318,44 +323,48 @@ export default function ChampionshipsView() {
                   not_started: 'Not Started',
                   completed: 'Completed',
                 };
-                const statusBadge: Record<ChampStatus, string> = {
-                  in_progress: 'running',
-                  not_started: 'queued',
-                  completed: 'finished',
+                const statusColor: Record<ChampStatus, string> = {
+                  in_progress: 'green',
+                  not_started: 'yellow',
+                  completed: 'gray',
                 };
                 return (
-                  <tr key={String(c.id)}>
-                    <td>
-                      <span className="color-dot" style={{ background: c.color }} />
-                    </td>
-                    <td>
-                      <Link to={`/championship/${c.id}`} className="table-link">
+                  <Table.Tr key={String(c.id)}>
+                    <Table.Td>
+                      <Box w={10} h={10} style={{ borderRadius: '50%', background: c.color }} />
+                    </Table.Td>
+                    <Table.Td>
+                      <Text component={Link} to={`/championship/${c.id}`} c="blue" td="none">
                         {c.name}
-                      </Link>
-                    </td>
-                    <td>
-                      <span className={`badge ${statusBadge[status]}`}>{statusLabel[status]}</span>
-                    </td>
-                    <td>{eventCount}</td>
-                    <td>
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color={statusColor[status]} variant="light">
+                        {statusLabel[status]}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>{eventCount}</Table.Td>
+                    <Table.Td>
                       {nextEvent ? (
-                        <span>
-                          <Link to={`/event/${nextEvent.slug}`} className="table-link">
+                        <Stack gap={0}>
+                          <Text component={Link} to={`/event/${nextEvent.slug}`} c="blue" td="none">
                             {nextEvent.name}
-                          </Link>
-                          <div className="muted small-text">{nextEvent.startDate}</div>
-                        </span>
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {nextEvent.startDate}
+                          </Text>
+                        </Stack>
                       ) : (
-                        <span className="muted">—</span>
+                        <Text c="dimmed">—</Text>
                       )}
-                    </td>
-                    <td>{startDate}</td>
-                    <td>{endDate}</td>
-                    <td>
+                    </Table.Td>
+                    <Table.Td>{startDate}</Table.Td>
+                    <Table.Td>{endDate}</Table.Td>
+                    <Table.Td>
                       <RowActionMenu
                         items={[
                           {
-                            icon: faTrash,
+                            icon: IconTrash,
                             label: 'Delete',
                             danger: true,
                             onClick: () => {
@@ -370,13 +379,13 @@ export default function ChampionshipsView() {
                           },
                         ]}
                       />
-                    </td>
-                  </tr>
+                    </Table.Td>
+                  </Table.Tr>
                 );
               }
             )}
-          </tbody>
-        </table>
+          </Table.Tbody>
+        </Table>
       )}
     </div>
   );

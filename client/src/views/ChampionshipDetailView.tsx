@@ -1,13 +1,28 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
+import {
+  TextInput,
+  Button,
+  Table,
+  Badge,
+  Paper,
+  Stack,
+  Group,
+  Text,
+  Box,
+  ColorInput,
+  ActionIcon,
+} from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
-import { FontAwesomeIcon, faPen, faThumbtack, faTrash } from '../icons';
+import { IconPencil, IconPin, IconTrash } from '../icons';
 import { getErrorMessage } from '../utils';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
+import SearchableSelect from '../components/SearchableSelect';
 import type {
   Championship,
   Event,
@@ -33,11 +48,6 @@ const STATUS_LABEL: Record<EventStatus, string> = {
   in_progress: 'In Progress',
   not_started: 'Not Started',
   completed: 'Completed',
-};
-const STATUS_BADGE: Record<EventStatus, string> = {
-  in_progress: 'running',
-  not_started: 'queued',
-  completed: 'finished',
 };
 
 export default function ChampionshipDetailView() {
@@ -133,19 +143,40 @@ export default function ChampionshipDetailView() {
     return m;
   }, [venues]);
 
+  const orgVenues = useMemo(() => {
+    if (!oid) return [];
+    return venues
+      .filter((v: Venue) => v.orgId === oid)
+      .sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
+  }, [venues, oid]);
+
+  const selectedVenue = evtVenueId ? orgVenues.find((v: Venue) => String(v.id) === evtVenueId) ?? null : null;
+
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
-    return <div className="empty">Organization not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Organization not found.
+      </Text>
+    );
   }
   if (!champ) {
     if (championships.length === 0) return null;
-    return <div className="empty">Championship not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Championship not found.
+      </Text>
+    );
   }
   if (!hasAccess)
-    return <div className="empty">You don't have access to manage this championship.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        You don't have access to manage this championship.
+      </Text>
+    );
 
   const startEditing = () => {
     setEditName(champ.name);
@@ -250,64 +281,45 @@ export default function ChampionshipDetailView() {
 
       {/* Championship name + description — editable */}
       {editing ? (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave();
-                if (e.key === 'Escape') setEditing(false);
-              }}
-              autoFocus
-              className="input"
-              style={{ fontSize: '1.4rem', fontWeight: 700 }}
-            />
-            <input
-              type="text"
-              value={editDesc}
-              onChange={(e) => setEditDesc(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave();
-                if (e.key === 'Escape') setEditing(false);
-              }}
-              placeholder="Description"
-              className="input"
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <label className="input-label" style={{ marginBottom: 0 }}>
-                Color
-              </label>
-              <input
-                type="color"
-                value={editColor}
-                onChange={(e) => setEditColor(e.target.value)}
-                className="color-input"
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="primary small" onClick={handleSave}>
-                Save
-              </button>
-              <button className="ghost small" onClick={() => setEditing(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
+        <Stack gap="sm" mb="lg">
+          <TextInput
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') setEditing(false);
+            }}
+            autoFocus
+            styles={{ input: { fontSize: '1.4rem', fontWeight: 700 } }}
+          />
+          <TextInput
+            placeholder="Description"
+            value={editDesc}
+            onChange={(e) => setEditDesc(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') setEditing(false);
+            }}
+          />
+          <ColorInput label="Color" value={editColor} onChange={setEditColor} />
+          <Group gap="xs">
+            <Button size="xs" onClick={handleSave}>
+              Save
+            </Button>
+            <Button variant="subtle" size="xs" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </Group>
           {editError && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginTop: 4 }}>
+            <Text size="sm" c="red">
               {editError}
-            </div>
+            </Text>
           )}
-        </div>
+        </Stack>
       ) : (
-        <div style={{ marginBottom: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span
-              className="color-dot"
-              style={{ background: champ.color, width: 14, height: 14, alignSelf: 'center' }}
-            />
+        <Box mb="xs">
+          <Group gap="xs" align="baseline">
+            <Box w={14} h={14} style={{ borderRadius: '50%', background: champ.color, flexShrink: 0 }} />
             <h1 style={{ marginBottom: 0 }}>{champ.name}</h1>
             <ActionMenu
               open={menuOpen}
@@ -315,7 +327,7 @@ export default function ChampionshipDetailView() {
               onClose={() => setMenuOpen(false)}
               items={[
                 {
-                  icon: faPen,
+                  icon: IconPencil,
                   label: 'Edit',
                   onClick: () => {
                     setMenuOpen(false);
@@ -323,7 +335,7 @@ export default function ChampionshipDetailView() {
                   },
                 },
                 {
-                  icon: faTrash,
+                  icon: IconTrash,
                   label: 'Delete',
                   danger: true,
                   onClick: () => {
@@ -339,34 +351,31 @@ export default function ChampionshipDetailView() {
                 },
               ]}
             />
-          </div>
-          {champ.description && <p className="muted small-text">{champ.description}</p>}
-        </div>
+          </Group>
+          {champ.description && (
+            <Text size="sm" c="dimmed">
+              {champ.description}
+            </Text>
+          )}
+        </Box>
       )}
 
       {/* Events section */}
-      <div className="section" style={{ marginTop: 20 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 8,
-          }}
-        >
-          <div className="section-title" style={{ marginBottom: 0 }}>
+      <Stack gap="md" mt="lg">
+        <Group justify="space-between" align="center">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
             Events ({champEvents.length})
-          </div>
+          </Text>
           {!showEventForm && (
-            <button className="primary small" onClick={() => setShowEventForm(true)}>
+            <Button size="xs" onClick={() => setShowEventForm(true)}>
               + Add Event
-            </button>
+            </Button>
           )}
-        </div>
+        </Group>
 
         {/* Status filter */}
         {eventRows.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+          <Group gap="xs" mb="sm">
             {(['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
               const labels: Record<string, string> = {
                 all: 'All',
@@ -375,130 +384,124 @@ export default function ChampionshipDetailView() {
                 completed: 'Completed',
               };
               return (
-                <button
+                <Button
                   key={f}
-                  className={statusFilter === f ? 'primary small' : 'ghost small'}
+                  size="xs"
+                  variant={statusFilter === f ? 'filled' : 'subtle'}
                   onClick={() => setStatusFilter(f)}
                 >
                   {labels[f]} ({statusCounts[f]})
-                </button>
+                </Button>
               );
             })}
-          </div>
+          </Group>
         )}
 
         {showEventForm && (
-          <div className="card" style={{ marginBottom: 12 }}>
+          <Paper withBorder p="md" mb="sm">
             {evtError && (
-              <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+              <Text size="sm" c="red" mb="xs">
                 {evtError}
-              </div>
+              </Text>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <input
-                type="text"
+            <Stack gap="sm">
+              <TextInput
                 placeholder="Event name"
                 value={evtName}
                 onChange={(e) => setEvtName(e.target.value)}
                 autoFocus
-                className="input"
               />
-              <input
-                type="text"
+              <TextInput
                 placeholder="Description (optional)"
                 value={evtDesc}
                 onChange={(e) => setEvtDesc(e.target.value)}
-                className="input"
               />
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label className="input-label">Start date</label>
-                  <input
-                    type="date"
-                    value={evtStart}
-                    onChange={(e) => setEvtStart(e.target.value)}
-                    className="input"
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label className="input-label">End date</label>
-                  <input
-                    type="date"
-                    value={evtEnd}
-                    onChange={(e) => setEvtEnd(e.target.value)}
-                    className="input"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="input-label">Location</label>
-                <select
-                  value={evtVenueId}
-                  onChange={(e) => setEvtVenueId(e.target.value)}
-                  className="input"
-                >
-                  <option value="">Select location...</option>
-                  {venues.map((v: Venue) => (
-                    <option key={String(v.id)} value={String(v.id)}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="primary small" onClick={handleAddEvent}>
+              <Group grow wrap="wrap">
+                <DatePickerInput
+                  label="Start date"
+                  value={evtStart ? new Date(evtStart + 'T00:00:00') : null}
+                  onChange={(d: Date | null) =>
+                    setEvtStart(d ? d.toISOString().slice(0, 10) : '')
+                  }
+                />
+                <DatePickerInput
+                  label="End date"
+                  value={evtEnd ? new Date(evtEnd + 'T00:00:00') : null}
+                  onChange={(d: Date | null) =>
+                    setEvtEnd(d ? d.toISOString().slice(0, 10) : '')
+                  }
+                />
+              </Group>
+              <SearchableSelect<Venue>
+                label="Location"
+                items={orgVenues}
+                value={selectedVenue}
+                onChange={(v) => setEvtVenueId(v ? String(v.id) : '')}
+                getLabel={(v) => v.name}
+                getKey={(v) => String(v.id)}
+                placeholder="Select location..."
+                filterFn={(v, q) => v.name.toLowerCase().includes(q.toLowerCase())}
+              />
+              <Group gap="xs">
+                <Button size="xs" onClick={handleAddEvent}>
                   Create Event
-                </button>
-                <button
-                  className="ghost small"
+                </Button>
+                <Button
+                  variant="subtle"
+                  size="xs"
                   onClick={() => {
                     setShowEventForm(false);
                     setEvtError('');
                   }}
                 >
                   Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
         )}
 
         {champEvents.length === 0 && !showEventForm ? (
-          <div className="empty">No events in this championship yet.</div>
+          <Text c="dimmed" ta="center" py="xl">
+            No events in this championship yet.
+          </Text>
         ) : filteredEventRows.length === 0 ? (
-          <div className="empty">No events match the selected filter.</div>
+          <Text c="dimmed" ta="center" py="xl">
+            No events match the selected filter.
+          </Text>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: 32 }}></th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Location</th>
-                <th>Start</th>
-                <th>End</th>
-                <th style={{ width: 40 }}></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ width: 32 }}></Table.Th>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Location</Table.Th>
+                <Table.Th>Start</Table.Th>
+                <Table.Th>End</Table.Th>
+                <Table.Th style={{ width: 40 }}></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {filteredEventRows.map(({ event: e, status }) => (
-                <tr key={String(e.id)}>
-                  <td>
+                <Table.Tr key={String(e.id)}>
+                  <Table.Td>
                     {isAuthenticated && (
-                      <button
-                        className={`pin-btn${pinnedEventIds.has(e.id) ? ' pinned' : ''}`}
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        color={pinnedEventIds.has(e.id) ? 'blue' : 'gray'}
                         onClick={() => togglePin({ eventId: e.id })}
                         title={pinnedEventIds.has(e.id) ? 'Unpin event' : 'Pin event'}
                       >
-                        <FontAwesomeIcon icon={faThumbtack} />
-                      </button>
+                        <IconPin size={16} />
+                      </ActionIcon>
                     )}
-                  </td>
-                  <td>
+                  </Table.Td>
+                  <Table.Td>
                     {editingEventId === e.id ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <input
-                          type="text"
+                      <Group gap="xs" align="center">
+                        <TextInput
                           value={editEventName}
                           onChange={(ev) => setEditEventName(ev.target.value)}
                           onKeyDown={(ev) => {
@@ -506,44 +509,55 @@ export default function ChampionshipDetailView() {
                             if (ev.key === 'Escape') setEditingEventId(null);
                           }}
                           autoFocus
-                          className="input"
-                          style={{ padding: '4px 8px', fontSize: '0.875rem' }}
+                          size="xs"
+                          style={{ flex: 1, minWidth: 120 }}
                         />
-                        <button className="primary small" onClick={() => handleSaveEventName(e)}>
+                        <Button size="xs" onClick={() => handleSaveEventName(e)}>
                           Save
-                        </button>
-                        <button className="ghost small" onClick={() => setEditingEventId(null)}>
+                        </Button>
+                        <Button variant="subtle" size="xs" onClick={() => setEditingEventId(null)}>
                           Cancel
-                        </button>
+                        </Button>
                         {editEventError && (
-                          <span style={{ color: 'var(--red)', fontSize: '0.75rem' }}>
+                          <Text size="xs" c="red">
                             {editEventError}
-                          </span>
+                          </Text>
                         )}
-                      </div>
+                      </Group>
                     ) : (
-                      <Link to={`/event/${e.slug}`} className="table-link">
+                      <Text component={Link} to={`/event/${e.slug}`} c="blue" td="none">
                         {e.name}
-                      </Link>
+                      </Text>
                     )}
-                  </td>
-                  <td>
-                    <span className={`badge ${STATUS_BADGE[status]}`}>{STATUS_LABEL[status]}</span>
-                  </td>
-                  <td>{venueMap.get(e.venueId)?.name ?? '—'}</td>
-                  <td>{e.startDate}</td>
-                  <td>{e.endDate}</td>
-                  <td>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge
+                      color={
+                        status === 'in_progress'
+                          ? 'green'
+                          : status === 'not_started'
+                            ? 'yellow'
+                            : 'gray'
+                      }
+                      variant="light"
+                    >
+                      {STATUS_LABEL[status]}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>{venueMap.get(e.venueId)?.name ?? '—'}</Table.Td>
+                  <Table.Td>{e.startDate}</Table.Td>
+                  <Table.Td>{e.endDate}</Table.Td>
+                  <Table.Td>
                     <RowActionMenu
-                      items={[{ icon: faPen, label: 'Rename', onClick: () => startEditEvent(e) }]}
+                      items={[{ icon: IconPencil, label: 'Rename', onClick: () => startEditEvent(e) }]}
                     />
-                  </td>
-                </tr>
+                  </Table.Td>
+                </Table.Tr>
               ))}
-            </tbody>
-          </table>
+            </Table.Tbody>
+          </Table>
         )}
-      </div>
+      </Stack>
     </div>
   );
 }

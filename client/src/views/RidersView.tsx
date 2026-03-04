@@ -1,11 +1,27 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { QRCodeSVG } from 'qrcode.react';
+import {
+  TextInput,
+  NumberInput,
+  Button,
+  Table,
+  Paper,
+  Stack,
+  Group,
+  Text,
+  Menu,
+  ActionIcon,
+  Tabs,
+  Checkbox,
+  Select,
+} from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
-import { FontAwesomeIcon, faPen, faTrash, faEllipsisVertical, faShareNodes } from '../icons';
+import { IconPencil, IconTrash, IconDotsVertical, IconShare3 } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import Modal from '../components/Modal';
 import type { Rider, Organization } from '../module_bindings/types';
@@ -49,9 +65,7 @@ export default function RidersView() {
     return 10;
   });
   const [registrationModalOpen, setRegistrationModalOpen] = useState(false);
-  const [registrationModalTab, setRegistrationModalTab] = useState<'url' | 'qr'>('url');
-  const [ridersMenuOpen, setRidersMenuOpen] = useState(false);
-  const ridersMenuRef = useRef<HTMLDivElement>(null);
+  const [registrationModalTab, setRegistrationModalTab] = useState<string | null>('url');
 
   const org = oid ? orgs.find((o: Organization) => o.id === oid) : null;
   const hasAccess = oid !== null ? canManageOrgEvents(oid) : false;
@@ -103,24 +117,23 @@ export default function RidersView() {
     setPage(0);
   }, [search, ageMin, ageMax, pageSize]);
 
-  useEffect(() => {
-    if (!ridersMenuOpen) return;
-    const handle = (e: MouseEvent) => {
-      if (ridersMenuRef.current && !ridersMenuRef.current.contains(e.target as Node))
-        setRidersMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [ridersMenuOpen]);
-
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!oid) return null;
   if (!org) {
     if (orgs.length === 0) return null;
-    return <div className="empty">Organization not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Organization not found.
+      </Text>
+    );
   }
-  if (!hasAccess) return <div className="empty">You don't have access to manage riders.</div>;
+  if (!hasAccess)
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        You don't have access to manage riders.
+      </Text>
+    );
 
   const resetForm = () => {
     setForm({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
@@ -187,335 +200,249 @@ export default function RidersView() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'baseline',
-          marginBottom: 20,
-          flexWrap: 'wrap',
-          gap: 8,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+      <Group justify="space-between" align="baseline" mb="lg" wrap="wrap" gap="xs">
+        <Group gap="xs" align="baseline">
           <h1 style={{ marginBottom: 0 }}>
-            Riders{' '}
-            <span className="muted" style={{ fontSize: '1rem', fontWeight: 400 }}>
-              ({orgRiders.length})
-            </span>
+            Riders <Text span c="dimmed" size="md" fw={400}>({orgRiders.length})</Text>
           </h1>
-          <div ref={ridersMenuRef} style={{ position: 'relative' }}>
-            <button
-              className="ghost small"
-              onClick={() => setRidersMenuOpen((o) => !o)}
-              title="Riders actions"
-              style={{ fontSize: '1rem', padding: '4px 8px' }}
-            >
-              <FontAwesomeIcon icon={faEllipsisVertical} />
-            </button>
-            {ridersMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: '100%',
-                  marginTop: 4,
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                  minWidth: 200,
-                  zIndex: 50,
-                  overflow: 'hidden',
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="subtle" size="sm" title="Riders actions">
+                <IconDotsVertical size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<IconShare3 size={16} />}
+                onClick={() => {
+                  setRegistrationModalTab('url');
+                  setRegistrationModalOpen(true);
                 }}
               >
-                <button
-                  onClick={() => {
-                    setRidersMenuOpen(false);
-                    setRegistrationModalTab('url');
-                    setRegistrationModalOpen(true);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    gap: 10,
-                    width: '100%',
-                    padding: '9px 14px',
-                    border: 'none',
-                    background: 'none',
-                    color: 'var(--text)',
-                    fontSize: '0.85rem',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                >
-                  <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
-                    <FontAwesomeIcon icon={faShareNodes} />
-                  </span>
-                  <span>Registration link</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {!showForm && (
-            <button
-              className="primary small"
-              onClick={() => {
-                setEditingId(null);
-                setShowForm(true);
-                setError('');
-              }}
-            >
-              + Add Rider
-            </button>
-          )}
-        </div>
-      </div>
+                Registration link
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+        {!showForm && (
+          <Button
+            size="xs"
+            onClick={() => {
+              setEditingId(null);
+              setShowForm(true);
+              setError('');
+            }}
+          >
+            + Add Rider
+          </Button>
+        )}
+      </Group>
 
       {/* Add / Edit form */}
       {showForm && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>
+        <Paper withBorder p="md" mb="lg">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
             {editingId !== null ? 'Edit Rider' : 'New Rider'}
-          </div>
+          </Text>
           {error && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>{error}</div>
+            <Text size="sm" c="red" mb="xs">
+              {error}
+            </Text>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div>
-              <label className="input-label">First Name *</label>
-              <input
-                type="text"
+          <Stack gap="sm">
+            <Group grow>
+              <TextInput
+                label="First Name *"
                 placeholder="First name"
                 value={form.firstName}
                 onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 autoFocus
-                className="input"
               />
-            </div>
-            <div>
-              <label className="input-label">Last Name *</label>
-              <input
-                type="text"
+              <TextInput
+                label="Last Name *"
                 placeholder="Last name"
                 value={form.lastName}
                 onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="input"
               />
-            </div>
-            <div>
-              <label className="input-label">Email</label>
-              <input
-                type="email"
+            </Group>
+            <Group grow>
+              <TextInput
+                label="Email"
                 placeholder="email@example.com"
+                type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="input"
               />
-            </div>
-            <div>
-              <label className="input-label">Phone</label>
-              <input
-                type="tel"
+              <TextInput
+                label="Phone"
                 placeholder="+1-555-0100"
+                type="tel"
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="input"
               />
-            </div>
-            <div>
-              <label className="input-label">Date of Birth</label>
-              <input
-                type="date"
-                value={form.dateOfBirth}
-                onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="input"
-              />
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button className="primary small" onClick={handleSubmit}>
-              {editingId !== null ? 'Save' : 'Add Rider'}
-            </button>
-            <button className="ghost small" onClick={resetForm}>
-              Cancel
-            </button>
-          </div>
-        </div>
+            </Group>
+            <DatePickerInput
+              label="Date of Birth"
+              value={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
+              onChange={(d) => setForm((f) => ({ ...f, dateOfBirth: d ? d.toISOString().slice(0, 10) : '' }))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            />
+            <Group gap="xs" mt="sm">
+              <Button size="xs" onClick={handleSubmit}>
+                {editingId !== null ? 'Save' : 'Add Rider'}
+              </Button>
+              <Button variant="subtle" size="xs" onClick={resetForm}>
+                Cancel
+              </Button>
+            </Group>
+          </Stack>
+        </Paper>
       )}
 
       {/* Search and filters */}
       {orgRiders.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            gap: 16,
-            flexWrap: 'wrap',
-            alignItems: 'flex-end',
-            marginBottom: 16,
-          }}
-        >
-          <div>
-            <label className="input-label">Search</label>
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input"
-              style={{ maxWidth: 280 }}
+        <Group gap="md" align="flex-end" wrap="wrap" mb="md">
+          <TextInput
+            label="Search"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: 280 }}
+          />
+          <Group gap="xs" align="flex-end">
+            <NumberInput
+              label="Min Age"
+              placeholder="—"
+              value={ageMin === '' ? undefined : (isNaN(parseInt(ageMin, 10)) ? undefined : parseInt(ageMin, 10))}
+              onChange={(v) => setAgeMin(v === undefined || v === null ? '' : String(v))}
+              min={0}
+              w={72}
             />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-            <div>
-              <label className="input-label">Min Age</label>
-              <input
-                type="number"
-                placeholder="—"
-                value={ageMin}
-                onChange={(e) => setAgeMin(e.target.value)}
-                className="input"
-                style={{ width: 72 }}
-                min={0}
-              />
-            </div>
-            <span className="muted small-text">–</span>
-            <div>
-              <label className="input-label">Max Age</label>
-              <input
-                type="number"
-                placeholder="—"
-                value={ageMax}
-                onChange={(e) => setAgeMax(e.target.value)}
-                className="input"
-                style={{ width: 72 }}
-                min={0}
-              />
-            </div>
-          </div>
-        </div>
+            <Text c="dimmed" size="sm">
+              –
+            </Text>
+            <NumberInput
+              label="Max Age"
+              placeholder="—"
+              value={ageMax === '' ? undefined : (isNaN(parseInt(ageMax, 10)) ? undefined : parseInt(ageMax, 10))}
+              onChange={(v) => setAgeMax(v === undefined || v === null ? '' : String(v))}
+              min={0}
+              w={72}
+            />
+          </Group>
+        </Group>
       )}
 
       {/* Riders table */}
       {filteredRiders.length === 0 && !showForm ? (
-        <div className="empty">
+        <Text c="dimmed" ta="center" py="xl">
           {search || ageMin || ageMax
             ? 'No riders match your filters.'
             : 'No riders yet. Add one or share the registration link.'}
-        </div>
+        </Text>
       ) : (
         <>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>DOB</th>
-                <th>Age</th>
-                <th style={{ width: 40 }}></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Email</Table.Th>
+                <Table.Th>Phone</Table.Th>
+                <Table.Th>DOB</Table.Th>
+                <Table.Th>Age</Table.Th>
+                <Table.Th style={{ width: 40 }}></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {paginatedRiders.map((r: Rider) => (
-                <tr key={String(r.id)}>
-                  <td>
+                <Table.Tr key={String(r.id)}>
+                  <Table.Td>
                     {r.firstName} {r.lastName}
-                  </td>
-                  <td className="muted">{r.email || '—'}</td>
-                  <td className="muted">{r.phone || '—'}</td>
-                  <td>{r.dateOfBirth || '—'}</td>
-                  <td className="muted">
-                    {r.dateOfBirth
-                      ? (() => {
-                          const today = new Date();
-                          const dob = new Date(r.dateOfBirth);
-                          let age = today.getFullYear() - dob.getFullYear();
-                          const m = today.getMonth() - dob.getMonth();
-                          if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-                          return age;
-                        })()
-                      : '—'}
-                  </td>
-                  <td>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {r.email || '—'}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {r.phone || '—'}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>{r.dateOfBirth || '—'}</Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {r.dateOfBirth
+                        ? (() => {
+                            const today = new Date();
+                            const dob = new Date(r.dateOfBirth);
+                            let age = today.getFullYear() - dob.getFullYear();
+                            const m = today.getMonth() - dob.getMonth();
+                            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                            return age;
+                          })()
+                        : '—'}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
                     <RowActionMenu
                       items={[
-                        { icon: faPen, label: 'Edit', onClick: () => startEdit(r) },
+                        { icon: IconPencil, label: 'Edit', onClick: () => startEdit(r) },
                         {
-                          icon: faTrash,
+                          icon: IconTrash,
                           label: 'Delete',
                           danger: true,
                           onClick: () => handleDelete(r),
                         },
                       ]}
                     />
-                  </td>
-                </tr>
+                  </Table.Td>
+                </Table.Tr>
               ))}
-            </tbody>
-          </table>
+            </Table.Tbody>
+          </Table>
           {filteredRiders.length > PAGE_SIZE_OPTIONS[0] && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                gap: 12,
-                marginTop: 12,
-                flexWrap: 'wrap',
-              }}
-            >
-              <button
-                className="ghost small"
+            <Group justify="flex-end" gap="md" mt="md" wrap="wrap">
+              <Button
+                variant="subtle"
+                size="xs"
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
               >
                 Previous
-              </button>
-              <span className="muted small-text">
+              </Button>
+              <Text size="sm" c="dimmed">
                 Page {page + 1} of {totalPages} ({filteredRiders.length} riders)
-              </span>
-              <button
-                className="ghost small"
+              </Text>
+              <Button
+                variant="subtle"
+                size="xs"
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
               >
                 Next
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <label className="input-label" style={{ marginBottom: 0 }}>
-                  Per page
-                </label>
-                <select
-                  className="input"
-                  value={pageSize}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
+              </Button>
+              <Group gap="xs" align="center">
+                <Select
+                  label="Per page"
+                  value={String(pageSize)}
+                  onChange={(v) => {
+                    const n = v ? Number(v) : 10;
                     setPageSize(n);
                     try {
                       localStorage.setItem('racetimetracker-riders-page-size', String(n));
                     } catch {}
                   }}
-                  style={{ width: 72, padding: '6px 8px' }}
-                >
-                  {PAGE_SIZE_OPTIONS.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+                  data={PAGE_SIZE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
+                  w={72}
+                  size="xs"
+                />
+              </Group>
+            </Group>
           )}
         </>
       )}
@@ -529,81 +456,56 @@ export default function RidersView() {
         }}
         title="Registration link"
       >
-        <div
-          style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}
-        >
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              cursor: 'pointer',
-              fontSize: '0.9rem',
+        <Stack gap="md">
+          <Checkbox
+            label="Allow new riders to register"
+            checked={org?.registrationEnabled !== false}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              setRegistrationEnabled({ orgId: oid, enabled });
             }}
-          >
-            <input
-              type="checkbox"
-              checked={org?.registrationEnabled !== false}
-              onChange={(e) => {
-                const enabled = e.target.checked;
-                setRegistrationEnabled({ orgId: oid, enabled });
-              }}
-              style={{ accentColor: 'var(--accent)', width: 18, height: 18 }}
-            />
-            <span>Allow new riders to register</span>
-          </label>
+          />
           {org?.registrationEnabled === false && (
-            <p className="muted small-text" style={{ marginTop: 8, marginBottom: 0 }}>
+            <Text size="sm" c="dimmed">
               The link is disabled. Visitors will see a "Registration Closed" message.
-            </p>
+            </Text>
           )}
-        </div>
-        <div className="tabs" style={{ marginBottom: 16 }}>
-          <button
-            className={registrationModalTab === 'url' ? 'active' : ''}
-            onClick={() => setRegistrationModalTab('url')}
-          >
-            URL
-          </button>
-          <button
-            className={registrationModalTab === 'qr' ? 'active' : ''}
-            onClick={() => setRegistrationModalTab('qr')}
-          >
-            QR code
-          </button>
-        </div>
-        {registrationModalTab === 'url' && (
-          <div>
-            <div className="small-text" style={{ wordBreak: 'break-all', marginBottom: 12 }}>
-              <a href={registrationUrl} target="_blank" rel="noopener noreferrer">
-                {registrationUrl}
-              </a>
-            </div>
-            <button
-              className="primary small"
-              onClick={() => navigator.clipboard.writeText(registrationUrl)}
-            >
-              Copy link
-            </button>
-          </div>
-        )}
-        {registrationModalTab === 'qr' && (
-          <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div
-              style={{
-                background: 'white',
-                padding: 20,
-                borderRadius: 12,
-                display: 'inline-block',
-              }}
-            >
-              <QRCodeSVG value={registrationUrl} size={200} level="M" />
-            </div>
-            <p className="muted small-text" style={{ marginTop: 8 }}>
-              Scan to open registration form
-            </p>
-          </div>
-        )}
+          <Tabs value={registrationModalTab} onChange={setRegistrationModalTab}>
+            <Tabs.List>
+              <Tabs.Tab value="url">URL</Tabs.Tab>
+              <Tabs.Tab value="qr">QR code</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="url" pt="md">
+              <Stack gap="sm">
+                <Text size="sm" style={{ wordBreak: 'break-all' }}>
+                  <Text component="a" href={registrationUrl} target="_blank" rel="noopener noreferrer" c="blue">
+                    {registrationUrl}
+                  </Text>
+                </Text>
+                <Button size="xs" onClick={() => navigator.clipboard.writeText(registrationUrl)}>
+                  Copy link
+                </Button>
+              </Stack>
+            </Tabs.Panel>
+            <Tabs.Panel value="qr" pt="md">
+              <Stack gap="xs" align="center">
+                <div
+                  style={{
+                    background: 'white',
+                    padding: 20,
+                    borderRadius: 12,
+                    display: 'inline-block',
+                  }}
+                >
+                  <QRCodeSVG value={registrationUrl} size={200} level="M" />
+                </div>
+                <Text size="sm" c="dimmed">
+                  Scan to open registration form
+                </Text>
+              </Stack>
+            </Tabs.Panel>
+          </Tabs>
+        </Stack>
       </Modal>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Stack, TextInput, NumberInput, Button, Group, Text, ScrollArea } from '@mantine/core';
 import Modal from './Modal';
 import type { Rider } from '../module_bindings/types';
 
@@ -28,8 +29,8 @@ export default function AddRiderModal({
   availableRiders,
 }: AddRiderModalProps) {
   const [search, setSearch] = useState('');
-  const [minAge, setMinAge] = useState('');
-  const [maxAge, setMaxAge] = useState('');
+  const [minAge, setMinAge] = useState<string | number>('');
+  const [maxAge, setMaxAge] = useState<string | number>('');
 
   const handleClose = () => {
     setSearch('');
@@ -40,16 +41,14 @@ export default function AddRiderModal({
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    const min = minAge !== '' ? parseInt(minAge) : null;
-    const max = maxAge !== '' ? parseInt(maxAge) : null;
+    const min = minAge !== '' ? Number(minAge) : null;
+    const max = maxAge !== '' ? Number(maxAge) : null;
 
     return availableRiders.filter((r) => {
-      // Name search
       if (q) {
         const full = `${r.firstName} ${r.lastName}`.toLowerCase();
         if (!full.includes(q)) return false;
       }
-      // Age filter
       if (min !== null || max !== null) {
         const age = getAge(r.dateOfBirth);
         if (age === null) return false;
@@ -62,92 +61,67 @@ export default function AddRiderModal({
 
   return (
     <Modal open={open} onClose={handleClose} title="Add Riders">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-        <input
-          type="text"
-          className="input"
+      <Stack gap="xs" mb="md">
+        <TextInput
           placeholder="Search by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div>
-            <label className="input-label">Min Age</label>
-            <input
-              type="number"
-              className="input"
-              min="0"
-              value={minAge}
-              onChange={(e) => setMinAge(e.target.value)}
-              placeholder="—"
-            />
-          </div>
-          <div>
-            <label className="input-label">Max Age</label>
-            <input
-              type="number"
-              className="input"
-              min="0"
-              value={maxAge}
-              onChange={(e) => setMaxAge(e.target.value)}
-              placeholder="—"
-            />
-          </div>
-        </div>
-      </div>
+        <Group grow>
+          <NumberInput
+            label="Min Age"
+            min={0}
+            value={minAge}
+            onChange={setMinAge}
+            placeholder="—"
+          />
+          <NumberInput
+            label="Max Age"
+            min={0}
+            value={maxAge}
+            onChange={setMaxAge}
+            placeholder="—"
+          />
+        </Group>
+      </Stack>
 
-      <div className="muted small-text" style={{ marginBottom: 8 }}>
+      <Text size="xs" c="dimmed" mb="xs">
         {filtered.length} rider{filtered.length !== 1 ? 's' : ''} found
-      </div>
+      </Text>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          maxHeight: 300,
-          overflowY: 'auto',
-        }}
-      >
-        {filtered.length === 0 ? (
-          <div className="muted small-text" style={{ padding: 8 }}>
-            {availableRiders.length === 0
-              ? 'All riders are already assigned.'
-              : 'No riders match your filters.'}
-          </div>
-        ) : (
-          filtered.map((r) => {
-            const age = getAge(r.dateOfBirth);
-            return (
-              <div
-                key={String(r.id)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '6px 10px',
-                  borderRadius: 'var(--radius)',
-                }}
-              >
-                <div>
-                  <span style={{ fontSize: '0.85rem' }}>
-                    {r.firstName} {r.lastName}
-                  </span>
-                  {age !== null && (
-                    <span className="muted small-text" style={{ marginLeft: 8 }}>
-                      ({age} yrs)
-                    </span>
-                  )}
-                </div>
-                <button className="primary small" onClick={() => onAdd(r.id)}>
-                  Add
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
+      <ScrollArea h={300}>
+        <Stack gap={4}>
+          {filtered.length === 0 ? (
+            <Text size="xs" c="dimmed" p="xs">
+              {availableRiders.length === 0
+                ? 'All riders are already assigned.'
+                : 'No riders match your filters.'}
+            </Text>
+          ) : (
+            filtered.map((r) => {
+              const age = getAge(r.dateOfBirth);
+              return (
+                <Group key={String(r.id)} justify="space-between" p="xs" style={{ borderRadius: 4 }}>
+                  <div>
+                    <Text size="sm">
+                      {r.firstName} {r.lastName}
+                    </Text>
+                    {age !== null && (
+                      <Text size="xs" c="dimmed" component="span" ml={8}>
+                        ({age} yrs)
+                      </Text>
+                    )}
+                  </div>
+                  <Button size="xs" onClick={() => onAdd(r.id)}>
+                    Add
+                  </Button>
+                </Group>
+              );
+            })
+          )}
+        </Stack>
+      </ScrollArea>
     </Modal>
   );
 }

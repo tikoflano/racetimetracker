@@ -2,10 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { MantineProvider } from '@mantine/core';
 import { SpacetimeDBProvider } from 'spacetimedb/react';
 import { DbConnection } from './module_bindings';
 import { AuthProvider } from './auth';
 import App from './App';
+import { theme } from './theme';
+import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
+import '@mantine/carousel/styles.css';
 import './index.css';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'PLACEHOLDER';
@@ -64,9 +69,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <SpacetimeDBProvider connectionBuilder={builder}>
       <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <MantineProvider theme={theme} defaultColorScheme="dark">
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </MantineProvider>
       </AuthProvider>
     </SpacetimeDBProvider>
   </GoogleOAuthProvider>

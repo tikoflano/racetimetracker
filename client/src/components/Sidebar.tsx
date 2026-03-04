@@ -1,21 +1,20 @@
 import { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { NavLink, ActionIcon, Group, Text, Stack } from '@mantine/core';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { IS_DEV } from '../env';
-import { FontAwesomeIcon, faThumbtack, faChevronLeft, faChevronRight } from '../icons';
+import { IconPin, IconChevronLeft, IconChevronRight } from '../icons';
 import type { Event, Organization, PinnedEvent } from '../module_bindings/types';
 
 interface SidebarProps {
-  className?: string;
   activeOrg: Organization | null;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
 export default function Sidebar({
-  className = '',
   activeOrg,
   collapsed,
   onToggleCollapse,
@@ -38,108 +37,79 @@ export default function Sidebar({
   }, [events, pinnedEventIds]);
 
   return (
-    <nav className={`sidebar ${className}`.trim()}>
-      <div className="sidebar-section">
-        <div className="sidebar-label">Pinned Events</div>
-        {pinnedList.length === 0 ? (
-          <div className="sidebar-empty">No pinned events</div>
-        ) : (
-          pinnedList.map((e: Event) => (
-            <div key={String(e.id)} className="sidebar-event-row">
-              <NavLink
-                to={`/event/${e.slug}`}
-                className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-              >
-                {e.name}
-              </NavLink>
-              <button
-                className="pin-btn"
-                onClick={() => togglePin({ eventId: e.id })}
-                title="Unpin event"
-              >
-                <FontAwesomeIcon icon={faThumbtack} />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
-      {isAuthenticated && (
-        <div className="sidebar-section">
-          <NavLink
-            to="/calendar"
-            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-          >
-            Calendar
-          </NavLink>
-          <NavLink
-            to="/timekeep"
-            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-          >
-            Timekeeping
-          </NavLink>
-        </div>
-      )}
-
-      {activeOrg && canManageOrgEvents(activeOrg.id) && (
-        <div className="sidebar-section">
-          <div className="sidebar-label">Manage</div>
-          <NavLink
-            to="/championships"
-            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-          >
-            Championships
-          </NavLink>
-          <NavLink
-            to="/locations"
-            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-          >
-            Locations
-          </NavLink>
-          <NavLink
-            to="/riders"
-            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-          >
-            Riders
-          </NavLink>
-          {canManageOrg(activeOrg.id) && (
-            <NavLink
-              to="/members"
-              className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-            >
-              Members
-            </NavLink>
+    <>
+      <Stack gap="lg" flex={1}>
+        <Stack gap={4}>
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="md" mb={4}>
+            Pinned Events
+          </Text>
+          {pinnedList.length === 0 ? (
+            <Text size="sm" c="dimmed" px="md" py="xs">
+              No pinned events
+            </Text>
+          ) : (
+            pinnedList.map((e: Event) => (
+              <Group key={String(e.id)} gap="xs" wrap="nowrap">
+                <NavLink
+                  component={Link}
+                  to={`/event/${e.slug}`}
+                  label={collapsed ? null : e.name}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => togglePin({ eventId: e.id })}
+                  title="Unpin event"
+                >
+                  <IconPin size={16} />
+                </ActionIcon>
+              </Group>
+            ))
           )}
-        </div>
-      )}
+        </Stack>
 
-      {IS_DEV && isAuthenticated && (
-        <div
-          className="sidebar-section"
-          style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}
-        >
-          <NavLink
-            to="/dev"
-            className={({ isActive }) => `sidebar-link sub${isActive ? ' active' : ''}`}
-            style={{ fontSize: '0.8rem', opacity: 0.6 }}
-          >
-            {collapsed ? '🛠' : 'Dev Tools'}
-          </NavLink>
-        </div>
-      )}
+        {isAuthenticated && (
+          <Stack gap={4}>
+            <NavLink component={Link} to="/calendar" label={collapsed ? null : 'Calendar'} />
+            <NavLink component={Link} to="/timekeep" label={collapsed ? null : 'Timekeeping'} />
+          </Stack>
+        )}
+
+        {activeOrg && canManageOrgEvents(activeOrg.id) && (
+          <Stack gap={4}>
+            <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="md" mb={4}>
+              Manage
+            </Text>
+            <NavLink component={Link} to="/championships" label={collapsed ? null : 'Championships'} />
+            <NavLink component={Link} to="/locations" label={collapsed ? null : 'Locations'} />
+            <NavLink component={Link} to="/riders" label={collapsed ? null : 'Riders'} />
+            {canManageOrg(activeOrg.id) && (
+              <NavLink component={Link} to="/members" label={collapsed ? null : 'Members'} />
+            )}
+          </Stack>
+        )}
+
+        {IS_DEV && isAuthenticated && (
+          <Stack gap={4} style={{ borderTop: '1px solid var(--mantine-color-default-border)' }} pt="md">
+            <NavLink component={Link} to="/dev" label={collapsed ? '🛠' : 'Dev Tools'} style={{ opacity: 0.6 }} />
+          </Stack>
+        )}
+      </Stack>
 
       {onToggleCollapse && (
-        <div className="sidebar-collapse-toggle">
-          <button
-            className="ghost small"
+        <Stack gap={0} style={{ borderTop: '1px solid var(--mantine-color-default-border)' }} p={4}>
+          <ActionIcon
+            variant="subtle"
+            size="sm"
             onClick={onToggleCollapse}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            style={{ width: '100%', padding: '8px', fontSize: '0.75rem', opacity: 0.6 }}
+            style={{ width: '100%' }}
           >
-            <FontAwesomeIcon icon={collapsed ? faChevronRight : faChevronLeft} />
-          </button>
-        </div>
+            {collapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+          </ActionIcon>
+        </Stack>
       )}
-    </nav>
+    </>
   );
 }

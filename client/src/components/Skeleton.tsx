@@ -1,3 +1,5 @@
+import { Skeleton as MSkeleton, Paper, Table, Stack } from '@mantine/core';
+
 interface SkeletonProps {
   width?: string;
   height?: string;
@@ -11,121 +13,121 @@ export function Skeleton({
   borderRadius = '4px',
   style,
 }: SkeletonProps) {
-  return <div className="skeleton" style={{ width, height, borderRadius, ...style }} />;
+  return (
+    <MSkeleton
+      width={width}
+      height={height}
+      radius={borderRadius}
+      style={style}
+    />
+  );
 }
 
 export function SkeletonCard({ lines = 2 }: { lines?: number }) {
   return (
-    <div className="card" style={{ pointerEvents: 'none' }}>
-      <Skeleton width="40%" height="18px" style={{ marginBottom: 10 }} />
+    <Paper withBorder p="md" style={{ pointerEvents: 'none' }}>
+      <MSkeleton height={18} width="40%" mb="xs" />
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton
+        <MSkeleton
           key={i}
+          height={14}
           width={i === lines - 1 ? '60%' : '90%'}
-          height="14px"
-          style={{ marginBottom: i < lines - 1 ? 8 : 0 }}
+          mb={i < lines - 1 ? 'xs' : 0}
         />
       ))}
-    </div>
+    </Paper>
   );
 }
 
 export function SkeletonTable({ rows = 4, cols = 3 }: { rows?: number; cols?: number }) {
   return (
-    <table className="table">
-      <thead>
-        <tr>
+    <Table>
+      <Table.Thead>
+        <Table.Tr>
           {Array.from({ length: cols }).map((_, i) => (
-            <th key={i}>
-              <Skeleton width="60px" height="10px" />
-            </th>
+            <Table.Th key={i}>
+              <MSkeleton height={10} width={60} />
+            </Table.Th>
           ))}
-        </tr>
-      </thead>
-      <tbody>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
         {Array.from({ length: rows }).map((_, r) => (
-          <tr key={r}>
+          <Table.Tr key={r}>
             {Array.from({ length: cols }).map((_, c) => (
-              <td key={c}>
-                <Skeleton
-                  width={c === 0 ? '30px' : c === cols - 1 ? '70px' : '100px'}
-                  height="14px"
+              <Table.Td key={c}>
+                <MSkeleton
+                  height={14}
+                  width={c === 0 ? 30 : c === cols - 1 ? 70 : 100}
                 />
-              </td>
+              </Table.Td>
             ))}
-          </tr>
+          </Table.Tr>
         ))}
-      </tbody>
-    </table>
+      </Table.Tbody>
+    </Table>
   );
 }
 
 export function SkeletonHeader() {
   return (
-    <div style={{ marginBottom: 20 }}>
-      <Skeleton width="50%" height="28px" style={{ marginBottom: 8 }} />
-      <Skeleton width="70%" height="14px" style={{ marginBottom: 4 }} />
-      <Skeleton width="40%" height="14px" />
-    </div>
+    <Stack gap="xs" mb="lg">
+      <MSkeleton height={28} width="50%" />
+      <MSkeleton height={14} width="70%" />
+      <MSkeleton height={14} width="40%" />
+    </Stack>
   );
 }
 
 export function EventViewSkeleton() {
   return (
-    <div>
+    <Stack gap="lg">
       <SkeletonHeader />
-      <div className="section">
-        <Skeleton width="60px" height="11px" style={{ marginBottom: 12 }} />
+      <Stack gap="xs">
+        <MSkeleton height={11} width={60} />
         <SkeletonCard lines={1} />
         <SkeletonCard lines={1} />
-      </div>
-      <div className="section">
-        <Skeleton width="100px" height="11px" style={{ marginBottom: 12 }} />
+      </Stack>
+      <Stack gap="xs">
+        <MSkeleton height={11} width={100} />
         <SkeletonTable rows={4} cols={4} />
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
 export function TrackViewSkeleton() {
   return (
-    <div>
-      <Skeleton width="100px" height="14px" style={{ marginBottom: 16 }} />
-      <Skeleton width="50%" height="28px" style={{ marginBottom: 8 }} />
-      <Skeleton width="70%" height="14px" style={{ marginBottom: 20 }} />
-      <div className="section">
-        <Skeleton width="80px" height="11px" style={{ marginBottom: 12 }} />
-        <div className="card" style={{ textAlign: 'center', padding: 24 }}>
-          <Skeleton width="60px" height="14px" style={{ margin: '0 auto 8px' }} />
-          <Skeleton width="160px" height="22px" style={{ margin: '0 auto 8px' }} />
-          <Skeleton width="100px" height="14px" style={{ margin: '0 auto 16px' }} />
-          <Skeleton width="100%" height="52px" borderRadius="12px" />
-        </div>
-      </div>
-      <div className="section">
-        <Skeleton width="60px" height="11px" style={{ marginBottom: 12 }} />
+    <Stack gap="lg">
+      <MSkeleton height={14} width={100} />
+      <MSkeleton height={28} width="50%" />
+      <MSkeleton height={14} width="70%" />
+      <Stack gap="xs">
+        <MSkeleton height={11} width={80} />
+        <Paper withBorder p="xl" style={{ textAlign: 'center' }}>
+          <MSkeleton height={14} width={60} mx="auto" mb="xs" />
+          <MSkeleton height={22} width={160} mx="auto" mb="xs" />
+          <MSkeleton height={14} width={100} mx="auto" mb="md" />
+          <MSkeleton height={52} radius="md" />
+        </Paper>
+      </Stack>
+      <Stack gap="xs">
+        <MSkeleton height={11} width={60} />
         <SkeletonCard lines={1} />
         <SkeletonCard lines={1} />
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
 export function AppSkeleton() {
   return (
-    <div>
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
-        <Skeleton width="90px" height="14px" />
-        <Skeleton width="80px" height="32px" borderRadius="16px" />
-      </header>
+    <Stack gap="lg">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <MSkeleton height={14} width={90} />
+        <MSkeleton height={32} width={80} radius="xl" />
+      </div>
       <EventViewSkeleton />
-    </div>
+    </Stack>
   );
 }

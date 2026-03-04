@@ -1,4 +1,14 @@
 import { useState, useMemo } from 'react';
+import {
+  Stack,
+  TextInput,
+  Button,
+  Group,
+  Text,
+  Paper,
+  ScrollArea,
+  UnstyledButton,
+} from '@mantine/core';
 import Modal from './Modal';
 import type { Track, TrackVariation } from '../module_bindings/types';
 
@@ -71,175 +81,144 @@ export default function AddTrackModal({
 
   return (
     <Modal open={open} onClose={handleClose} title={`Add Track from ${venueName}`}>
-      {/* Step 1: Select track */}
       {!selectedTrack && (
-        <div>
-          <input
-            type="text"
-            className="input"
+        <Stack gap="xs">
+          <TextInput
             placeholder="Search tracks..."
             value={trackSearch}
             onChange={(e) => setTrackSearch(e.target.value)}
             autoFocus
           />
-          <div
-            style={{
-              marginTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              maxHeight: 300,
-              overflowY: 'auto',
-            }}
-          >
-            {filteredTracks.length === 0 ? (
-              <div className="muted small-text" style={{ padding: 8 }}>
-                {availableTracks.length === 0
-                  ? 'No tracks available from this location.'
-                  : 'No tracks match your search.'}
-              </div>
-            ) : (
-              filteredTracks.map((track, i) => (
-                <button
-                  key={String(track.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
-                    color: 'var(--text)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background =
-                      i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')
-                  }
-                  onClick={() => {
-                    setSelectedTrack(track);
-                    setVarSearch('');
-                    setSelectedVariation(null);
-                  }}
-                >
-                  <span className="color-dot" style={{ background: track.color }} />
-                  <strong>{track.name}</strong>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
+          <ScrollArea h={300}>
+            <Stack gap={4}>
+              {filteredTracks.length === 0 ? (
+                <Text size="xs" c="dimmed" p="xs">
+                  {availableTracks.length === 0
+                    ? 'No tracks available from this location.'
+                    : 'No tracks match your search.'}
+                </Text>
+              ) : (
+                filteredTracks.map((track) => (
+                  <UnstyledButton
+                    key={String(track.id)}
+                    p="sm"
+                    style={{ borderRadius: 4, textAlign: 'left' }}
+                    onClick={() => {
+                      setSelectedTrack(track);
+                      setVarSearch('');
+                      setSelectedVariation(null);
+                    }}
+                  >
+                    <Group gap="xs">
+                      <span
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          background: track.color,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Text fw={600}>{track.name}</Text>
+                    </Group>
+                  </UnstyledButton>
+                ))
+              )}
+            </Stack>
+          </ScrollArea>
+        </Stack>
       )}
 
-      {/* Step 2: Select variation */}
       {selectedTrack && !selectedVariation && (
-        <div>
-          <button
-            className="ghost small"
-            onClick={() => setSelectedTrack(null)}
-            style={{ marginBottom: 8 }}
-          >
-            &larr; Back to tracks
-          </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span className="color-dot" style={{ background: selectedTrack.color }} />
-            <strong>{selectedTrack.name}</strong>
-          </div>
-          <input
-            type="text"
-            className="input"
+        <Stack gap="xs">
+          <Button variant="subtle" size="xs" onClick={() => setSelectedTrack(null)}>
+            ← Back to tracks
+          </Button>
+          <Group gap="xs" mb="xs">
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: selectedTrack.color,
+                flexShrink: 0,
+              }}
+            />
+            <Text fw={600}>{selectedTrack.name}</Text>
+          </Group>
+          <TextInput
             placeholder="Search variations..."
             value={varSearch}
             onChange={(e) => setVarSearch(e.target.value)}
             autoFocus
           />
-          <div
-            style={{
-              marginTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              maxHeight: 300,
-              overflowY: 'auto',
-            }}
-          >
-            {filteredVariations.length === 0 ? (
-              <div className="muted small-text" style={{ padding: 8 }}>
-                {availableVariations.length === 0
-                  ? 'No variations available.'
-                  : 'No variations match your search.'}
-              </div>
-            ) : (
-              filteredVariations.map((tv, i) => (
-                <button
-                  key={String(tv.id)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    background: i % 2 === 0 ? 'var(--surface)' : 'var(--bg)',
-                    color: 'var(--text)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background =
-                      i % 2 === 0 ? 'var(--surface)' : 'var(--bg)')
-                  }
-                  onClick={() => setSelectedVariation(tv)}
-                >
-                  <strong>{tv.name}</strong>
-                  {tv.description && (
-                    <div className="muted small-text" style={{ marginTop: 2 }}>
-                      {tv.description}
+          <ScrollArea h={300}>
+            <Stack gap={4}>
+              {filteredVariations.length === 0 ? (
+                <Text size="xs" c="dimmed" p="xs">
+                  {availableVariations.length === 0
+                    ? 'No variations available.'
+                    : 'No variations match your search.'}
+                </Text>
+              ) : (
+                filteredVariations.map((tv) => (
+                  <UnstyledButton
+                    key={String(tv.id)}
+                    p="sm"
+                    style={{ borderRadius: 4, textAlign: 'left' }}
+                    onClick={() => setSelectedVariation(tv)}
+                  >
+                    <div>
+                      <Text fw={600}>{tv.name}</Text>
+                      {tv.description && (
+                        <Text size="xs" c="dimmed" mt={2}>
+                          {tv.description}
+                        </Text>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
+                  </UnstyledButton>
+                ))
+              )}
+            </Stack>
+          </ScrollArea>
+        </Stack>
       )}
 
-      {/* Step 3: Confirm */}
       {selectedTrack && selectedVariation && (
-        <div>
-          <button
-            className="ghost small"
-            onClick={() => setSelectedVariation(null)}
-            style={{ marginBottom: 8 }}
-          >
-            &larr; Back to variations
-          </button>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span className="color-dot" style={{ background: selectedTrack.color }} />
-              <strong>{selectedTrack.name}</strong>
-              <span className="muted">—</span>
-              <span>{selectedVariation.name}</span>
-            </div>
+        <Stack gap="md">
+          <Button variant="subtle" size="xs" onClick={() => setSelectedVariation(null)}>
+            ← Back to variations
+          </Button>
+          <Paper withBorder p="md" mb="md">
+            <Group gap="xs" mb="xs">
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: selectedTrack.color,
+                  flexShrink: 0,
+                }}
+              />
+              <Text fw={600}>{selectedTrack.name}</Text>
+              <Text c="dimmed">—</Text>
+              <Text>{selectedVariation.name}</Text>
+            </Group>
             {selectedVariation.description && (
-              <p className="muted small-text">{selectedVariation.description}</p>
+              <Text size="xs" c="dimmed">
+                {selectedVariation.description}
+              </Text>
             )}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="primary small" onClick={handleConfirm}>
+          </Paper>
+          <Group gap="xs">
+            <Button size="xs" onClick={handleConfirm}>
               Add Track
-            </button>
-            <button className="ghost small" onClick={handleClose}>
+            </Button>
+            <Button variant="subtle" size="xs" onClick={handleClose}>
               Cancel
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Group>
+        </Stack>
       )}
     </Modal>
   );

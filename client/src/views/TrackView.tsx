@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
+import { Table, Badge, Paper, Stack, Group, Text } from '@mantine/core';
 import { tables } from '../module_bindings';
 import { useActiveOrgMaybe } from '../OrgContext';
 import type {
@@ -97,7 +98,11 @@ export default function TrackView() {
 
   if (!eventTrack) {
     if (eventTracks.length === 0) return null;
-    return <div className="empty">Track not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Track not found.
+      </Text>
+    );
   }
 
   return (
@@ -116,23 +121,25 @@ export default function TrackView() {
         {tv ? ` — ${tv.name}` : ''}
       </h1>
       {tv && (
-        <p className="muted small-text" style={{ marginBottom: 20 }}>
+        <Text size="sm" c="dimmed" mb="lg">
           {tv.description}
-        </p>
+        </Text>
       )}
 
       {/* Currently running riders */}
       {runningRuns.length > 0 && (
-        <div className="section">
-          <div className="section-title">On Track</div>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            On Track
+          </Text>
           {runningRuns.map((run: Run) => {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
               <div className="running-card" key={String(run.id)}>
-                <div className="badge running" style={{ marginBottom: 8 }}>
+                <Badge color="green" variant="light" mb="xs">
                   Racing
-                </div>
+                </Badge>
                 <h3 style={{ fontSize: '1.3rem', marginBottom: 8 }}>
                   <span style={{ fontWeight: 700, marginRight: 6 }}>#{num ?? '?'}</span>
                   {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
@@ -143,17 +150,19 @@ export default function TrackView() {
               </div>
             );
           })}
-        </div>
+        </Stack>
       )}
 
       {/* Next rider — prominent when no one is running */}
       {nextQueued && runningRuns.length === 0 && (
-        <div className="section">
-          <div className="section-title">Next Rider</div>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Next Rider
+          </Text>
           <div className="next-rider-card">
-            <p className="muted small-text" style={{ marginBottom: 4 }}>
+            <Text size="sm" c="dimmed" mb="xs">
               Up next — #{nextQueued.sortOrder} in queue
-            </p>
+            </Text>
             <h3>
               <span style={{ fontWeight: 700, marginRight: 6 }}>
                 #{getRiderNumber(nextQueued.riderId) ?? '?'}
@@ -164,172 +173,176 @@ export default function TrackView() {
               })()}
             </h3>
           </div>
-        </div>
+        </Stack>
       )}
 
       {/* Next up while someone is running */}
       {nextQueued && runningRuns.length > 0 && (
-        <div className="section">
-          <div className="section-title">Next Up</div>
-          <div
-            className="card"
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-          >
-            <div>
-              <span className="muted small-text">#{nextQueued.sortOrder} in queue</span>{' '}
-              <span style={{ fontWeight: 600, marginRight: 6 }}>
-                #{getRiderNumber(nextQueued.riderId) ?? '?'}
-              </span>
-              {(() => {
-                const rider = riderMap.get(nextQueued.riderId);
-                return rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown';
-              })()}
-            </div>
-            <span className="badge queued">Queued</span>
-          </div>
-        </div>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Next Up
+          </Text>
+          <Paper withBorder p="md">
+            <Group justify="space-between" align="center">
+              <Group gap="xs">
+                <Text size="sm" c="dimmed">
+                  #{nextQueued.sortOrder} in queue
+                </Text>
+                <Text fw={600}>
+                  #{getRiderNumber(nextQueued.riderId) ?? '?'}
+                </Text>
+                {(() => {
+                  const rider = riderMap.get(nextQueued.riderId);
+                  return rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown';
+                })()}
+              </Group>
+              <Badge color="yellow" variant="light">
+                Queued
+              </Badge>
+            </Group>
+          </Paper>
+        </Stack>
       )}
 
       {/* Remaining queue */}
       {queuedRuns.length > 1 && (
-        <div className="section">
-          <div className="section-title">Queue ({queuedRuns.length - 1} remaining)</div>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Queue ({queuedRuns.length - 1} remaining)
+          </Text>
           {queuedRuns.slice(1).map((run: Run) => {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div
-                className="card"
-                key={String(run.id)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 16px',
-                }}
-              >
-                <div>
-                  <span className="muted small-text">#{run.sortOrder}</span>{' '}
-                  <span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span>
-                  {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
-                </div>
-                <span className="badge queued">Queued</span>
-              </div>
+              <Paper key={String(run.id)} withBorder p="sm">
+                <Group justify="space-between" align="center">
+                  <Group gap="xs">
+                    <Text size="sm" c="dimmed">
+                      #{run.sortOrder}
+                    </Text>
+                    <Text fw={600}>#{num ?? '?'}</Text>
+                    {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
+                  </Group>
+                  <Badge color="yellow" variant="light">
+                    Queued
+                  </Badge>
+                </Group>
+              </Paper>
             );
           })}
-        </div>
+        </Stack>
       )}
 
       {/* All done — only show when there are runs and all are finished */}
       {trackRuns.length > 0 && queuedRuns.length === 0 && runningRuns.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', padding: 24 }}>
-          <p className="muted">All riders have completed this track.</p>
-        </div>
+        <Paper withBorder p="xl" ta="center">
+          <Text c="dimmed">All riders have completed this track.</Text>
+        </Paper>
       )}
 
       {/* Results */}
       {finishedRuns.length > 0 && (
-        <div className="section">
-          <div className="section-title">Results</div>
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>Pos</th>
-                <th style={{ width: 50 }}>#</th>
-                <th>Rider</th>
-                <th style={{ textAlign: 'right' }}>Time</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Results
+          </Text>
+          <Table>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ width: 40 }}>Pos</Table.Th>
+                <Table.Th style={{ width: 50 }}>#</Table.Th>
+                <Table.Th>Rider</Table.Th>
+                <Table.Th style={{ textAlign: 'right' }}>Time</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {finishedRuns.map((run: Run, idx: number) => {
                 const rider = riderMap.get(run.riderId);
                 const num = getRiderNumber(run.riderId);
                 const elapsed = Number(run.endTime) - Number(run.startTime);
                 const pos = idx + 1;
-                const posClass =
-                  pos === 1
-                    ? 'position p1'
-                    : pos === 2
-                      ? 'position p2'
-                      : pos === 3
-                        ? 'position p3'
-                        : 'position';
+                const posColor =
+                  pos === 1 ? '#fbbf24' : pos === 2 ? '#94a3b8' : pos === 3 ? '#d97706' : undefined;
                 return (
-                  <tr key={String(run.id)}>
-                    <td>
-                      <span className={posClass}>{pos}</span>
-                    </td>
-                    <td>
-                      <span className="muted small-text">{num ?? '—'}</span>
-                    </td>
-                    <td>{rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className="elapsed">{formatElapsed(elapsed)}</span>
-                    </td>
-                  </tr>
+                  <Table.Tr key={String(run.id)}>
+                    <Table.Td>
+                      <Text fw={700} style={{ color: posColor ?? 'var(--accent)', minWidth: 28, textAlign: 'center' }}>
+                        {pos}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {num ?? '—'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>{rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}</Table.Td>
+                    <Table.Td style={{ textAlign: 'right' }}>
+                      <Text component="span" ff="monospace" fw={600} c="green">
+                        {formatElapsed(elapsed)}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </Table.Tbody>
+          </Table>
+        </Stack>
       )}
 
       {/* DNFs */}
       {dnfRuns.length > 0 && (
-        <div className="section">
-          <div className="section-title">Did Not Finish</div>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Did Not Finish
+          </Text>
           {dnfRuns.map((run: Run) => {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div
-                className="card"
-                key={String(run.id)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 16px',
-                }}
-              >
-                <span>
-                  <span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span>{' '}
-                  {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
-                </span>
-                <span className="badge dnf">DNF</span>
-              </div>
+              <Paper key={String(run.id)} withBorder p="sm">
+                <Group justify="space-between" align="center">
+                  <Text>
+                    <Text span fw={600} mr="xs">
+                      #{num ?? '?'}
+                    </Text>{' '}
+                    {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
+                  </Text>
+                  <Badge color="red" variant="light">
+                    DNF
+                  </Badge>
+                </Group>
+              </Paper>
             );
           })}
-        </div>
+        </Stack>
       )}
 
       {/* DNSs */}
       {dnsRuns.length > 0 && (
-        <div className="section">
-          <div className="section-title">Did Not Start</div>
+        <Stack gap="md" mb="xl">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+            Did Not Start
+          </Text>
           {dnsRuns.map((run: Run) => {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div
-                className="card"
-                key={String(run.id)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 16px',
-                }}
-              >
-                <span>
-                  <span style={{ fontWeight: 600, marginRight: 6 }}>#{num ?? '?'}</span>{' '}
-                  {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
-                </span>
-                <span className="badge dns">DNS</span>
-              </div>
+              <Paper key={String(run.id)} withBorder p="sm">
+                <Group justify="space-between" align="center">
+                  <Text>
+                    <Text span fw={600} mr="xs">
+                      #{num ?? '?'}
+                    </Text>{' '}
+                    {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
+                  </Text>
+                  <Badge color="gray" variant="light">
+                    DNS
+                  </Badge>
+                </Group>
+              </Paper>
             );
           })}
-        </div>
+        </Stack>
       )}
     </div>
   );

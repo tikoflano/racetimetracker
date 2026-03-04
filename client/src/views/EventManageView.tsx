@@ -1,6 +1,21 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
+import {
+  TextInput,
+  NumberInput,
+  Button,
+  Table,
+  Badge,
+  Paper,
+  Stack,
+  Group,
+  Text,
+  Box,
+  ActionIcon,
+  Tabs,
+} from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
@@ -8,7 +23,7 @@ import AddRiderModal from '../components/AddRiderModal';
 import AddTrackModal from '../components/AddTrackModal';
 import CheckInModal from '../components/CheckInModal';
 import SearchableSelect from '../components/SearchableSelect';
-import { faPen, faTrash } from '../icons';
+import { IconPencil, IconTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
 import type {
   Event,
@@ -588,9 +603,18 @@ export default function EventManageView() {
   if (!isAuthenticated) return <Navigate to="/" replace />;
   if (!event) {
     if (events.length === 0) return null;
-    return <div className="empty">Event not found.</div>;
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Event not found.
+      </Text>
+    );
   }
-  if (!canEdit) return <div className="empty">Access denied.</div>;
+  if (!canEdit)
+    return (
+      <Text c="dimmed" ta="center" py="xl">
+        Access denied.
+      </Text>
+    );
 
   const assignedRiders = orgRiders.filter((r) => eventRiderIds.has(r.id));
   const unassignedRiders = orgRiders.filter((r) => !eventRiderIds.has(r.id));
@@ -606,72 +630,53 @@ export default function EventManageView() {
         &larr; Back to Event
       </Link>
       <h1 style={{ marginBottom: 4 }}>Manage: {event.name}</h1>
-      <p className="muted small-text" style={{ marginBottom: 12 }}>
+      <Text size="sm" c="dimmed" mb="sm">
         {event.description}
-      </p>
+      </Text>
 
-      <div className="tabs">
-        <button
-          className={activeTab === 'tracks' ? 'active' : ''}
-          onClick={() => setActiveTab('tracks')}
-        >
-          Tracks ({sortedEventTracks.length})
-        </button>
-        <button
-          className={activeTab === 'categories' ? 'active' : ''}
-          onClick={() => setActiveTab('categories')}
-        >
-          Categories ({categories.length})
-        </button>
-        <button
-          className={activeTab === 'racers' ? 'active' : ''}
-          onClick={() => setActiveTab('racers')}
-        >
-          Riders ({assignedRiders.length})
-        </button>
-        <button
-          className={activeTab === 'runs' ? 'active' : ''}
-          onClick={() => setActiveTab('runs')}
-        >
-          Runs
-        </button>
-      </div>
+      <Tabs value={activeTab} onChange={(v) => v && setActiveTab(v as typeof activeTab)}>
+        <Tabs.List mb="md">
+          <Tabs.Tab value="tracks">
+            Tracks ({sortedEventTracks.length})
+          </Tabs.Tab>
+          <Tabs.Tab value="categories">
+            Categories ({categories.length})
+          </Tabs.Tab>
+          <Tabs.Tab value="racers">
+            Riders ({assignedRiders.length})
+          </Tabs.Tab>
+          <Tabs.Tab value="runs">
+            Runs
+          </Tabs.Tab>
+        </Tabs.List>
 
-      {activeTab === 'tracks' && (
-        <div className="section">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8,
-            }}
-          >
-            <div className="section-title" style={{ marginBottom: 0 }}>
-              Tracks{' '}
-              <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>
-                ({sortedEventTracks.length})
-              </span>
-            </div>
-            <button
-              className="primary small"
+        <Tabs.Panel value="tracks">
+        <Stack gap="md">
+          <Group justify="space-between" align="center">
+            <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+              Tracks <Text span inherit size="sm" fw={400}>({sortedEventTracks.length})</Text>
+            </Text>
+            <Button
+              size="xs"
               onClick={() => {
                 setShowAddTrackModal(true);
                 setAddTrackError('');
               }}
             >
               + Add Track
-            </button>
-          </div>
+            </Button>
+          </Group>
 
           {addTrackError && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+            <Text size="sm" c="red" mb="xs">
               {addTrackError}
-            </div>
+            </Text>
           )}
 
           {sortedEventTracks.length === 0 ? (
-            <div className="empty">No tracks assigned to this event.</div>
+            <Text c="dimmed" ta="center" py="xl">
+              No tracks assigned to this event.
+            </Text>
           ) : (
             sortedEventTracks.map((et: EventTrack) => {
               const tv = tvMap.get(et.trackVariationId);
@@ -682,11 +687,8 @@ export default function EventManageView() {
               const queuedCount = trackRuns.filter((r: Run) => r.status === 'queued').length;
 
               return (
-                <div
-                  key={String(et.id)}
-                  className="card"
-                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                >
+                <Paper key={String(et.id)} withBorder p="sm">
+                  <Group align="center" gap="xs" wrap="nowrap">
                   <Link
                     to={`/event/${event.slug}/track/${et.id}`}
                     style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
@@ -697,68 +699,71 @@ export default function EventManageView() {
                           {track?.name ?? 'Unknown Track'}
                           {tv ? ` — ${tv.name}` : ''}
                         </h3>
-                        {tv && <p className="muted small-text">{tv.description}</p>}
+                        {tv && (
+                          <Text size="sm" c="dimmed">
+                            {tv.description}
+                          </Text>
+                        )}
                       </div>
-                      <div style={{ textAlign: 'right', fontSize: '0.8rem' }}>
+                      <Group gap="xs" justify="flex-end" style={{ fontSize: '0.8rem' }}>
                         {runningCount > 0 && (
-                          <span className="badge running" style={{ marginRight: 4 }}>
+                          <Badge color="green" variant="light" size="sm">
                             {runningCount} racing
-                          </span>
+                          </Badge>
                         )}
                         {queuedCount > 0 && (
-                          <span className="badge queued" style={{ marginRight: 4 }}>
+                          <Badge color="yellow" variant="light" size="sm">
                             {queuedCount} queued
-                          </span>
+                          </Badge>
                         )}
-                        <span className="badge finished">{finishedCount} done</span>
-                      </div>
+                        <Badge color="gray" variant="light" size="sm">
+                          {finishedCount} done
+                        </Badge>
+                      </Group>
                     </div>
                   </Link>
-                  <button
-                    className="ghost small"
+                  <Button
+                    variant="subtle"
+                    size="xs"
                     onClick={() => handleRemoveTrack(et)}
                     title="Remove"
-                    style={{ color: 'var(--red)', flexShrink: 0 }}
+                    color="red"
+                    style={{ flexShrink: 0 }}
                   >
                     &times;
-                  </button>
-                </div>
+                  </Button>
+                  </Group>
+                </Paper>
               );
             })
           )}
-        </div>
-      )}
+        </Stack>
+        </Tabs.Panel>
 
-      {activeTab === 'categories' && (
-        <div className="section">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8,
-            }}
-          >
-            <div className="section-title" style={{ marginBottom: 0 }}>
+        <Tabs.Panel value="categories">
+        <Stack gap="md">
+          <Group justify="space-between" align="center">
+            <Text size="xs" fw={600} c="dimmed" tt="uppercase">
               Categories{' '}
-              <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>
+              <Text span inherit size="sm" fw={400}>
                 ({categories.length})
-              </span>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+              </Text>
+            </Text>
+            <Group gap="xs">
               {!showCatForm && (
                 <>
-                  <button
-                    className="ghost small"
+                  <Button
+                    variant="subtle"
+                    size="xs"
                     onClick={() => {
                       setShowImport(!showImport);
                       setImportError('');
                     }}
                   >
                     {showImport ? 'Cancel Import' : 'Import'}
-                  </button>
-                  <button
-                    className="primary small"
+                  </Button>
+                  <Button
+                    size="xs"
                     onClick={() => {
                       setShowCatForm(true);
                       setEditingCatId(null);
@@ -767,36 +772,38 @@ export default function EventManageView() {
                     }}
                   >
                     + Add Category
-                  </button>
+                  </Button>
                 </>
               )}
-            </div>
-          </div>
+            </Group>
+          </Group>
 
           {catError && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+            <Text size="sm" c="red" mb="xs">
               {catError}
-            </div>
+            </Text>
           )}
           {categoryTrackError && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+            <Text size="sm" c="red" mb="xs">
               {categoryTrackError}
-            </div>
+            </Text>
           )}
 
           {/* Import from another event */}
           {showImport && (
-            <div className="card" style={{ marginBottom: 12 }}>
-              <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>
+            <Paper withBorder p="md" mb="sm">
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
                 Import categories from another event
-              </div>
+              </Text>
               {importError && (
-                <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+                <Text size="sm" c="red" mb="xs">
                   {importError}
-                </div>
+                </Text>
               )}
               {otherEvents.length === 0 ? (
-                <div className="muted small-text">No other events in this organization.</div>
+                <Text size="sm" c="dimmed">
+                  No other events in this organization.
+                </Text>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {otherEvents
@@ -817,104 +824,88 @@ export default function EventManageView() {
                         >
                           <div>
                             <strong style={{ fontSize: '0.85rem' }}>{evt.name}</strong>
-                            <span className="muted small-text" style={{ marginLeft: 8 }}>
+                            <Text size="sm" c="dimmed" ml="xs">
                               {cats.length} categor{cats.length === 1 ? 'y' : 'ies'}:{' '}
                               {cats.map((c) => c.name).join(', ')}
-                            </span>
+                            </Text>
                           </div>
-                          <button className="primary small" onClick={() => handleImport(evt.id)}>
+                          <Button size="xs" onClick={() => handleImport(evt.id)}>
                             Import
-                          </button>
+                          </Button>
                         </div>
                       );
                     })}
                   {otherEvents.every((e) => !categoriesByEvent.has(e.id)) && (
-                    <div className="muted small-text">No other events have categories defined.</div>
+                    <Text size="sm" c="dimmed">
+                      No other events have categories defined.
+                    </Text>
                   )}
                 </div>
               )}
-            </div>
+            </Paper>
           )}
 
           {/* Category form */}
           {showCatForm && (
-            <div className="card" style={{ marginBottom: 12 }}>
-              <div className="section-title" style={{ marginBottom: 8 }}>
+            <Paper withBorder p="md" mb="sm">
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
                 {editingCatId ? 'Edit Category' : 'New Category'}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div>
-                  <label className="input-label">Name *</label>
-                  <input
-                    type="text"
-                    value={catForm.name}
-                    onChange={(e) => setCatForm((f) => ({ ...f, name: e.target.value }))}
-                    className="input"
-                    autoFocus
+              </Text>
+              <Stack gap="sm">
+                <TextInput
+                  label="Name *"
+                  value={catForm.name}
+                  onChange={(e) => setCatForm((f) => ({ ...f, name: e.target.value }))}
+                  autoFocus
+                />
+                <TextInput
+                  label="Description"
+                  value={catForm.description}
+                  onChange={(e) => setCatForm((f) => ({ ...f, description: e.target.value }))}
+                />
+                <Group grow>
+                  <NumberInput
+                    label="Number Range Start *"
+                    min={0}
+                    value={catForm.rangeStart}
+                    onChange={(v) => setCatForm((f) => ({ ...f, rangeStart: String(v ?? '') }))}
                   />
-                </div>
-                <div>
-                  <label className="input-label">Description</label>
-                  <input
-                    type="text"
-                    value={catForm.description}
-                    onChange={(e) => setCatForm((f) => ({ ...f, description: e.target.value }))}
-                    className="input"
+                  <NumberInput
+                    label="Number Range End *"
+                    min={0}
+                    value={catForm.rangeEnd}
+                    onChange={(v) => setCatForm((f) => ({ ...f, rangeEnd: String(v ?? '') }))}
                   />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div>
-                    <label className="input-label">Number Range Start *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      required
-                      value={catForm.rangeStart}
-                      onChange={(e) => setCatForm((f) => ({ ...f, rangeStart: e.target.value }))}
-                      className="input"
-                    />
-                  </div>
-                  <div>
-                    <label className="input-label">Number Range End *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      required
-                      value={catForm.rangeEnd}
-                      onChange={(e) => setCatForm((f) => ({ ...f, rangeEnd: e.target.value }))}
-                      className="input"
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="primary small" onClick={handleCatSubmit}>
+                </Group>
+                <Group gap="xs">
+                  <Button size="xs" onClick={handleCatSubmit}>
                     {editingCatId ? 'Save' : 'Create'}
-                  </button>
-                  <button className="ghost small" onClick={resetCatForm}>
+                  </Button>
+                  <Button variant="subtle" size="xs" onClick={resetCatForm}>
                     Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
           )}
 
           {/* Category list */}
           {categories.length === 0 && !showCatForm ? (
-            <div className="empty">
+            <Text c="dimmed" ta="center" py="xl">
               No categories defined. Add one or import from another event.
-            </div>
+            </Text>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Number Range</th>
-                  <th>Tracks</th>
-                  <th style={{ width: 80 }}></th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>Description</Table.Th>
+                  <Table.Th>Number Range</Table.Th>
+                  <Table.Th>Tracks</Table.Th>
+                  <Table.Th style={{ width: 80 }}></Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
                 {categories.map((cat: EventCategory) => {
                   const cts = categoryTracksByCategoryId.get(cat.id) ?? [];
                   const eventTrackIdsInCat = new Set(
@@ -924,15 +915,21 @@ export default function EventManageView() {
                     (et: EventTrack) => !eventTrackIdsInCat.has(et.id)
                   );
                   return (
-                    <tr key={String(cat.id)}>
-                      <td>
-                        <strong>{cat.name}</strong>
-                      </td>
-                      <td className="muted small-text">{cat.description || '—'}</td>
-                      <td className="muted small-text">
-                        {cat.numberRangeStart} – {cat.numberRangeEnd}
-                      </td>
-                      <td>
+                    <Table.Tr key={String(cat.id)}>
+                      <Table.Td>
+                        <Text fw={600}>{cat.name}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">
+                          {cat.description || '—'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">
+                          {cat.numberRangeStart} – {cat.numberRangeEnd}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
                         <div
                           style={{
                             display: 'flex',
@@ -955,9 +952,9 @@ export default function EventManageView() {
                               ? `${trackColor}20`
                               : trackColor;
                             return (
-                              <span
+                              <Badge
                                 key={String(ct.id)}
-                                className="badge"
+                                variant="light"
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -976,30 +973,24 @@ export default function EventManageView() {
                                     gap: 6,
                                   }}
                                 >
-                                  <span className="color-dot" style={{ background: trackColor }} />
+                                  <Box w={6} h={6} style={{ borderRadius: '50%', background: trackColor }} />
                                   {label}
                                 </Link>
-                                <button
-                                  type="button"
-                                  className="ghost small"
+                                <ActionIcon
+                                  variant="subtle"
+                                  size="xs"
+                                  color="red"
                                   onClick={() => handleRemoveTrackFromCategory(ct.id)}
                                   title="Remove"
-                                  style={{
-                                    padding: 0,
-                                    margin: 0,
-                                    lineHeight: 1,
-                                    color: 'var(--red)',
-                                    fontSize: '0.9em',
-                                  }}
+                                  style={{ padding: 0, margin: 0, lineHeight: 1 }}
                                 >
                                   &times;
-                                </button>
-                              </span>
+                                </ActionIcon>
+                              </Badge>
                             );
                           })}
                           {availableTracks.length > 0 && (
                             <select
-                              className="input"
                               value=""
                               onChange={(e) => {
                                 const val = e.target.value;
@@ -1013,6 +1004,8 @@ export default function EventManageView() {
                                 minWidth: 140,
                                 padding: '4px 8px',
                                 fontSize: '0.8rem',
+                                borderRadius: 'var(--mantine-radius-sm)',
+                                border: '1px solid var(--mantine-color-default-border)',
                               }}
                             >
                               <option value="">+ Add track</option>
@@ -1031,83 +1024,81 @@ export default function EventManageView() {
                             </select>
                           )}
                           {cts.length === 0 && availableTracks.length === 0 && (
-                            <span className="muted small-text">No tracks in event</span>
+                            <Text size="sm" c="dimmed">
+                              No tracks in event
+                            </Text>
                           )}
                         </div>
-                      </td>
-                      <td>
+                      </Table.Td>
+                      <Table.Td>
                         <RowActionMenu
                           items={[
-                            { icon: faPen, label: 'Edit', onClick: () => startEditCat(cat) },
+                            { icon: IconPencil, label: 'Edit', onClick: () => startEditCat(cat) },
                             {
-                              icon: faTrash,
+                              icon: IconTrash,
                               label: 'Delete',
                               danger: true,
                               onClick: () => handleDeleteCat(cat),
                             },
                           ]}
                         />
-                      </td>
-                    </tr>
+                      </Table.Td>
+                    </Table.Tr>
                   );
                 })}
-              </tbody>
-            </table>
+              </Table.Tbody>
+            </Table>
           )}
-        </div>
-      )}
+        </Stack>
+        </Tabs.Panel>
 
-      {activeTab === 'racers' && (
-        <div className="section">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8,
-            }}
-          >
-            <div className="section-title" style={{ marginBottom: 0 }}>
+        <Tabs.Panel value="racers">
+        <Stack gap="md">
+          <Group justify="space-between" align="center">
+            <Text size="xs" fw={600} c="dimmed" tt="uppercase">
               Riders{' '}
-              <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 400 }}>
+              <Text span inherit size="sm" fw={400}>
                 ({assignedRiders.length})
-              </span>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                className="ghost small"
+              </Text>
+            </Text>
+            <Group gap="xs">
+              <Button
+                variant="subtle"
+                size="xs"
                 onClick={() => {
                   setShowImportRiders(!showImportRiders);
                   setImportRiderError('');
                 }}
               >
                 {showImportRiders ? 'Cancel Import' : 'Import'}
-              </button>
-              <button className="primary small" onClick={() => setShowAddRiderModal(true)}>
+              </Button>
+              <Button size="xs" onClick={() => setShowAddRiderModal(true)}>
                 + Add Riders
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Group>
+          </Group>
 
           {riderError && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+            <Text size="sm" c="red" mb="xs">
               {riderError}
-            </div>
+            </Text>
           )}
 
           {/* Import racers from another event */}
           {showImportRiders && (
-            <div className="card" style={{ marginBottom: 12 }}>
-              <div className="section-title" style={{ marginBottom: 8, fontSize: '0.85rem' }}>
+            <Paper withBorder p="md" mb="sm">
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
                 Import riders from another event
-              </div>
+              </Text>
               {importRiderError && (
-                <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+                <Text size="sm" c="red" mb="xs">
                   {importRiderError}
-                </div>
+                </Text>
               )}
               {otherEvents.length === 0 ? (
-                <div className="muted small-text">No other events in this organization.</div>
+                <Text size="sm" c="dimmed">
+                  No other events in this organization.
+                </Text>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {otherEvents
@@ -1128,35 +1119,38 @@ export default function EventManageView() {
                         >
                           <div>
                             <strong style={{ fontSize: '0.85rem' }}>{evt.name}</strong>
-                            <span className="muted small-text" style={{ marginLeft: 8 }}>
+                            <Text size="sm" c="dimmed" ml="xs">
                               {count} rider{count !== 1 ? 's' : ''}
-                            </span>
+                            </Text>
                           </div>
-                          <button
-                            className="primary small"
-                            onClick={() => handleImportRiders(evt.id)}
-                          >
+                          <Button size="xs" onClick={() => handleImportRiders(evt.id)}>
                             Import
-                          </button>
+                          </Button>
                         </div>
                       );
                     })}
                   {otherEvents.every((e) => !riderCountByEvent.has(e.id)) && (
-                    <div className="muted small-text">No other events have riders assigned.</div>
+                    <Text size="sm" c="dimmed">
+                      No other events have riders assigned.
+                    </Text>
                   )}
                 </div>
               )}
-            </div>
+            </Paper>
           )}
 
           {/* Category filter */}
           {assignedRiders.length > 0 && (
-            <div style={{ marginBottom: 8 }}>
+            <Box mb="xs">
               <select
-                className="input"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                style={{ width: 'auto', minWidth: 180 }}
+                style={{
+                  width: 'auto',
+                  minWidth: 180,
+                  borderRadius: 'var(--mantine-radius-sm)',
+                  border: '1px solid var(--mantine-color-default-border)',
+                }}
               >
                 <option value="all">All Categories</option>
                 <option value="none">No Category</option>
@@ -1166,41 +1160,46 @@ export default function EventManageView() {
                   </option>
                 ))}
               </select>
-            </div>
+            </Box>
           )}
 
           {assignedRiders.length === 0 ? (
-            <div className="empty">No riders assigned to this event.</div>
+            <Text c="dimmed" ta="center" py="xl">
+              No riders assigned to this event.
+            </Text>
           ) : filteredRiders.length === 0 ? (
-            <div className="empty">No riders match this filter.</div>
+            <Text c="dimmed" ta="center" py="xl">
+              No riders match this filter.
+            </Text>
           ) : (
             <>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 60 }}>No.</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Email</th>
-                    <th style={{ width: 120, minWidth: 120, textAlign: 'right' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th style={{ width: 60 }}>No.</Table.Th>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Category</Table.Th>
+                    <Table.Th>Email</Table.Th>
+                    <Table.Th style={{ width: 120, minWidth: 120, textAlign: 'right' }}></Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                   {paginatedRiders.map((r: Rider) => {
                     const er = eventRiderMap.get(r.id);
                     if (!er) return null;
                     const num = assignedNumberByRiderId.get(r.id);
                     return (
-                      <tr key={String(r.id)}>
-                        <td className="muted small-text">
-                          {num !== null && num !== undefined ? num : '—'}
-                        </td>
-                        <td>
+                      <Table.Tr key={String(r.id)}>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {num !== null && num !== undefined ? num : '—'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
                           {r.firstName} {r.lastName}
-                        </td>
-                        <td>
+                        </Table.Td>
+                        <Table.Td>
                           <select
-                            className="input"
                             value={String(er.categoryId)}
                             onChange={(e) => handleChangeCategory(er, BigInt(e.target.value))}
                             style={{
@@ -1208,6 +1207,8 @@ export default function EventManageView() {
                               minWidth: 120,
                               padding: '2px 6px',
                               fontSize: '0.8rem',
+                              borderRadius: 'var(--mantine-radius-sm)',
+                              border: '1px solid var(--mantine-color-default-border)',
                             }}
                           >
                             <option value="0">—</option>
@@ -1217,69 +1218,71 @@ export default function EventManageView() {
                               </option>
                             ))}
                           </select>
-                        </td>
-                        <td className="muted small-text">{r.email || '—'}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {r.email || '—'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {er.checkedIn ? (
-                            <span className="badge checked-in">
+                            <Badge
+                              color="green"
+                              variant="light"
+                              rightSection={
+                                <ActionIcon
+                                  variant="subtle"
+                                  size="xs"
+                                  color="red"
+                                  onClick={() => handleRevertCheckIn(er, r)}
+                                  title="Revert check-in"
+                                >
+                                  &times;
+                                </ActionIcon>
+                              }
+                            >
                               Checked in
-                              <button
-                                type="button"
-                                className="badge-revert"
-                                onClick={() => handleRevertCheckIn(er, r)}
-                                title="Revert check-in"
-                              >
-                                &times;
-                              </button>
-                            </span>
+                            </Badge>
                           ) : (
-                            <button
-                              className="primary small"
+                            <Button
+                              size="xs"
                               onClick={() => setCheckInModal({ rider: r, eventRider: er })}
                             >
                               Check in
-                            </button>
+                            </Button>
                           )}
-                        </td>
-                      </tr>
+                        </Table.Td>
+                      </Table.Tr>
                     );
                   })}
-                </tbody>
-              </table>
+                </Table.Tbody>
+              </Table>
               {filteredRiders.length > PAGE_SIZE_OPTIONS[0] && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    gap: 12,
-                    marginTop: 12,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <button
-                    className="ghost small"
+                <Group justify="flex-end" gap="md" mt="md" wrap="wrap">
+                  <Button
+                    variant="subtle"
+                    size="xs"
                     onClick={() => setRiderPage((p) => Math.max(0, p - 1))}
                     disabled={riderPage === 0}
                   >
                     Previous
-                  </button>
-                  <span className="muted small-text">
+                  </Button>
+                  <Text size="sm" c="dimmed">
                     Page {riderPage + 1} of {riderTotalPages} ({filteredRiders.length} riders)
-                  </span>
-                  <button
-                    className="ghost small"
+                  </Text>
+                  <Button
+                    variant="subtle"
+                    size="xs"
                     onClick={() => setRiderPage((p) => Math.min(riderTotalPages - 1, p + 1))}
                     disabled={riderPage >= riderTotalPages - 1}
                   >
                     Next
-                  </button>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <label className="input-label" style={{ marginBottom: 0 }}>
+                  </Button>
+                  <Group gap="xs" align="center">
+                    <Text size="sm" fw={500}>
                       Per page
-                    </label>
+                    </Text>
                     <select
-                      className="input"
                       value={riderPageSize}
                       onChange={(e) => {
                         const n = Number(e.target.value);
@@ -1288,7 +1291,12 @@ export default function EventManageView() {
                           localStorage.setItem('racetimetracker-event-riders-page-size', String(n));
                         } catch {}
                       }}
-                      style={{ width: 72, padding: '6px 8px' }}
+                      style={{
+                        width: 72,
+                        padding: '6px 8px',
+                        borderRadius: 'var(--mantine-radius-sm)',
+                        border: '1px solid var(--mantine-color-default-border)',
+                      }}
                     >
                       {PAGE_SIZE_OPTIONS.map((n) => (
                         <option key={n} value={n}>
@@ -1296,37 +1304,41 @@ export default function EventManageView() {
                         </option>
                       ))}
                     </select>
-                  </div>
-                </div>
+                  </Group>
+                </Group>
               )}
             </>
           )}
-        </div>
-      )}
+        </Stack>
+        </Tabs.Panel>
 
-      {activeTab === 'runs' && (
-        <div className="section">
-          <div className="section-title" style={{ marginBottom: 8 }}>
+        <Tabs.Panel value="runs">
+        <Stack gap="md">
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase">
             Run Schedule
-          </div>
-          <p className="muted small-text" style={{ marginBottom: 16 }}>
+          </Text>
+          <Text size="sm" c="dimmed" mb="md">
             Create a schedule of runs for each track using all registered riders. Start time must be
             within the event dates ({event?.startDate} to {event?.endDate}). Riders are ordered by
             category and assigned number.
-          </p>
+          </Text>
 
           {scheduleError && (
-            <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 8 }}>
+            <Text size="sm" c="red" mb="xs">
               {scheduleError}
-            </div>
+            </Text>
           )}
 
           {sortedEventTracks.length === 0 ? (
-            <div className="empty">No tracks assigned to this event. Add tracks first.</div>
+            <Text c="dimmed" ta="center" py="xl">
+              No tracks assigned to this event. Add tracks first.
+            </Text>
           ) : assignedRiders.length === 0 ? (
-            <div className="empty">No riders registered. Add riders to create a schedule.</div>
+            <Text c="dimmed" ta="center" py="xl">
+              No riders registered. Add riders to create a schedule.
+            </Text>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Stack gap="lg">
               {sortedEventTracks.map((et: EventTrack) => {
                 const tv = tvMap.get(et.trackVariationId);
                 const track = tv ? trackMap.get(tv.trackId) : undefined;
@@ -1338,106 +1350,84 @@ export default function EventManageView() {
                 const maxDatetime = event ? `${event.endDate}T23:59` : '';
 
                 return (
-                  <div key={String(et.id)} className="card" style={{ padding: 16 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: 12,
-                      }}
-                    >
+                  <Paper key={String(et.id)} withBorder p="md">
+                    <Group justify="space-between" align="flex-start" mb="sm">
                       <div>
-                        <h3 style={{ fontSize: '1rem', marginBottom: 4 }}>{trackLabel}</h3>
-                        <Link
+                        <Text fw={600} size="md" mb="xs">
+                          {trackLabel}
+                        </Text>
+                        <Text
+                          component={Link}
                           to={`/event/${event.slug}/track/${et.id}`}
-                          className="small-text"
-                          style={{ color: 'var(--accent)' }}
+                          size="sm"
+                          c="blue"
+                          td="none"
                         >
                           Track timing →
-                        </Link>
+                        </Text>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {schedule && (
-                          <span
-                            className="badge"
-                            style={{ background: 'var(--green-bg)', color: 'var(--green)' }}
-                          >
-                            {trackRuns.length} run{trackRuns.length !== 1 ? 's' : ''} scheduled
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr auto',
-                        gap: 12,
-                        alignItems: 'end',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <div>
-                        <label className="input-label">Start date & time</label>
-                        <input
-                          type="datetime-local"
-                          className="input"
-                          value={form.startDateTime}
-                          min={minDatetime}
-                          max={maxDatetime}
-                          onChange={(e) =>
-                            setScheduleForm(et.id, { startDateTime: e.target.value })
+                      {schedule && (
+                        <Badge color="green" variant="light">
+                          {trackRuns.length} run{trackRuns.length !== 1 ? 's' : ''} scheduled
+                        </Badge>
+                      )}
+                    </Group>
+                    <Group align="flex-end" gap="md" wrap="wrap">
+                      <DateTimePicker
+                        label="Start date & time"
+                        value={form.startDateTime ? new Date(form.startDateTime) : null}
+                        minDate={minDatetime ? new Date(minDatetime) : undefined}
+                        maxDate={maxDatetime ? new Date(maxDatetime) : undefined}
+                        onChange={(d: Date | null) =>
+                          setScheduleForm(et.id, {
+                            startDateTime: d ? d.toISOString().slice(0, 16) : '',
+                          })
+                        }
+                      />
+                      <Group gap="xs" align="flex-end">
+                        <NumberInput
+                          label="Interval between riders"
+                          min={1}
+                          value={form.intervalValue}
+                          onChange={(v) =>
+                            setScheduleForm(et.id, { intervalValue: String(v ?? '') })
                           }
+                          style={{ width: 80 }}
                         />
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <div>
-                          <label className="input-label">Interval between riders</label>
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            <input
-                              type="number"
-                              min="1"
-                              className="input"
-                              value={form.intervalValue}
-                              onChange={(e) =>
-                                setScheduleForm(et.id, { intervalValue: e.target.value })
-                              }
-                              style={{ width: 80 }}
-                            />
-                            <select
-                              className="input"
-                              value={form.intervalUnit}
-                              onChange={(e) =>
-                                setScheduleForm(et.id, {
-                                  intervalUnit: e.target.value as 'minutes' | 'seconds',
-                                })
-                              }
-                              style={{ width: 100 }}
-                            >
-                              <option value="minutes">minutes</option>
-                              <option value="seconds">seconds</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          className="primary small"
-                          onClick={() => handleGenerateSchedule(et)}
+                        <select
+                          value={form.intervalUnit}
+                          onChange={(e) =>
+                            setScheduleForm(et.id, {
+                              intervalUnit: e.target.value as 'minutes' | 'seconds',
+                            })
+                          }
+                          style={{
+                            width: 100,
+                            padding: '6px 8px',
+                            borderRadius: 'var(--mantine-radius-sm)',
+                            border: '1px solid var(--mantine-color-default-border)',
+                          }}
                         >
+                          <option value="minutes">minutes</option>
+                          <option value="seconds">seconds</option>
+                        </select>
+                      </Group>
+                      <Group gap="xs">
+                        <Button size="xs" onClick={() => handleGenerateSchedule(et)}>
                           {schedule ? 'Regenerate' : 'Generate'} Schedule
-                        </button>
+                        </Button>
                         {schedule && (
-                          <button
-                            className="ghost small"
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            color="red"
                             onClick={() => handleClearSchedule(et)}
-                            style={{ color: 'var(--red)' }}
                           >
                             Clear
-                          </button>
+                          </Button>
                         )}
-                      </div>
-                    </div>
+                      </Group>
+                    </Group>
 
                     {/* Timekeeper assignments */}
                     <TimekeeperSection
@@ -1458,13 +1448,14 @@ export default function EventManageView() {
                       }}
                       error={tkAssignError}
                     />
-                  </div>
+                  </Paper>
                 );
               })}
-            </div>
+            </Stack>
           )}
-        </div>
-      )}
+        </Stack>
+        </Tabs.Panel>
+      </Tabs>
 
       {/* Modals - outside tab content so they persist when switching tabs */}
       <AddTrackModal
@@ -1536,26 +1527,18 @@ function TimekeeperSection({
   }, [trackAssignments]);
 
   return (
-    <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-      <div
-        style={{
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: 'var(--text-muted)',
-          marginBottom: 8,
-        }}
-      >
+    <Box mt="md" pt="sm" style={{ borderTop: '1px solid var(--border)' }}>
+      <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
         Timekeepers
-      </div>
+      </Text>
       {error && (
-        <div style={{ color: 'var(--red)', fontSize: '0.8rem', marginBottom: 8 }}>{error}</div>
+        <Text size="sm" c="red" mb="xs">
+          {error}
+        </Text>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div>
-          <label className="input-label">Start line</label>
-          <SearchableSelect<User>
+      <Group grow>
+        <SearchableSelect<User>
+          label="Start line"
             items={assignableUsers}
             value={
               currentStart === 0n
@@ -1568,10 +1551,8 @@ function TimekeeperSection({
             placeholder="Select timekeeper..."
             clearLabel="Unassign"
           />
-        </div>
-        <div>
-          <label className="input-label">Finish line</label>
-          <SearchableSelect<User>
+        <SearchableSelect<User>
+          label="Finish line"
             items={assignableUsers}
             value={
               currentEnd === 0n ? null : (assignableUsers.find((u) => u.id === currentEnd) ?? null)
@@ -1582,8 +1563,7 @@ function TimekeeperSection({
             placeholder="Select timekeeper..."
             clearLabel="Unassign"
           />
-        </div>
-      </div>
-    </div>
+      </Group>
+    </Box>
   );
 }

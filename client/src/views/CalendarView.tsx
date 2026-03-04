@@ -1,24 +1,15 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Group, Button, Menu, Checkbox, Text, Title, Box, Stack, Paper } from '@mantine/core';
+import { Calendar } from '@mantine/dates';
 import { useTable } from 'spacetimedb/react';
 import { tables } from '../module_bindings';
 import { useAuth } from '../auth';
 import type { Event, Championship, Organization } from '../module_bindings/types';
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 function parseDate(s: string): Date | null {
@@ -31,6 +22,12 @@ function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function toDateStr(date: Date | string): string {
+  if (typeof date === 'string') return date;
+  const d = date;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export default function CalendarView() {
   const { user } = useAuth();
   const [events] = useTable(tables.event);
@@ -40,21 +37,16 @@ export default function CalendarView() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [selectedChampIds, setSelectedChampIds] = useState<Set<bigint> | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // User's org IDs
   const userOrgIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(orgs.filter((o: Organization) => o.ownerUserId === user.id).map((o) => o.id));
   }, [user, orgs]);
 
-  // Championships in user's orgs
   const orgChamps = useMemo(() => {
     return championships.filter((c: Championship) => userOrgIds.has(c.orgId));
   }, [championships, userOrgIds]);
 
-  // Default: all selected. null means "not yet initialized"
   const activeChampIds = useMemo(() => {
     if (selectedChampIds !== null) return selectedChampIds;
     return new Set(orgChamps.map((c) => c.id));
@@ -82,19 +74,6 @@ export default function CalendarView() {
   const allSelected = activeChampIds.size === orgChamps.length;
   const noneSelected = activeChampIds.size === 0;
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [dropdownOpen]);
-
-  // Events in user's orgs, filtered by selected championships
   const filteredEvents = useMemo(() => {
     let evts = events.filter((e: Event) => userOrgIds.has(e.orgId));
     if (!allSelected) {
@@ -103,7 +82,6 @@ export default function CalendarView() {
     return evts;
   }, [events, userOrgIds, activeChampIds, allSelected]);
 
-  // Map date keys to events (expand multi-day events)
   const dateEvents = useMemo(() => {
     const m = new Map<string, Event[]>();
     for (const evt of filteredEvents) {
@@ -123,15 +101,7 @@ export default function CalendarView() {
     return m;
   }, [filteredEvents]);
 
-  // Calendar grid
-  const firstDay = new Date(year, month, 1);
-  const startOffset = firstDay.getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < startOffset; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
+  const displayedDate = useMemo(() => new Date(year, month, 1), [year, month]);
 
   const prevMonth = () => {
     if (month === 0) {
@@ -151,9 +121,13 @@ export default function CalendarView() {
     setMonth(now.getMonth());
   };
 
-  const today = dateKey(new Date());
+  const handleDateChange = (d: Date | string | null) => {
+    if (!d) return;
+    const date = typeof d === 'string' ? new Date(d + 'T00:00:00') : d;
+    setYear(date.getFullYear());
+    setMonth(date.getMonth());
+  };
 
-  // Last (most recent past) and next (upcoming) event for jump buttons
   const { lastEvent, nextEvent } = useMemo(() => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -195,7 +169,6 @@ export default function CalendarView() {
     }
   };
 
-  // Dropdown label
   const dropdownLabel = allSelected
     ? 'All Championships'
     : noneSelected
@@ -205,151 +178,189 @@ export default function CalendarView() {
         : `${activeChampIds.size} Championships`;
 
   return (
-    <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-          flexWrap: 'wrap',
-          gap: 8,
-        }}
-      >
-        <h1 style={{ marginBottom: 0 }}>Calendar</h1>
+    <Box>
+      <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="xs">
+        <Title order={1}>Calendar</Title>
+        <Menu shadow="md" width={220} position="bottom-end" closeOnClickOutside>
+          <Menu.Target>
+            <Button variant="default" style={{ minWidth: 200, justifyContent: 'space-between' }}>
+              <Group gap="xs">
+                {!allSelected && !noneSelected && (
+                  <Group gap={2}>
+                    {[...activeChampIds].slice(0, 4).map((id) => {
+                      const c = champMap.get(id);
+                      return c ? (
+                        <span
+                          key={String(id)}
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            background: c.color,
+                          }}
+                        />
+                      ) : null;
+                    })}
+                  </Group>
+                )}
+                {dropdownLabel}
+              </Group>
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Group gap="xs" p="xs">
+              <Button variant="subtle" size="xs" onClick={selectAll} disabled={allSelected}>
+                All
+              </Button>
+              <Button variant="subtle" size="xs" onClick={selectNone} disabled={noneSelected}>
+                None
+              </Button>
+            </Group>
+            <Stack gap={0}>
+              {orgChamps.map((c: Championship) => (
+                <Box
+                  key={String(c.id)}
+                  p="xs"
+                  style={{ cursor: 'pointer' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleChamp(c.id);
+                  }}
+                >
+                  <Checkbox
+                    checked={activeChampIds.has(c.id)}
+                    onChange={() => toggleChamp(c.id)}
+                    label={
+                      <Group gap="xs">
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            background: c.color,
+                          }}
+                        />
+                        {c.name}
+                      </Group>
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Box>
+              ))}
+            </Stack>
+            {orgChamps.length === 0 && (
+              <Text size="sm" c="dimmed" p="xs">
+                No championships
+              </Text>
+            )}
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
 
-        {/* Multi-select championship dropdown */}
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
-          <button
-            className="input"
-            onClick={() => setDropdownOpen((o) => !o)}
-            style={{
-              width: 'auto',
-              minWidth: 200,
-              textAlign: 'left',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              cursor: 'pointer',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {!allSelected && !noneSelected && (
-                <span style={{ display: 'flex', gap: 2 }}>
-                  {[...activeChampIds].slice(0, 4).map((id) => {
-                    const c = champMap.get(id);
-                    return c ? (
-                      <span
-                        key={String(id)}
-                        className="color-dot"
-                        style={{ background: c.color }}
-                      />
-                    ) : null;
-                  })}
-                </span>
-              )}
-              {dropdownLabel}
-            </span>
-            <span style={{ fontSize: '0.6rem' }}>{dropdownOpen ? '\u25B2' : '\u25BC'}</span>
-          </button>
-
-          {dropdownOpen && (
-            <div className="champ-dropdown">
-              <div className="champ-dropdown-actions">
-                <button className="ghost small" onClick={selectAll} disabled={allSelected}>
-                  All
-                </button>
-                <button className="ghost small" onClick={selectNone} disabled={noneSelected}>
-                  None
-                </button>
-              </div>
-              {orgChamps.map((c: Championship) => {
-                const checked = activeChampIds.has(c.id);
-                return (
-                  <label key={String(c.id)} className="champ-dropdown-item">
-                    <input type="checkbox" checked={checked} onChange={() => toggleChamp(c.id)} />
-                    <span className="color-dot" style={{ background: c.color }} />
-                    <span>{c.name}</span>
-                  </label>
-                );
-              })}
-              {orgChamps.length === 0 && (
-                <div className="champ-dropdown-empty">No championships</div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Month navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <button className="ghost small" onClick={prevMonth}>
-          &larr;
-        </button>
-        <span style={{ fontWeight: 600, fontSize: '1.1rem', minWidth: 160, textAlign: 'center' }}>
+      <Group gap="md" mb="md">
+        <Button variant="subtle" size="xs" onClick={prevMonth}>
+          ←
+        </Button>
+        <Text fw={600} size="lg" style={{ minWidth: 160, textAlign: 'center' }}>
           {MONTH_NAMES[month]} {year}
-        </span>
-        <button className="ghost small" onClick={nextMonth}>
-          &rarr;
-        </button>
-        <button className="ghost small" onClick={goToday}>
+        </Text>
+        <Button variant="subtle" size="xs" onClick={nextMonth}>
+          →
+        </Button>
+        <Button variant="subtle" size="xs" onClick={goToday}>
           Today
-        </button>
-        <button
-          className="ghost small"
+        </Button>
+        <Button
+          variant="subtle"
+          size="xs"
           onClick={goToLastEvent}
           disabled={!lastEvent}
           title={lastEvent?.name}
         >
           Last event
-        </button>
-        <button
-          className="ghost small"
+        </Button>
+        <Button
+          variant="subtle"
+          size="xs"
           onClick={goToNextEvent}
           disabled={!nextEvent}
           title={nextEvent?.name}
         >
           Next event
-        </button>
-      </div>
+        </Button>
+      </Group>
 
-      {/* Calendar grid */}
-      <div className="cal-grid">
-        {DAYS.map((d) => (
-          <div key={d} className="cal-header">
-            {d}
-          </div>
-        ))}
-        {cells.map((day, i) => {
-          if (day === null) return <div key={`e${i}`} className="cal-cell empty" />;
-          const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const evts = dateEvents.get(key) ?? [];
-          const isToday = key === today;
-          return (
-            <div key={key} className={`cal-cell${isToday ? ' today' : ''}`}>
-              <div className="cal-day">{day}</div>
-              <div className="cal-events">
-                {evts.slice(0, 3).map((evt) => {
-                  const champ = champMap.get(evt.championshipId);
-                  return (
-                    <Link
-                      key={String(evt.id)}
-                      to={`/event/${evt.slug}`}
-                      className="cal-event"
-                      style={{ borderLeftColor: champ?.color ?? 'var(--accent)' }}
-                      title={evt.name}
-                    >
-                      {evt.name}
-                    </Link>
-                  );
-                })}
-                {evts.length > 3 && <span className="cal-more">+{evts.length - 3} more</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+      <Paper withBorder p="md" style={{ overflow: 'hidden' }}>
+        <Calendar
+          date={displayedDate}
+          onDateChange={handleDateChange}
+          onNextMonth={(date) => date && handleDateChange(date)}
+          onPreviousMonth={(date) => date && handleDateChange(date)}
+          firstDayOfWeek={0}
+          static
+          renderDay={(date) => {
+            const dateStr = toDateStr(date);
+            const evts = dateEvents.get(dateStr) ?? [];
+            const [y, m, dayNum] = dateStr.split('-').map(Number);
+            const isCurrentMonth = m === month + 1 && y === year;
+            const todayStr = dateKey(new Date());
+            const isToday = dateStr === todayStr;
+
+            return (
+              <Box
+                p={4}
+                style={{
+                  minHeight: 90,
+                  background: !isCurrentMonth ? 'var(--surface)' : isToday ? 'var(--surface-hover)' : 'var(--bg)',
+                  borderRadius: 4,
+                }}
+              >
+                <Text
+                  size="xs"
+                  fw={600}
+                  c={isToday ? 'blue' : 'dimmed'}
+                  mb={2}
+                >
+                  {dayNum}
+                </Text>
+                <Stack gap={2}>
+                  {evts.slice(0, 3).map((evt) => {
+                    const champ = champMap.get(evt.championshipId);
+                    return (
+                      <Text
+                        key={String(evt.id)}
+                        component={Link}
+                        to={`/event/${evt.slug}`}
+                        size="xs"
+                        style={{
+                          display: 'block',
+                          padding: '1px 4px',
+                          borderLeft: `3px solid ${champ?.color ?? 'var(--accent)'}`,
+                          borderRadius: 2,
+                          background: 'var(--surface)',
+                          color: 'inherit',
+                          textDecoration: 'none',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={evt.name}
+                      >
+                        {evt.name}
+                      </Text>
+                    );
+                  })}
+                  {evts.length > 3 && (
+                    <Text size="xs" c="dimmed" style={{ paddingLeft: 4 }}>
+                      +{evts.length - 3} more
+                    </Text>
+                  )}
+                </Stack>
+              </Box>
+            );
+          }}
+        />
+      </Paper>
+    </Box>
   );
 }
