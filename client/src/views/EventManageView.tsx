@@ -1560,7 +1560,7 @@ function TimekeeperSection({
             value={
               currentStart === 0n
                 ? null
-                : assignableUsers.find((u) => u.id === currentStart) ?? null
+                : (assignableUsers.find((u) => u.id === currentStart) ?? null)
             }
             onChange={(u) => onSave(u?.id ?? 0n, currentEnd)}
             getLabel={(u) => u.name || u.email || ''}
@@ -1574,9 +1574,7 @@ function TimekeeperSection({
           <SearchableSelect<User>
             items={assignableUsers}
             value={
-              currentEnd === 0n
-                ? null
-                : assignableUsers.find((u) => u.id === currentEnd) ?? null
+              currentEnd === 0n ? null : (assignableUsers.find((u) => u.id === currentEnd) ?? null)
             }
             onChange={(u) => onSave(currentStart, u?.id ?? 0n)}
             getLabel={(u) => u.name || u.email || ''}
