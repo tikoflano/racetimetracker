@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTable } from 'spacetimedb/react';
+import { Badge, Text } from '@mantine/core';
 import { tables } from '../module_bindings';
 import type {
   Event,
@@ -538,9 +539,15 @@ export default function LeaderboardView() {
                           ? `${entry.rider.firstName} ${entry.rider.lastName}`
                           : 'Unknown'}
                         {entry.dnf && (
-                          <span className="badge dnf" style={{ marginLeft: 12, fontSize: '0.6em' }}>
+                          <Badge
+                            color="red"
+                            variant="light"
+                            size="sm"
+                            ml="sm"
+                            style={{ fontSize: '0.6em' }}
+                          >
                             DNF
-                          </span>
+                          </Badge>
                         )}
                       </td>
                       <td
@@ -562,7 +569,9 @@ export default function LeaderboardView() {
                         {entry.total > 0 ? (
                           <span className="elapsed">{formatElapsed(entry.total)}</span>
                         ) : (
-                          <span className="muted">--:--</span>
+                          <Text component="span" c="dimmed">
+                            --:--
+                          </Text>
                         )}
                       </td>
                     </tr>

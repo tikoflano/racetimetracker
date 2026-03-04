@@ -1,19 +1,22 @@
-export { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+/**
+ * Tabler icons — Mantine's recommended icon library
+ * @see https://mantine.dev/guides/icons/
+ */
 export {
-  faPen,
-  faPlus,
-  faRightFromBracket,
-  faEllipsisVertical,
-  faGear,
-  faBars,
-  faXmark,
-  faThumbtack,
-  faLink,
-  faTrash,
-  faShareNodes,
-  faUser,
-  faArrowRightArrowLeft,
-  faChevronLeft,
-  faChevronRight,
-  faEnvelope,
-} from '@fortawesome/free-solid-svg-icons';
+  IconPencil,
+  IconPlus,
+  IconLogout,
+  IconDotsVertical,
+  IconSettings,
+  IconMenu2,
+  IconX,
+  IconPin,
+  IconLink,
+  IconTrash,
+  IconShare3,
+  IconUser,
+  IconArrowLeftRight,
+  IconChevronLeft,
+  IconChevronRight,
+  IconMail,
+} from '@tabler/icons-react';

@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Group, Modal, Button, Text, Box } from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
 import { useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '../module_bindings';
-import type { Image } from '../module_bindings/types';
+import type { Image as ImageType } from '../module_bindings/types';
 
 interface Props {
   entityType: string;
@@ -19,23 +21,18 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
 
   const entityImages = useMemo(() => {
     return images
-      .filter((img: Image) => img.entityType === entityType && img.entityId === entityId)
-      .sort((a: Image, b: Image) => a.sortOrder - b.sortOrder);
+      .filter((img: ImageType) => img.entityType === entityType && img.entityId === entityId)
+      .sort((a: ImageType, b: ImageType) => a.sortOrder - b.sortOrder);
   }, [images, entityType, entityId]);
 
-  // Keyboard navigation in modal
   useEffect(() => {
     if (modalIndex === null) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setModalIndex(null);
-      if (e.key === 'ArrowLeft')
-        setModalIndex((i) => (i !== null && i > 0 ? i - 1 : entityImages.length - 1));
-      if (e.key === 'ArrowRight')
-        setModalIndex((i) => (i !== null && i < entityImages.length - 1 ? i + 1 : 0));
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [modalIndex, entityImages.length]);
+  }, [modalIndex]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -67,7 +64,6 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
     }
   };
 
-  // Clamp modal index
   const idx = modalIndex !== null ? Math.min(modalIndex, entityImages.length - 1) : 0;
   const modalImage = entityImages[idx];
 
@@ -75,15 +71,43 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
 
   return (
     <>
-      {/* Thumbnail strip */}
-      <div className="img-thumbs">
-        {entityImages.map((img: Image, i: number) => (
-          <div key={String(img.id)} className="img-thumb" onClick={() => setModalIndex(i)}>
-            <img src={img.data} alt={img.caption || 'Image'} />
-          </div>
+      <Group gap="xs" wrap="wrap" mb="xs">
+        {entityImages.map((img: ImageType, i: number) => (
+          <Box
+            key={String(img.id)}
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 'var(--mantine-radius-sm)',
+              overflow: 'hidden',
+              border: '1px solid var(--mantine-color-default-border)',
+              cursor: 'pointer',
+            }}
+            onClick={() => setModalIndex(i)}
+          >
+            <img
+              src={img.data}
+              alt={img.caption || 'Image'}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </Box>
         ))}
         {canEdit && (
-          <label className="img-thumb img-thumb-add">
+          <label
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 'var(--mantine-radius-sm)',
+              border: '1px solid var(--mantine-color-default-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              background: 'var(--mantine-color-default)',
+              color: 'var(--mantine-color-dimmed)',
+              fontSize: '1.4rem',
+            }}
+          >
             <input
               type="file"
               accept="image/*"
@@ -95,74 +119,68 @@ export default function ImageCarousel({ entityType, entityId, canEdit = false }:
           </label>
         )}
         {entityImages.length === 0 && !canEdit && (
-          <span className="muted small-text">No images</span>
+          <Text size="sm" c="dimmed">
+            No images
+          </Text>
         )}
-      </div>
+      </Group>
 
-      {/* Modal viewer */}
-      {modalIndex !== null && modalImage && (
-        <div className="img-modal-overlay" onClick={() => setModalIndex(null)}>
-          <div className="img-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Close */}
-            <button className="img-modal-close" onClick={() => setModalIndex(null)}>
-              &times;
-            </button>
-
-            {/* Image */}
-            <div className="img-modal-main">
-              {entityImages.length > 1 && (
-                <button
-                  className="img-carousel-arrow left"
-                  onClick={() => setModalIndex(idx > 0 ? idx - 1 : entityImages.length - 1)}
-                >
-                  &lsaquo;
-                </button>
+      <Modal
+        opened={modalIndex !== null}
+        onClose={() => setModalIndex(null)}
+        withCloseButton
+        size="lg"
+        padding={0}
+      >
+        {modalImage && (
+          <>
+            <Carousel
+              initialSlide={idx}
+              withIndicators={entityImages.length > 1}
+              withControls={entityImages.length > 1}
+              onSlideChange={setModalIndex}
+              height="70vh"
+            >
+              {entityImages.map((img: ImageType) => (
+                <Carousel.Slide key={String(img.id)}>
+                  <img
+                    src={img.data}
+                    alt={img.caption || 'Image'}
+                    style={{
+                      width: '100%',
+                      height: '70vh',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                </Carousel.Slide>
+              ))}
+            </Carousel>
+            <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
+              {modalImage.caption && (
+                <Text size="sm" c="dimmed" ta="center" mb="xs">
+                  {modalImage.caption}
+                </Text>
               )}
-              <img
-                src={modalImage.data}
-                alt={modalImage.caption || 'Image'}
-                className="img-modal-img"
-              />
-              {entityImages.length > 1 && (
-                <button
-                  className="img-carousel-arrow right"
-                  onClick={() => setModalIndex(idx < entityImages.length - 1 ? idx + 1 : 0)}
-                >
-                  &rsaquo;
-                </button>
-              )}
-            </div>
-
-            {/* Footer: caption, dots, delete */}
-            <div className="img-modal-footer">
-              {modalImage.caption && <p className="img-carousel-caption">{modalImage.caption}</p>}
-              {entityImages.length > 1 && (
-                <div className="img-carousel-dots">
-                  {entityImages.map((_, i) => (
-                    <button
-                      key={i}
-                      className={`img-carousel-dot${i === idx ? ' active' : ''}`}
-                      onClick={() => setModalIndex(i)}
-                    />
-                  ))}
-                </div>
-              )}
-              <div className="img-modal-counter">
-                {idx + 1} / {entityImages.length}
+              <Group justify="center" gap="md">
+                <Text size="xs" c="dimmed">
+                  {idx + 1} / {entityImages.length}
+                </Text>
                 {canEdit && (
-                  <button
-                    className="img-modal-delete"
+                  <Button
+                    variant="subtle"
+                    color="red"
+                    size="xs"
                     onClick={() => handleDelete(modalImage.id)}
-                    title="Delete"
                   >
                     Delete
-                  </button>
+                  </Button>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              </Group>
+            </Box>
+          </>
+        )}
+      </Modal>
     </>
   );
 }

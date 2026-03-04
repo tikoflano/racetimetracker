@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Stack, Text, NumberInput, Button, Group } from '@mantine/core';
 import Modal from './Modal';
 import type { Rider, EventRider } from '../module_bindings/types';
 
@@ -20,16 +21,18 @@ export default function CheckInModal({
   defaultNumber,
   categoryName,
 }: CheckInModalProps) {
-  const [numberInput, setNumberInput] = useState('');
+  const [numberInput, setNumberInput] = useState<string | number>(
+    defaultNumber !== null ? defaultNumber : ''
+  );
 
   useEffect(() => {
     if (open) {
-      setNumberInput(defaultNumber !== null ? String(defaultNumber) : '');
+      setNumberInput(defaultNumber !== null ? defaultNumber : '');
     }
   }, [open, defaultNumber]);
 
   const handleConfirm = async () => {
-    const num = numberInput.trim() === '' ? 0 : parseInt(numberInput, 10);
+    const num = numberInput === '' ? 0 : Number(numberInput);
     if (isNaN(num) || num < 0) return;
     await onConfirm(num);
     onClose();
@@ -37,43 +40,39 @@ export default function CheckInModal({
 
   return (
     <Modal open={open} onClose={onClose} title="Confirm Check-in">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Stack gap="md">
         <div>
-          <div className="muted small-text" style={{ marginBottom: 4 }}>
+          <Text size="xs" c="dimmed" mb={4}>
             Rider
-          </div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+          </Text>
+          <Text fw={600} size="lg">
             {rider.firstName} {rider.lastName}
-          </div>
+          </Text>
         </div>
-        <div>
-          <label className="input-label">Assigned Number</label>
-          <input
-            type="number"
-            min="0"
-            className="input"
-            value={numberInput}
-            onChange={(e) => setNumberInput(e.target.value)}
-            placeholder={defaultNumber !== null ? String(defaultNumber) : '—'}
-          />
-          {categoryName && (
-            <div className="muted small-text" style={{ marginTop: 4 }}>
-              {categoryName}
-            </div>
-          )}
-        </div>
-        <p className="muted small-text" style={{ margin: 0 }}>
+        <NumberInput
+          label="Assigned Number"
+          min={0}
+          value={numberInput}
+          onChange={setNumberInput}
+          placeholder={defaultNumber !== null ? String(defaultNumber) : '—'}
+        />
+        {categoryName && (
+          <Text size="xs" c="dimmed" mt={4}>
+            {categoryName}
+          </Text>
+        )}
+        <Text size="xs" c="dimmed" m={0}>
           Confirm that this rider has checked in. Set or change the number above.
-        </p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button className="ghost small" onClick={onClose}>
+        </Text>
+        <Group justify="flex-end" mt="xs">
+          <Button variant="subtle" size="xs" onClick={onClose}>
             Cancel
-          </button>
-          <button className="primary small" onClick={handleConfirm}>
+          </Button>
+          <Button size="xs" onClick={handleConfirm}>
             Confirm Check-in
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Group>
+      </Stack>
     </Modal>
   );
 }

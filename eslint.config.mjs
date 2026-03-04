@@ -43,6 +43,7 @@ export default [
       '**/dist/**',
       '**/build/**',
       '**/.vite/**',
+      '**/.vercel/**',
       'client/src/module_bindings/**',
       '**/*.min.js',
     ],

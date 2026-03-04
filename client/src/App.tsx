@@ -1,6 +1,21 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import {
+  AppShell,
+  Burger,
+  Group,
+  Text,
+  Button,
+  Menu,
+  Avatar,
+  Modal,
+  Paper,
+  Box,
+  ScrollArea,
+  Stack,
+} from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { tables, reducers } from './module_bindings';
 import { useAuth } from './auth';
 import { OrgProvider } from './OrgContext';
@@ -22,15 +37,7 @@ import QRCodeView from './views/QRCodeView';
 import TimekeepView from './views/TimekeepView';
 import LeaderboardView from './views/LeaderboardView';
 import DevView from './views/DevView';
-import {
-  FontAwesomeIcon,
-  faBars,
-  faXmark,
-  faRightFromBracket,
-  faArrowRightArrowLeft,
-} from './icons';
-import Modal from './components/Modal';
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { IconLogout, IconArrowLeftRight } from './icons';
 import type { Organization } from './module_bindings/types';
 
 const ACTIVE_ORG_KEY = 'active_org_id';
@@ -42,32 +49,18 @@ export default function App() {
   const [orgs] = useTable(tables.organization);
   const stopImpersonation = useReducer(reducers.stopImpersonation);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('sidebar_collapsed') === 'true'
   );
-  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [switchOrgOpen, setSwitchOrgOpen] = useState(false);
-  const avatarRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isRegistrationPage = location.pathname.startsWith('/register');
   const isLeaderboardPage = location.pathname.includes('/leaderboard');
 
-  // Close sidebar on navigation (mobile)
   useEffect(() => {
-    setSidebarOpen(false);
-    setAvatarMenuOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!avatarMenuOpen) return;
-    const handle = (e: MouseEvent) => {
-      if (avatarRef.current && !avatarRef.current.contains(e.target as Node))
-        setAvatarMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [avatarMenuOpen]);
+    closeMobile();
+  }, [location.pathname, closeMobile]);
 
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
@@ -75,7 +68,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Active org state (persisted to localStorage)
   const [activeOrgId, setActiveOrgIdRaw] = useState<bigint | null>(() => {
     const stored = localStorage.getItem(ACTIVE_ORG_KEY);
     return stored ? BigInt(stored) : null;
@@ -91,7 +83,6 @@ export default function App() {
     return orgs.filter((o: Organization) => getOrgRole(o.id) !== null);
   }, [isAuthenticated, orgs, getOrgRole]);
 
-  // Auto-select org if none selected or current is invalid
   useEffect(() => {
     if (userOrgs.length === 0) return;
     if (activeOrgId && userOrgs.some((o: Organization) => o.id === activeOrgId)) return;
@@ -105,330 +96,240 @@ export default function App() {
 
   const isConnected = connState.isActive;
   const showSkeleton = !timedOut && !isConnected;
+  const showNavbar = isAuthenticated && !isRegistrationPage && !isLeaderboardPage;
+
+  const toggleCollapse = () => {
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem('sidebar_collapsed', String(next));
+  };
 
   if (showSkeleton) {
     return (
-      <div className="app-shell">
-        <header className="app-header">
-          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>RaceTimeTracker</span>
-          <span className="muted small-text">Connecting...</span>
-        </header>
-        <div className="app-body">
-          <main className="app-main">
-            <EventViewSkeleton />
-          </main>
-        </div>
-      </div>
+      <AppShell header={{ height: 48 }} padding="lg">
+        <AppShell.Header>
+          <Group justify="space-between" px="md" h="100%">
+            <Text fw={600} size="sm">
+              RaceTimeTracker
+            </Text>
+            <Text size="xs" c="dimmed">
+              Connecting...
+            </Text>
+          </Group>
+        </AppShell.Header>
+        <AppShell.Main>
+          <EventViewSkeleton />
+        </AppShell.Main>
+      </AppShell>
     );
   }
 
   return (
-    <div className="app-shell">
+    <AppShell
+      header={{ height: 48 }}
+      navbar={
+        showNavbar
+          ? {
+              width: sidebarCollapsed ? 48 : 220,
+              breakpoint: 'sm',
+              collapsed: { mobile: !mobileOpened, desktop: false },
+            }
+          : undefined
+      }
+      padding="lg"
+    >
       {isAuthenticated && !isRegistrationPage && (
-        <header className="app-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              className="ghost small menu-toggle"
-              onClick={() => setSidebarOpen((o) => !o)}
-              aria-label="Toggle menu"
-            >
-              <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
-            </button>
-            <span className="header-title" style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              RaceTimeTracker
-            </span>
-            {activeOrg && (
-              <>
-                <span
-                  className="header-title"
-                  style={{ color: 'var(--muted)', fontSize: '0.85rem' }}
+        <AppShell.Header>
+          <Group justify="space-between" px="md" h="100%">
+            <Group gap="xs">
+              {showNavbar && (
+                <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
+              )}
+              <Text fw={600} size="sm">
+                RaceTimeTracker
+              </Text>
+              {activeOrg && (
+                <>
+                  <Text size="sm" c="dimmed">
+                    /
+                  </Text>
+                  <Text size="sm" opacity={0.8}>
+                    {activeOrg.name}
+                  </Text>
+                </>
+              )}
+            </Group>
+            <Menu shadow="md" width={220} position="bottom-end">
+              <Menu.Target>
+                <Avatar
+                  src={user?.picture}
+                  radius="xl"
+                  color="blue"
+                  style={{ cursor: 'pointer' }}
                 >
-                  /
-                </span>
-                <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>{activeOrg.name}</span>
-              </>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {isAuthenticated ? (
-              <div ref={avatarRef} style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
-                  title={user?.name || user?.email || 'User'}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: user?.picture ? 'transparent' : 'var(--accent)',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {user?.picture ? (
-                    <img
-                      src={user.picture}
-                      alt=""
-                      style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    (user?.name || user?.email || 'U').charAt(0).toUpperCase()
+                  {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                </Avatar>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>
+                  <Text size="sm" fw={600}>
+                    {user?.name || 'User'}
+                  </Text>
+                  {user?.email && (
+                    <Text size="xs" c="dimmed">
+                      {user.email}
+                    </Text>
                   )}
-                </button>
-                {avatarMenuOpen && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      top: '100%',
-                      marginTop: 6,
-                      background: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                      minWidth: 220,
-                      zIndex: 50,
-                      overflow: 'hidden',
-                    }}
+                </Menu.Label>
+                {userOrgs.length > 1 && (
+                  <Menu.Item
+                    leftSection={<IconArrowLeftRight size={16} />}
+                    onClick={() => setSwitchOrgOpen(true)}
                   >
-                    <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                        {user?.name || 'User'}
-                      </div>
-                      {user?.email && <div className="muted small-text">{user.email}</div>}
-                    </div>
-                    {userOrgs.length > 1 && (
-                      <AvatarMenuItem
-                        icon={faArrowRightArrowLeft}
-                        label="Switch organization"
-                        onClick={() => {
-                          setAvatarMenuOpen(false);
-                          setSwitchOrgOpen(true);
-                        }}
-                      />
-                    )}
-                    <AvatarMenuItem
-                      icon={faRightFromBracket}
-                      label="Sign out"
-                      danger
-                      onClick={() => {
-                        setAvatarMenuOpen(false);
-                        logout();
-                      }}
-                    />
-                  </div>
+                    Switch organization
+                  </Menu.Item>
                 )}
-              </div>
-            ) : null}
-          </div>
-        </header>
+                <Menu.Item
+                  leftSection={<IconLogout size={16} />}
+                  color="red"
+                  onClick={() => logout()}
+                >
+                  Sign out
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </AppShell.Header>
       )}
 
-      {/* Switch org modal */}
+      {showNavbar && (
+        <AppShell.Navbar>
+          <AppShell.Section grow component={ScrollArea}>
+            <Sidebar
+              activeOrg={activeOrg}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={toggleCollapse}
+            />
+          </AppShell.Section>
+        </AppShell.Navbar>
+      )}
+
       <Modal
-        open={switchOrgOpen}
+        opened={switchOrgOpen}
         onClose={() => setSwitchOrgOpen(false)}
         title="Switch Organization"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <Stack gap="xs">
           {userOrgs.map((o: Organization) => {
             const isActive = activeOrg?.id === o.id;
             const role = isOrgOwner(o.id) ? 'owner' : getOrgRole(o.id);
             return (
-              <button
+              <Button
                 key={String(o.id)}
+                variant={isActive ? 'light' : 'default'}
+                fullWidth
+                justify="space-between"
                 onClick={() => {
                   setActiveOrgId(o.id);
                   setSwitchOrgOpen(false);
                 }}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius)',
-                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: isActive
-                    ? 'var(--accent-bg, rgba(59,130,246,0.1))'
-                    : 'var(--surface)',
-                  color: 'var(--text)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  textAlign: 'left',
-                }}
               >
-                <span style={{ fontWeight: isActive ? 600 : 400 }}>{o.name}</span>
+                <Text fw={isActive ? 600 : 400}>{o.name}</Text>
                 {role && (
-                  <span
-                    className="badge"
-                    style={{
-                      fontSize: '0.7rem',
-                      background:
-                        role === 'owner' || role === 'admin' ? 'var(--green-bg)' : undefined,
-                      color: role === 'owner' || role === 'admin' ? 'var(--green)' : undefined,
-                    }}
-                  >
+                  <Text size="xs" component="span">
                     {role}
-                  </span>
+                  </Text>
                 )}
-              </button>
+              </Button>
             );
           })}
-        </div>
+        </Stack>
       </Modal>
 
       {isImpersonating && user && realUser && (
-        <div className="impersonation-banner">
-          <span>
+        <Box
+          style={{
+            background: 'var(--mantine-color-orange-6)',
+            color: 'white',
+            padding: '8px 16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Text size="sm">
             Viewing as: <strong>{user.name || user.email}</strong>
-          </span>
-          <button
+          </Text>
+          <Button
+            variant="white"
+            color="dark"
+            size="xs"
             onClick={() => stopImpersonation()}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.4)',
-              borderRadius: 'var(--radius)',
-              padding: '2px 10px',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
           >
             Stop
-          </button>
-        </div>
+          </Button>
+        </Box>
       )}
 
-      {!isConnected ? (
-        <div className="app-body">
-          <main className="app-main">
-            <div className="card" style={{ textAlign: 'center', padding: 24 }}>
-              <p style={{ marginBottom: 8 }}>Unable to connect to the server.</p>
-              <button className="primary" onClick={() => window.location.reload()}>
-                Retry
-              </button>
-            </div>
-          </main>
-        </div>
-      ) : (
-        <div className="app-body">
-          {isAuthenticated && !isRegistrationPage && !isLeaderboardPage && (
-            <>
-              {sidebarOpen && (
-                <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-              )}
-              <Sidebar
-                className={`${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
-                activeOrg={activeOrg}
-                collapsed={sidebarCollapsed}
-                onToggleCollapse={() => {
-                  const next = !sidebarCollapsed;
-                  setSidebarCollapsed(next);
-                  localStorage.setItem('sidebar_collapsed', String(next));
-                }}
+      <AppShell.Main>
+        {!isConnected ? (
+          <Paper withBorder p="xl" style={{ textAlign: 'center' }}>
+            <Text mb="xs">Unable to connect to the server.</Text>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </Paper>
+        ) : (
+          <OrgProvider value={{ activeOrgId: activeOrgId }}>
+            <Routes>
+              <Route path="/" element={isAuthenticated ? <AuthRedirect /> : <HomePage />} />
+              <Route path="/event/:eventSlug" element={<EventView />} />
+              <Route path="/event/:eventSlug/manage" element={<EventManageView />} />
+              <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
+              <Route path="/event/:eventSlug/leaderboard" element={<LeaderboardView />} />
+              <Route path="/:orgSlug/event/:eventSlug" element={<EventView />} />
+              <Route
+                path="/:orgSlug/event/:eventSlug/leaderboard"
+                element={<LeaderboardView />}
               />
-            </>
-          )}
-          <main className="app-main">
-            <OrgProvider value={{ activeOrgId: activeOrgId }}>
-              <Routes>
-                <Route path="/" element={isAuthenticated ? <AuthRedirect /> : <HomePage />} />
-                <Route path="/event/:eventSlug" element={<EventView />} />
-                <Route path="/event/:eventSlug/manage" element={<EventManageView />} />
-                <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
-                <Route path="/event/:eventSlug/leaderboard" element={<LeaderboardView />} />
-                <Route path="/:orgSlug/event/:eventSlug" element={<EventView />} />
-                <Route
-                  path="/:orgSlug/event/:eventSlug/leaderboard"
-                  element={<LeaderboardView />}
-                />
-                <Route path="/members" element={<OrgMembersView />} />
-                <Route path="/calendar" element={<CalendarView />} />
-                <Route path="/championships" element={<ChampionshipsView />} />
-                <Route path="/championship/:champId" element={<ChampionshipDetailView />} />
-                <Route path="/riders" element={<RidersView />} />
-                <Route path="/locations" element={<LocationsView />} />
-                <Route path="/location/:venueId" element={<LocationDetailView />} />
-                <Route path="/timekeep" element={<TimekeepView />} />
-                <Route path="/register/:orgSlug" element={<RegisterView />} />
-                <Route path="/register/:orgSlug/qr" element={<QRCodeView />} />
-                <Route path="/dev" element={<DevView />} />
-                <Route
-                  path="*"
-                  element={isAuthenticated ? <NotFound /> : <Navigate to="/" replace />}
-                />
-              </Routes>
-            </OrgProvider>
-          </main>
-        </div>
-      )}
-    </div>
+              <Route path="/members" element={<OrgMembersView />} />
+              <Route path="/calendar" element={<CalendarView />} />
+              <Route path="/championships" element={<ChampionshipsView />} />
+              <Route path="/championship/:champId" element={<ChampionshipDetailView />} />
+              <Route path="/riders" element={<RidersView />} />
+              <Route path="/locations" element={<LocationsView />} />
+              <Route path="/location/:venueId" element={<LocationDetailView />} />
+              <Route path="/timekeep" element={<TimekeepView />} />
+              <Route path="/register/:orgSlug" element={<RegisterView />} />
+              <Route path="/register/:orgSlug/qr" element={<QRCodeView />} />
+              <Route path="/dev" element={<DevView />} />
+              <Route
+                path="*"
+                element={isAuthenticated ? <NotFound /> : <Navigate to="/" replace />}
+              />
+            </Routes>
+          </OrgProvider>
+        )}
+      </AppShell.Main>
+    </AppShell>
   );
 }
 
 function HomePage() {
   return (
-    <div style={{ textAlign: 'center', padding: '80px 20px', maxWidth: 480, margin: '0 auto' }}>
-      <div style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: 8 }}>RaceTimeTracker</div>
-      <p className="muted" style={{ marginBottom: 32, fontSize: '1rem' }}>
+    <Box style={{ textAlign: 'center', padding: '80px 20px', maxWidth: 480, margin: '0 auto' }}>
+      <Text size="2.5rem" fw={700} mb="xs">
+        RaceTimeTracker
+      </Text>
+      <Text c="dimmed" mb="xl" size="md">
         Real-time enduro bike race timing. Start and stop timers across the course — everyone sees
         results instantly.
-      </p>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
+      </Text>
+      <Group justify="center" mb="lg">
         <LoginButton />
-      </div>
-      <p className="muted small-text">
+      </Group>
+      <Text c="dimmed" size="sm">
         Sign in with Google to create events, manage riders, and run races.
-      </p>
-    </div>
-  );
-}
-
-function AvatarMenuItem({
-  icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon: IconDefinition;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        gap: 10,
-        width: '100%',
-        padding: '9px 14px',
-        border: 'none',
-        background: 'none',
-        color: danger ? 'var(--red, #ef4444)' : 'var(--text)',
-        fontSize: '0.85rem',
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-    >
-      <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>
-        <FontAwesomeIcon icon={icon} />
-      </span>
-      <span>{label}</span>
-    </button>
+      </Text>
+    </Box>
   );
 }
 
@@ -443,24 +344,19 @@ function AuthRedirect() {
 
 function NotFound() {
   return (
-    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-      <div style={{ fontSize: '4rem', fontWeight: 700, opacity: 0.2, marginBottom: 8 }}>404</div>
-      <h2 style={{ marginBottom: 8 }}>Page not found</h2>
-      <p className="muted" style={{ marginBottom: 20 }}>
+    <Box style={{ textAlign: 'center', padding: '80px 20px' }}>
+      <Text size="4rem" fw={700} opacity={0.2} mb="xs">
+        404
+      </Text>
+      <Text size="lg" fw={600} mb="xs">
+        Page not found
+      </Text>
+      <Text c="dimmed" mb="lg">
         The page you're looking for doesn't exist.
-      </p>
-      <a
-        href="/"
-        className="primary"
-        style={{
-          display: 'inline-block',
-          padding: '8px 20px',
-          borderRadius: 'var(--radius)',
-          textDecoration: 'none',
-        }}
-      >
+      </Text>
+      <Button component="a" href="/">
         Go home
-      </a>
-    </div>
+      </Button>
+    </Box>
   );
 }

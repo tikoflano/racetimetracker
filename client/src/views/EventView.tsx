@@ -1,10 +1,21 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTable, useReducer } from 'spacetimedb/react';
+import {
+  TextInput,
+  Button,
+  Table,
+  Badge,
+  Stack,
+  Group,
+  Text,
+  Box,
+} from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import Modal from '../components/Modal';
+import ActionMenu, { type ActionMenuItem } from '../components/ActionMenu';
 import type {
   Event,
   Venue,
@@ -17,7 +28,7 @@ import type {
   Organization,
   EventCategory,
 } from '../module_bindings/types';
-import { FontAwesomeIcon, faPen, faThumbtack, faLink, faEllipsisVertical } from '../icons';
+import { IconPencil, IconPin, IconLink } from '../icons';
 import { formatElapsed, getErrorMessage } from '../utils';
 
 export default function EventView() {
@@ -260,40 +271,61 @@ export default function EventView() {
   if (!event) {
     if (events.length === 0) return null;
     return (
-      <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-        <div style={{ fontSize: '4rem', fontWeight: 700, opacity: 0.2, marginBottom: 8 }}>404</div>
+      <Box ta="center" py="xl" px="md">
+        <Text size="4rem" fw={700} opacity={0.2} mb="xs">
+          404
+        </Text>
         <h2 style={{ marginBottom: 8 }}>Event not found</h2>
-        <p className="muted" style={{ marginBottom: 20 }}>
+        <Text c="dimmed" mb="lg">
           {orgSlug
             ? `No event "${eventSlug}" exists in organization "${orgSlug}".`
             : `No event "${eventSlug}" exists in the current organization.`}
-        </p>
-        <a
-          href="/"
-          className="primary"
-          style={{
-            display: 'inline-block',
-            padding: '8px 20px',
-            borderRadius: 'var(--radius)',
-            textDecoration: 'none',
-          }}
-        >
+        </Text>
+        <Button component="a" href="/">
           Go home
-        </a>
-      </div>
+        </Button>
+      </Box>
     );
   }
 
   return (
     <div>
       {editingName ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <input
-            type="text"
-            value={nameValue}
-            onChange={(e) => setNameValue(e.target.value)}
-            onKeyDown={async (e) => {
-              if (e.key === 'Enter') {
+        <Stack gap="xs" mb="xs">
+          <Group gap="xs" align="center">
+            <TextInput
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  setNameError('');
+                  const trimmed = nameValue.trim();
+                  if (!trimmed) {
+                    setNameError('Name cannot be empty');
+                    return;
+                  }
+                  try {
+                    await updateEvent({
+                      eventId: eid,
+                      name: trimmed,
+                      description: event.description,
+                      startDate: event.startDate,
+                      endDate: event.endDate,
+                    });
+                    setEditingName(false);
+                  } catch (err: unknown) {
+                    setNameError(getErrorMessage(err, 'Failed'));
+                  }
+                }
+                if (e.key === 'Escape') setEditingName(false);
+              }}
+              autoFocus
+              style={{ flex: 1, maxWidth: 400 }}
+              styles={{ input: { fontSize: '1.4rem', fontWeight: 700 } }}
+            />
+            <Button
+              size="xs"
+              onClick={async () => {
                 setNameError('');
                 const trimmed = nameValue.trim();
                 if (!trimmed) {
@@ -312,55 +344,23 @@ export default function EventView() {
                 } catch (err: unknown) {
                   setNameError(getErrorMessage(err, 'Failed'));
                 }
-              }
-              if (e.key === 'Escape') setEditingName(false);
-            }}
-            autoFocus
-            className="input"
-            style={{ fontSize: '1.4rem', fontWeight: 700, flex: 1, maxWidth: 400 }}
-          />
-          <button
-            className="primary small"
-            onClick={async () => {
-              setNameError('');
-              const trimmed = nameValue.trim();
-              if (!trimmed) {
-                setNameError('Name cannot be empty');
-                return;
-              }
-              try {
-                await updateEvent({
-                  eventId: eid,
-                  name: trimmed,
-                  description: event.description,
-                  startDate: event.startDate,
-                  endDate: event.endDate,
-                });
-                setEditingName(false);
-              } catch (err: unknown) {
-                setNameError(getErrorMessage(err, 'Failed'));
-              }
-            }}
-          >
-            Save
-          </button>
-          <button className="ghost small" onClick={() => setEditingName(false)}>
-            Cancel
-          </button>
+              }}
+            >
+              Save
+            </Button>
+            <Button variant="subtle" size="xs" onClick={() => setEditingName(false)}>
+              Cancel
+            </Button>
+          </Group>
           {nameError && (
-            <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{nameError}</span>
+            <Text size="sm" c="red">
+              {nameError}
+            </Text>
           )}
-        </div>
+        </Stack>
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            gap: 8,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <Group justify="space-between" align="baseline" gap="xs">
+          <Group gap="xs" align="baseline">
             <h1 style={{ marginBottom: 0 }}>{event.name}</h1>
             <EventActionMenu
               open={eventMenuOpen}
@@ -386,215 +386,232 @@ export default function EventView() {
                 setShareOpen(true);
               }}
             />
-          </div>
+          </Group>
           {canEdit && (
-            <Link
-              to={`/event/${event.slug}/manage`}
-              className="primary small"
-              style={{
-                textDecoration: 'none',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius)',
-                background: 'var(--accent)',
-                color: 'white',
-                fontSize: '0.8rem',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <Button component={Link} to={`/event/${event.slug}/manage`} size="xs">
               Manage
-            </Link>
+            </Button>
           )}
-        </div>
+        </Group>
       )}
-      <p className="muted small-text" style={{ marginBottom: 4 }}>
+      <Text size="sm" c="dimmed" mb="xs">
         {event.description}
-      </p>
+      </Text>
       {venue && (
-        <p className="muted small-text" style={{ marginBottom: 16 }}>
-          <Link to={`/location/${venue.id}`} style={{ color: 'inherit' }}>
+        <Text size="sm" c="dimmed" mb="md">
+          <Text component={Link} to={`/location/${venue.id}`} inherit c="dimmed">
             {venue.name}
-          </Link>{' '}
+          </Text>{' '}
           &middot; {event.startDate} &ndash; {event.endDate}
-        </p>
+        </Text>
       )}
 
       {/* Leaderboard — per category */}
-      <div className="section">
-        <div className="section-title">Leaderboard</div>
+      <Stack gap="md" mb="xl">
+        <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+          Leaderboard
+        </Text>
         {leaderboardByCategory.length === 0 ? (
-          <div className="empty">No results yet.</div>
+          <Text c="dimmed" ta="center" py="xl">
+            No results yet.
+          </Text>
         ) : (
           leaderboardByCategory.map(({ categoryId, categoryName, entries }) => (
-            <div key={String(categoryId)} style={{ marginBottom: categoryName ? 24 : 0 }}>
+            <Box key={String(categoryId)} mb={categoryName ? 'lg' : 0}>
               {categoryName && (
-                <div
-                  className="muted small-text"
-                  style={{
-                    marginBottom: 8,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
+                <Text
+                  size="xs"
+                  fw={600}
+                  c="dimmed"
+                  tt="uppercase"
+                  mb="xs"
+                  style={{ letterSpacing: '0.05em' }}
                 >
                   {categoryName}
-                </div>
+                </Text>
               )}
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 40 }}>Pos</th>
-                    <th style={{ width: 50 }}>#</th>
-                    <th>Rider</th>
-                    <th>Runs</th>
-                    <th style={{ textAlign: 'right' }}>Total Time</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th style={{ width: 40 }}>Pos</Table.Th>
+                    <Table.Th style={{ width: 50 }}>#</Table.Th>
+                    <Table.Th>Rider</Table.Th>
+                    <Table.Th>Runs</Table.Th>
+                    <Table.Th style={{ textAlign: 'right' }}>Total Time</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                   {entries.map((entry, idx) => {
                     const pos = idx + 1;
-                    const posClass =
-                      pos === 1
-                        ? 'position p1'
-                        : pos === 2
-                          ? 'position p2'
-                          : pos === 3
-                            ? 'position p3'
-                            : 'position';
+                    const posColor =
+                      pos === 1 ? '#fbbf24' : pos === 2 ? '#94a3b8' : pos === 3 ? '#d97706' : undefined;
                     const isExpanded = expandedRiderId === entry.riderId;
                     return (
                       <React.Fragment key={entry.rider ? String(entry.rider.id) : idx}>
-                        <tr
+                        <Table.Tr
                           onClick={() => setExpandedRiderId(isExpanded ? null : entry.riderId)}
                           style={{ cursor: 'pointer' }}
                         >
-                          <td>
-                            <span className={posClass}>{entry.complete ? pos : '-'}</span>
-                          </td>
-                          <td className="muted small-text">
-                            {getRiderNumber(entry.riderId) ?? '—'}
-                          </td>
-                          <td>
+                          <Table.Td>
+                            <Text
+                              fw={700}
+                              size="lg"
+                              style={{
+                                color: posColor ?? 'var(--accent)',
+                                minWidth: 28,
+                                textAlign: 'center',
+                              }}
+                            >
+                              {entry.complete ? pos : '-'}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm" c="dimmed">
+                              {getRiderNumber(entry.riderId) ?? '—'}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
                             {entry.rider
                               ? `${entry.rider.firstName} ${entry.rider.lastName}`
                               : 'Unknown'}
-                          </td>
-                          <td className="muted small-text">
-                            {entry.trackCount}/{sortedEventTracks.length}
-                            {entry.dnf && (
-                              <span className="badge dnf" style={{ marginLeft: 6 }}>
-                                DNF
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
+                          </Table.Td>
+                          <Table.Td>
+                            <Group gap="xs" wrap="nowrap">
+                              <Text size="sm" c="dimmed">
+                                {entry.trackCount}/{sortedEventTracks.length}
+                              </Text>
+                              {entry.dnf && (
+                                <Badge color="red" variant="light" size="sm">
+                                  DNF
+                                </Badge>
+                              )}
+                            </Group>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: 'right' }}>
                             {entry.total > 0 ? (
-                              <span className="elapsed">{formatElapsed(entry.total)}</span>
+                              <Text
+                                component="span"
+                                ff="monospace"
+                                fw={600}
+                                size="md"
+                                c="green"
+                              >
+                                {formatElapsed(entry.total)}
+                              </Text>
                             ) : (
-                              <span className="muted">--:--</span>
+                              <Text span c="dimmed">
+                                --:--
+                              </Text>
                             )}
-                          </td>
-                        </tr>
+                          </Table.Td>
+                        </Table.Tr>
                         {isExpanded && (
-                          <tr key={`${entry.riderId}-detail`}>
-                            <td
+                          <Table.Tr>
+                            <Table.Td
                               colSpan={5}
                               style={{
                                 padding: '0 12px 12px 52px',
                                 background: 'var(--surface-hover, rgba(255,255,255,0.02))',
                               }}
                             >
-                              <table style={{ width: '100%', fontSize: '0.8rem' }}>
-                                <tbody>
+                              <Table>
+                                <Table.Tbody>
                                   {sortedEventTracks.map((et: EventTrack) => {
                                     const tv = tvMap.get(et.trackVariationId);
                                     const track = tv ? trackMap.get(tv.trackId) : undefined;
                                     const run = entry.runs.find((r) => r.eventTrackId === et.id);
                                     return (
-                                      <tr
-                                        key={String(et.id)}
-                                        style={{ borderBottom: '1px solid var(--border)' }}
-                                      >
-                                        <td
-                                          style={{ padding: '6px 0', color: 'var(--text-muted)' }}
-                                        >
-                                          {track?.name ?? 'Track'}
-                                        </td>
-                                        <td style={{ padding: '6px 0', textAlign: 'right' }}>
+                                      <Table.Tr key={String(et.id)}>
+                                        <Table.Td>
+                                          <Text size="sm" c="dimmed">
+                                            {track?.name ?? 'Track'}
+                                          </Text>
+                                        </Table.Td>
+                                        <Table.Td style={{ textAlign: 'right' }}>
                                           {run ? (
                                             run.status === 'finished' ? (
-                                              <span className="elapsed">
+                                              <Text
+                                                component="span"
+                                                ff="monospace"
+                                                fw={600}
+                                                size="sm"
+                                                c="green"
+                                              >
                                                 {formatElapsed(run.elapsed)}
-                                              </span>
+                                              </Text>
                                             ) : (
-                                              <span
-                                                className={`badge ${run.status === 'dnf' ? 'dnf' : run.status === 'dns' ? '' : 'running'}`}
+                                              <Badge
+                                                color={
+                                                  run.status === 'dnf'
+                                                    ? 'red'
+                                                    : run.status === 'dns'
+                                                      ? 'gray'
+                                                      : 'green'
+                                                }
+                                                variant="light"
+                                                size="sm"
                                               >
                                                 {run.status.toUpperCase()}
-                                              </span>
+                                              </Badge>
                                             )
                                           ) : (
-                                            <span className="muted">—</span>
+                                            <Text span c="dimmed">
+                                              —
+                                            </Text>
                                           )}
-                                        </td>
-                                      </tr>
+                                        </Table.Td>
+                                      </Table.Tr>
                                     );
                                   })}
-                                </tbody>
-                              </table>
-                            </td>
-                          </tr>
+                                </Table.Tbody>
+                              </Table>
+                            </Table.Td>
+                          </Table.Tr>
                         )}
                       </React.Fragment>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </Table.Tbody>
+              </Table>
+            </Box>
           ))
         )}
-      </div>
+      </Stack>
 
       {/* Share modal — leaderboard display URL for big screens */}
       <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Leaderboard Display">
-        <p className="muted small-text" style={{ marginBottom: 12 }}>
-          Use this link to display the leaderboard on a big screen at the event.
-        </p>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            type="text"
-            readOnly
-            value={publicUrl ? `${publicUrl}/leaderboard` : ''}
-            className="input"
-            style={{ flex: 1, fontSize: '0.8rem' }}
-            onFocus={(e) => e.target.select()}
-          />
-          <button
-            className="primary"
-            onClick={() => {
-              navigator.clipboard.writeText(publicUrl ? `${publicUrl}/leaderboard` : '');
-              setCopied(true);
-            }}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-          <a
-            href={publicUrl ? `${publicUrl}/leaderboard` : '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="primary"
-            style={{
-              whiteSpace: 'nowrap',
-              padding: '8px 16px',
-              borderRadius: 'var(--radius)',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-            }}
-          >
-            Open
-          </a>
-        </div>
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Use this link to display the leaderboard on a big screen at the event.
+          </Text>
+          <Group gap="xs">
+            <TextInput
+              readOnly
+              value={publicUrl ? `${publicUrl}/leaderboard` : ''}
+              style={{ flex: 1 }}
+              styles={{ input: { fontSize: '0.8rem' } }}
+              onFocus={(e) => e.target.select()}
+            />
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(publicUrl ? `${publicUrl}/leaderboard` : '');
+                setCopied(true);
+              }}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </Button>
+            <Button
+              component="a"
+              href={publicUrl ? `${publicUrl}/leaderboard` : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Open
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
     </div>
   );
@@ -623,100 +640,9 @@ function EventActionMenu({
   onPin: () => void;
   onShare: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [open, onClose]);
-
-  const itemStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 10,
-    width: '100%',
-    padding: '9px 14px',
-    border: 'none',
-    background: 'none',
-    color: 'var(--text)',
-    fontSize: '0.85rem',
-    textAlign: 'left',
-    cursor: 'pointer',
-  };
-  const iconStyle: React.CSSProperties = { width: 16, textAlign: 'center', flexShrink: 0 };
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        className="ghost small"
-        onClick={onToggle}
-        title="Event actions"
-        style={{ fontSize: '1rem', padding: '4px 8px' }}
-      >
-        <FontAwesomeIcon icon={faEllipsisVertical} />
-      </button>
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: '100%',
-            marginTop: 4,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            minWidth: 200,
-            zIndex: 50,
-            overflow: 'hidden',
-          }}
-        >
-          {canEdit && (
-            <button
-              onClick={onRename}
-              style={itemStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
-              <span style={iconStyle}>
-                <FontAwesomeIcon icon={faPen} />
-              </span>
-              <span>Rename</span>
-            </button>
-          )}
-          {isAuthenticated && (
-            <button
-              onClick={onPin}
-              style={itemStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
-              <span style={iconStyle}>
-                <FontAwesomeIcon icon={faThumbtack} />
-              </span>
-              <span>{isPinned ? 'Unpin event' : 'Pin event'}</span>
-            </button>
-          )}
-          {hasPublicUrl && (
-            <button
-              onClick={onShare}
-              style={itemStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
-              <span style={iconStyle}>
-                <FontAwesomeIcon icon={faLink} />
-              </span>
-              <span>Share</span>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const items: ActionMenuItem[] = [];
+  if (canEdit) items.push({ icon: IconPencil, label: 'Rename', onClick: onRename });
+  if (isAuthenticated) items.push({ icon: IconPin, label: isPinned ? 'Unpin event' : 'Pin event', onClick: onPin });
+  if (hasPublicUrl) items.push({ icon: IconLink, label: 'Share', onClick: onShare });
+  return <ActionMenu open={open} onToggle={onToggle} onClose={onClose} items={items} />;
 }

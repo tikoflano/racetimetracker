@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { TextInput, Button, Stack, Text } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { tables, reducers } from '../module_bindings';
 import { getErrorMessage } from '../utils';
 import type { Organization } from '../module_bindings/types';
@@ -29,7 +31,7 @@ export default function RegisterView() {
     return (
       <div className="register-page">
         <div className="register-card">
-          <p className="muted">Connecting...</p>
+          <Text c="dimmed">Connecting...</Text>
         </div>
       </div>
     );
@@ -40,9 +42,7 @@ export default function RegisterView() {
       <div className="register-page">
         <div className="register-card">
           <h1>Registration Complete</h1>
-          <p style={{ marginTop: 12 }}>
-            You have been registered successfully. See you at the race!
-          </p>
+          <Text mt="md">You have been registered successfully. See you at the race!</Text>
         </div>
       </div>
     );
@@ -54,9 +54,9 @@ export default function RegisterView() {
       <div className="register-page">
         <div className="register-card">
           <h1>Organization Not Found</h1>
-          <p className="muted" style={{ marginTop: 8 }}>
+          <Text c="dimmed" mt="xs">
             This registration link is invalid.
-          </p>
+          </Text>
         </div>
       </div>
     );
@@ -68,9 +68,9 @@ export default function RegisterView() {
       <div className="register-page">
         <div className="register-card">
           <h1>Registration Closed</h1>
-          <p className="muted" style={{ marginTop: 8 }}>
+          <Text c="dimmed" mt="xs">
             Registration is currently disabled for this organization.
-          </p>
+          </Text>
         </div>
       </div>
     );
@@ -102,75 +102,59 @@ export default function RegisterView() {
       <div className="register-card">
         <h1>Rider Registration</h1>
         {org && (
-          <p className="muted" style={{ marginBottom: 16 }}>
+          <Text c="dimmed" mb="md">
             Register with <strong>{org.name}</strong>
-          </p>
+          </Text>
         )}
 
         {error && (
-          <div style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 12 }}>{error}</div>
+          <Text size="sm" c="red" mb="sm">
+            {error}
+          </Text>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <label className="input-label">First Name *</label>
-            <input
-              type="text"
-              placeholder="First name"
-              value={form.firstName}
-              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              autoFocus
-              className="input"
-            />
-          </div>
-          <div>
-            <label className="input-label">Last Name *</label>
-            <input
-              type="text"
-              placeholder="Last name"
-              value={form.lastName}
-              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              className="input"
-            />
-          </div>
-          <div>
-            <label className="input-label">Email</label>
-            <input
-              type="email"
-              placeholder="email@example.com"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              className="input"
-            />
-          </div>
-          <div>
-            <label className="input-label">Phone</label>
-            <input
-              type="tel"
-              placeholder="+1-555-0100"
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              className="input"
-            />
-          </div>
-          <div>
-            <label className="input-label">Date of Birth</label>
-            <input
-              type="date"
-              value={form.dateOfBirth}
-              onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              className="input"
-            />
-          </div>
-          <button className="primary" onClick={handleSubmit} style={{ marginTop: 4 }}>
+        <Stack gap="sm">
+          <TextInput
+            label="First Name *"
+            placeholder="First name"
+            value={form.firstName}
+            onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            autoFocus
+          />
+          <TextInput
+            label="Last Name *"
+            placeholder="Last name"
+            value={form.lastName}
+            onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          />
+          <TextInput
+            label="Email"
+            placeholder="email@example.com"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          />
+          <TextInput
+            label="Phone"
+            placeholder="+1-555-0100"
+            type="tel"
+            value={form.phone}
+            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          />
+          <DatePickerInput
+            label="Date of Birth"
+            value={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
+            onChange={(d) => setForm((f) => ({ ...f, dateOfBirth: d ? d.toISOString().slice(0, 10) : '' }))}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          />
+          <Button onClick={handleSubmit} mt="xs">
             Register
-          </button>
-        </div>
+          </Button>
+        </Stack>
       </div>
     </div>
   );

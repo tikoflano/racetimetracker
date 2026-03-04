@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { Paper, Badge, Button, Group, Text, Box, SimpleGrid } from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useClockSync } from '../hooks/useClockSync';
@@ -99,40 +100,29 @@ export default function TimekeepView() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
+      <Group justify="space-between" align="center" mb="md">
         <h1 style={{ marginBottom: 0 }}>Timekeeping</h1>
         <div className="connection-bar" style={{ margin: 0 }}>
           <span className={`dot ${isConnected ? 'on' : ''}`} />
           {isConnected ? 'Connected' : 'Disconnected'}
           {isConnected && synced && (
-            <span className="muted small-text" style={{ marginLeft: 8 }}>
+            <Text span size="sm" c="dimmed" ml="xs">
               ⏱ Synced
-            </span>
+            </Text>
           )}
         </div>
-      </div>
+      </Group>
 
       {myAssignments.length === 0 && (
-        <div className="card" style={{ padding: 24, textAlign: 'center' }}>
-          <p className="muted">No track assignments yet.</p>
-          <p className="muted small-text">Ask an event organizer to assign you to a track.</p>
-        </div>
+        <Paper withBorder p="xl" ta="center">
+          <Text c="dimmed">No track assignments yet.</Text>
+          <Text size="sm" c="dimmed">
+            Ask an event organizer to assign you to a track.
+          </Text>
+        </Paper>
       )}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: 12,
-        }}
-      >
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
         {myAssignments.map(({ assignment, event, track, trackRuns }) => {
           const canStart = assignment.position === 'start' || assignment.position === 'both';
           const canStop = assignment.position === 'end' || assignment.position === 'both';
@@ -151,195 +141,151 @@ export default function TimekeepView() {
           const dnsCount = trackRuns.filter((r: Run) => r.status === 'dns').length;
           const dnfCount = trackRuns.filter((r: Run) => r.status === 'dnf').length;
 
+          const positionBadgeColor =
+            assignment.position === 'both' ? 'blue' : assignment.position === 'start' ? 'green' : 'yellow';
+
           return (
-            <div
+            <Paper
               key={String(assignment.id)}
-              className="card"
-              style={{ padding: 12, display: 'flex', flexDirection: 'column' }}
+              withBorder
+              p="sm"
+              style={{ display: 'flex', flexDirection: 'column' }}
             >
               {/* Header */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: '0.9rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+              <Group justify="space-between" align="center" mb="xs">
+                <Box style={{ minWidth: 0 }}>
+                  <Text fw={600} size="sm" truncate>
                     {track?.name ?? 'Track'}
-                  </div>
-                  <div
-                    className="muted small-text"
-                    style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  >
-                    <Link
-                      to={`/event/${event!.slug}`}
-                      style={{ color: 'var(--accent)', textDecoration: 'underline' }}
-                    >
+                  </Text>
+                  <Text size="xs" c="dimmed" truncate>
+                    <Link to={`/event/${event!.slug}`} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
                       {event!.name}
                     </Link>
-                  </div>
-                </div>
-                <span
-                  className="badge"
-                  style={{
-                    fontSize: '0.65rem',
-                    flexShrink: 0,
-                    background:
-                      assignment.position === 'both'
-                        ? 'var(--accent-bg, rgba(59,130,246,0.15))'
-                        : assignment.position === 'start'
-                          ? 'var(--green-bg)'
-                          : 'var(--yellow-bg, #fef3c7)',
-                    color:
-                      assignment.position === 'both'
-                        ? 'var(--accent)'
-                        : assignment.position === 'start'
-                          ? 'var(--green)'
-                          : 'var(--yellow, #d97706)',
-                  }}
-                >
+                  </Text>
+                </Box>
+                <Badge color={positionBadgeColor} variant="light" size="xs">
                   {positionLabel}
-                </span>
-              </div>
+                </Badge>
+              </Group>
 
               {/* Running riders — compact */}
               {runningRuns.map((run: Run) => {
                 const rider = riderMap.get(run.riderId);
                 const num = getRiderNumber(event!.id, run.riderId);
                 return (
-                  <div
+                  <Box
                     key={String(run.id)}
-                    style={{
-                      background: 'rgba(239,68,68,0.08)',
-                      borderRadius: 'var(--radius)',
-                      padding: 10,
-                      marginBottom: 6,
-                    }}
+                    p="sm"
+                    mb="xs"
+                    style={{ background: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius)' }}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 6,
-                      }}
-                    >
-                      <div>
-                        <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>#{num ?? '?'}</span>
-                        <span className="muted small-text" style={{ marginLeft: 6 }}>
+                    <Group justify="space-between" align="center" mb="xs">
+                      <Group gap="xs">
+                        <Text fw={700} size="lg">
+                          #{num ?? '?'}
+                        </Text>
+                        <Text size="sm" c="dimmed">
                           {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
-                        </span>
-                      </div>
-                      <span className="badge running" style={{ fontSize: '0.6rem' }}>
+                        </Text>
+                      </Group>
+                      <Badge color="green" variant="light" size="xs">
                         Racing
-                      </span>
-                    </div>
+                      </Badge>
+                    </Group>
                     <ElapsedTimer startTime={Number(run.startTime)} className="elapsed" />
                     {canStop && (
-                      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                        <button
-                          className="stop"
-                          style={{ padding: '10px', fontSize: '0.85rem', flex: 1 }}
+                      <Group gap="xs" mt="xs">
+                        <Button
+                          color="red"
+                          size="sm"
+                          style={{ flex: 1 }}
                           onClick={() => handleFinish(run.id)}
                         >
                           STOP
-                        </button>
-                        <button
-                          className="dnf-btn"
-                          style={{ padding: '10px', fontSize: '0.75rem' }}
+                        </Button>
+                        <Button
+                          color="orange"
+                          variant="filled"
+                          size="xs"
                           onClick={() => handleDnf(run.id)}
                         >
                           DNF
-                        </button>
-                      </div>
+                        </Button>
+                      </Group>
                     )}
                     {!canStop && (
-                      <div className="muted small-text" style={{ marginTop: 4 }}>
+                      <Text size="sm" c="dimmed" mt="xs">
                         Waiting for finish line...
-                      </div>
+                      </Text>
                     )}
-                  </div>
+                  </Box>
                 );
               })}
 
               {/* Next queued — compact */}
               {canStart && nextQueued && (
-                <div
-                  style={{
-                    background: 'rgba(34,197,94,0.08)',
-                    borderRadius: 'var(--radius)',
-                    padding: 10,
-                    marginBottom: 6,
-                  }}
+                <Box
+                  p="sm"
+                  mb="xs"
+                  style={{ background: 'rgba(34,197,94,0.08)', borderRadius: 'var(--radius)' }}
                 >
-                  <div style={{ marginBottom: 6 }}>
-                    <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                  <Group gap="xs" mb="xs">
+                    <Text fw={700} size="lg">
                       #{getRiderNumber(event!.id, nextQueued.riderId) ?? '?'}
-                    </span>
-                    <span className="muted small-text" style={{ marginLeft: 6 }}>
+                    </Text>
+                    <Text size="sm" c="dimmed">
                       {(() => {
                         const r = riderMap.get(nextQueued.riderId);
                         return r ? `${r.firstName} ${r.lastName}` : 'Unknown';
                       })()}
-                    </span>
-                    <span className="muted small-text" style={{ marginLeft: 6 }}>
+                    </Text>
+                    <Text size="sm" c="dimmed">
                       (#{nextQueued.sortOrder} in queue)
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      className="start"
-                      style={{ padding: '10px', fontSize: '0.85rem', flex: 1 }}
+                    </Text>
+                  </Group>
+                  <Group gap="xs">
+                    <Button
+                      color="green"
+                      size="sm"
+                      style={{ flex: 1 }}
                       onClick={() => handleStart(nextQueued.id)}
                     >
                       START
-                    </button>
-                    <button
-                      className="dnf-btn"
-                      style={{ padding: '10px', fontSize: '0.75rem' }}
+                    </Button>
+                    <Button
+                      color="orange"
+                      variant="filled"
+                      size="xs"
                       onClick={() => handleDns(nextQueued.id)}
                     >
                       DNS
-                    </button>
-                  </div>
-                </div>
+                    </Button>
+                  </Group>
+                </Box>
               )}
 
               {/* Empty state */}
               {queuedRuns.length === 0 && runningRuns.length === 0 && (
-                <p className="muted small-text" style={{ padding: '8px 0' }}>
+                <Text size="sm" c="dimmed" py="xs">
                   No riders in queue.
-                </p>
+                </Text>
               )}
 
               {/* Summary line */}
-              <div
-                className="muted small-text"
-                style={{
-                  marginTop: 'auto',
-                  paddingTop: 6,
-                  borderTop: '1px solid var(--border)',
-                  fontSize: '0.7rem',
-                }}
+              <Text
+                size="xs"
+                c="dimmed"
+                mt="auto"
+                pt="xs"
+                style={{ borderTop: '1px solid var(--border)' }}
               >
                 {queuedRuns.length} queued · {runningRuns.length} racing · {finishedCount} finished
                 · {dnfCount} DNF · {dnsCount} DNS
-              </div>
-            </div>
+              </Text>
+            </Paper>
           );
         })}
-      </div>
+      </SimpleGrid>
     </div>
   );
 }

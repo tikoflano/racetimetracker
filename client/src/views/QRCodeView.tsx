@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import { Button, Text } from '@mantine/core';
 
 export default function QRCodeView() {
   const { orgSlug } = useParams<{ orgSlug: string }>();
@@ -20,12 +21,12 @@ export default function QRCodeView() {
         >
           <QRCodeSVG value={url} size={256} level="M" />
         </div>
-        <p className="muted small-text" style={{ wordBreak: 'break-all' }}>
+        <Text size="sm" c="dimmed" style={{ wordBreak: 'break-all' }}>
           {url}
-        </p>
-        <button className="ghost small" style={{ marginTop: 12 }} onClick={() => window.print()}>
+        </Text>
+        <Button variant="subtle" size="xs" mt="md" onClick={() => window.print()}>
           Print
-        </button>
+        </Button>
       </div>
     </div>
   );

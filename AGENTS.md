@@ -9,9 +9,22 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 ## Tech Stack
 
 - **Server:** SpacetimeDB v2.0 TypeScript module (`spacetimedb/src/index.ts`)
-- **Client:** React 19 + Vite + TypeScript (`client/`)
+- **Client:** React 19 + Vite + TypeScript + Mantine UI (`client/`) — `@mantine/core`, `@mantine/hooks`, `@mantine/dates`, `@mantine/carousel`, `@mantine/form`
 - **Auth:** Google OAuth ID tokens validated server-side in `clientConnected`
 - **SDK:** `spacetimedb` npm package (both server and client)
+
+## Mantine UI
+
+- **Favor native Mantine components over custom implementations** when a suitable component exists (e.g. Carousel, Calendar, Modal, Menu). Prefer `@mantine/carousel`, `@mantine/dates`, etc. over hand-rolled alternatives.
+- Use Mantine components for all UI primitives: Modal, Menu, Select, TextInput, Button, Table, Badge, Alert, Skeleton, Tabs, Paper, Calendar, DatePickerInput, DateTimePickerInput, Carousel, etc.
+- Icons: Continue using FontAwesome via `client/src/icons.ts`. Pass as `leftSection` or `rightSection` where Mantine components accept them.
+- Theming: Dark mode by default (`defaultColorScheme="dark"`). Custom theme in `client/src/theme.ts`.
+- Layout: Use `AppShell` for app structure (Header, Navbar/sidebar, Main). Use `Stack`, `Group`, `Box`, `Flex` for content layout.
+- For forms: Prefer `@mantine/form` with `useForm` when doing multi-field forms with validation.
+- Action menus: Use `Menu` with `Menu.Target` (e.g. `ActionIcon` with ellipsis) and `Menu.Dropdown` / `Menu.Item`. Destructive actions use `color="red"`.
+- Modals: Use Mantine `Modal` with `opened`, `onClose`, `title`. Close on Escape and overlay click by default.
+- Error display: Use `Alert` with `color="red"`, `withCloseButton`, `onClose`.
+- **Selects:** Favor searchable dropdowns (`Select` with `searchable` or Combobox) when the list is expected to have more than 10 items (riders, events, locations, championships, categories, etc.). Plain `Select` is fine for small fixed lists (e.g. status, role).
 
 ## SpacetimeDB
 
@@ -46,8 +59,7 @@ Reference: `ChampionshipsView.tsx`, `RidersView.tsx`, `OrgMembersView.tsx`, `Loc
 
 - TypeScript strict mode in both client and server.
 - ESLint + Prettier for linting and formatting. Run `npm run lint` and `npm run format` before committing.
-- No CSS modules — all styles in `client/src/index.css`.
-- No component library — plain HTML elements with CSS classes.
+- Mantine UI for components. Minimal custom CSS in `index.css` for app-specific layout and domain styles.
 - `bigint` for all SpacetimeDB IDs (auto-increment u64).
 - `formatElapsed(ms)` in `utils.ts` for time display.
 - `getErrorMessage(e, fallback)` in `utils.ts` for extracting user-facing messages from caught errors.
@@ -59,43 +71,15 @@ All icons use FontAwesome via `client/src/icons.ts`. Import from `../icons` — 
 
 ### Action menus
 
-Entity-level actions (rename, share, manage, delete, etc.) go in a **dropdown menu** triggered by a vertical dots icon (`faEllipsisVertical`). This is the standard pattern used across the app (events, organizations, member rows).
-
-Implementation pattern:
-
-- The title row containing the entity name and the trigger button must use `alignItems: 'baseline'` to align the icon with the text.
-- Trigger button: `<FontAwesomeIcon icon={faEllipsisVertical} />` in a `ghost small` button
-- Dropdown: absolutely positioned `div` with `background: var(--surface)`, border, shadow, `zIndex: 50`
-- Each item: flex row with `justifyContent: 'flex-start'`, fixed-width icon span (16px), then label text
-- Destructive actions (delete, leave): `color: 'var(--red, #ef4444)'`
-- Close on outside click via `useRef` + `useEffect` mousedown listener
-- When one action is used very frequently, keep it as a visible button outside the dropdown (e.g. "Manage Event" in EventView). Secondary actions stay in the dropdown.
-- See `EventActionMenu` in `EventView.tsx` as the reference implementation.
+Entity-level actions (rename, share, manage, delete, etc.) go in a **dropdown menu** triggered by a vertical dots icon (`faEllipsisVertical`). Use Mantine `Menu` with `Menu.Target` (e.g. `ActionIcon` with ellipsis) and `Menu.Dropdown` / `Menu.Item`. Destructive actions use `color="red"`. See `ActionMenu` and `RowActionMenu` in `client/src/components/ActionMenu.tsx` and `EventActionMenu` in `EventView.tsx` as reference implementations.
 
 ### Error messages
 
-Show error messages in a **dismissable banner** using the `ErrorBanner` component (`client/src/components/ErrorBanner.tsx`).
-
-Implementation pattern:
-
-- Import: `import ErrorBanner from '../components/ErrorBanner';`
-- Props: `message` (string), `onDismiss` (callback), `noMargin` (optional, for use inside modals)
-- Place the banner near the relevant context (e.g. below a section header, inside a modal)
-- Call `onDismiss` to clear the error state when the user clicks the X button
-- See `OrgMembersView.tsx` for usage (page-level and inside invite modal).
+Show error messages in a **dismissable banner** using the `ErrorBanner` component (`client/src/components/ErrorBanner.tsx`), which wraps Mantine `Alert` with `color="red"`, `withCloseButton`, `onClose`. Props: `message`, `onDismiss`, `noMargin` (optional, for use inside modals). See `OrgMembersView.tsx` for usage.
 
 ### Modals
 
-Use the `Modal` component (`client/src/components/Modal.tsx`) for forms and dialogs that require user input or confirmation. Prefer modals over inline forms for add/edit flows (invite member, create entity, etc.).
-
-Implementation pattern:
-
-- Import: `import Modal from '../components/Modal';`
-- Props: `open`, `onClose`, `title`, `children`
-- Close on Escape key and overlay click (handled by Modal)
-- On success, call `onClose()` (or your close handler) to dismiss
-- Show validation/error messages inside the modal body when the action fails
-- See the invite member flow in `OrgMembersView.tsx` as the reference implementation.
+Use the `Modal` component (`client/src/components/Modal.tsx`), which wraps Mantine `Modal`, for forms and dialogs that require user input or confirmation. Props: `open`, `onClose`, `title`, `children`. Close on Escape and overlay click by default. See the invite member flow in `OrgMembersView.tsx` as the reference implementation.
 
 ### Table pagination
 
