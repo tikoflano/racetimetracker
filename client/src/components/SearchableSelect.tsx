@@ -141,9 +141,10 @@ export default function SearchableSelect<T>({
                   width: '100%',
                   padding: '6px 12px',
                   border: 'none',
-                  background: value && getKey(value) === getKey(item)
-                    ? 'var(--accent-bg, rgba(59,130,246,0.1))'
-                    : 'none',
+                  background:
+                    value && getKey(value) === getKey(item)
+                      ? 'var(--accent-bg, rgba(59,130,246,0.1))'
+                      : 'none',
                   color: 'var(--text)',
                   fontSize: '0.8rem',
                   textAlign: 'left',

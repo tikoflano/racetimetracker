@@ -36,15 +36,11 @@ export default function DevView() {
     return orgMembers
       .filter(
         (m: OrgMember) =>
-          m.orgId === selectedOrg.id &&
-          m.role === 'admin' &&
-          m.userId !== selectedOrg.ownerUserId
+          m.orgId === selectedOrg.id && m.role === 'admin' && m.userId !== selectedOrg.ownerUserId
       )
       .map((m: OrgMember) => users.find((u: User) => u.id === m.userId))
       .filter((u): u is User => !!u && !u.googleSub?.startsWith('pending:'))
-      .sort((a, b) =>
-        (a.name || a.email || '').localeCompare(b.name || b.email || '')
-      );
+      .sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''));
   }, [orgMembers, users, selectedOrg]);
 
   if (!IS_DEV) return <Navigate to="/" replace />;
@@ -174,11 +170,7 @@ export default function DevView() {
                 onChange={setSelectedUser}
                 getLabel={(u) => u.name || u.email || `User #${u.id}`}
                 getKey={(u) => String(u.id)}
-                placeholder={
-                  selectedOrg
-                    ? 'Select admin...'
-                    : 'Select an organization first'
-                }
+                placeholder={selectedOrg ? 'Select admin...' : 'Select an organization first'}
                 filterFn={(u, q) => {
                   const name = (u.name || u.email || '').toLowerCase();
                   const email = (u.email || '').toLowerCase();
