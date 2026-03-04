@@ -311,7 +311,7 @@ export default function CalendarView() {
                 p={4}
                 style={{
                   minHeight: 90,
-                  background: !isCurrentMonth ? 'var(--surface)' : isToday ? 'var(--surface-hover)' : 'var(--bg)',
+                  background: !isCurrentMonth ? 'var(--mantine-color-dark-6)' : isToday ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-dark-7)',
                   borderRadius: 4,
                 }}
               >
@@ -335,9 +335,9 @@ export default function CalendarView() {
                         style={{
                           display: 'block',
                           padding: '1px 4px',
-                          borderLeft: `3px solid ${champ?.color ?? 'var(--accent)'}`,
+                          borderLeft: `3px solid ${champ?.color ?? 'var(--mantine-color-blue-6)'}`,
                           borderRadius: 2,
-                          background: 'var(--surface)',
+                          background: 'var(--mantine-color-dark-6)',
                           color: 'inherit',
                           textDecoration: 'none',
                           whiteSpace: 'nowrap',

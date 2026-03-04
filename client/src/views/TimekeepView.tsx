@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
-import { Paper, Badge, Button, Group, Text, Box, SimpleGrid } from '@mantine/core';
+import { Paper, Badge, Button, Group, Text, Box, SimpleGrid, Title } from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useClockSync } from '../hooks/useClockSync';
+import ConnectionIndicator from '../components/ConnectionIndicator';
 import ElapsedTimer from '../components/ElapsedTimer';
 import type {
   EventTrack,
@@ -99,18 +100,17 @@ export default function TimekeepView() {
     riderNumberMap.get(`${eventId}-${riderId}`);
 
   return (
-    <div>
+    <Box>
       <Group justify="space-between" align="center" mb="md">
-        <h1 style={{ marginBottom: 0 }}>Timekeeping</h1>
-        <div className="connection-bar" style={{ margin: 0 }}>
-          <span className={`dot ${isConnected ? 'on' : ''}`} />
-          {isConnected ? 'Connected' : 'Disconnected'}
+        <Title order={1}>Timekeeping</Title>
+        <Group gap="xs">
+          <ConnectionIndicator isConnected={isConnected} margin={0} />
           {isConnected && synced && (
-            <Text span size="sm" c="dimmed" ml="xs">
+            <Text size="sm" c="dimmed">
               ⏱ Synced
             </Text>
           )}
-        </div>
+        </Group>
       </Group>
 
       {myAssignments.length === 0 && (
@@ -158,9 +158,9 @@ export default function TimekeepView() {
                     {track?.name ?? 'Track'}
                   </Text>
                   <Text size="xs" c="dimmed" truncate>
-                    <Link to={`/event/${event!.slug}`} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                    <Text component={Link} to={`/event/${event!.slug}`} c="blue" size="xs" td="underline">
                       {event!.name}
-                    </Link>
+                    </Text>
                   </Text>
                 </Box>
                 <Badge color={positionBadgeColor} variant="light" size="xs">
@@ -177,7 +177,8 @@ export default function TimekeepView() {
                     key={String(run.id)}
                     p="sm"
                     mb="xs"
-                    style={{ background: 'rgba(239,68,68,0.08)', borderRadius: 'var(--radius)' }}
+                    bg="red.0"
+                    style={{ borderRadius: 'var(--mantine-radius-sm)' }}
                   >
                     <Group justify="space-between" align="center" mb="xs">
                       <Group gap="xs">
@@ -192,7 +193,7 @@ export default function TimekeepView() {
                         Racing
                       </Badge>
                     </Group>
-                    <ElapsedTimer startTime={Number(run.startTime)} className="elapsed" />
+                    <ElapsedTimer startTime={Number(run.startTime)} />
                     {canStop && (
                       <Group gap="xs" mt="xs">
                         <Button
@@ -227,7 +228,8 @@ export default function TimekeepView() {
                 <Box
                   p="sm"
                   mb="xs"
-                  style={{ background: 'rgba(34,197,94,0.08)', borderRadius: 'var(--radius)' }}
+                  bg="green.0"
+                  style={{ borderRadius: 'var(--mantine-radius-sm)' }}
                 >
                   <Group gap="xs" mb="xs">
                     <Text fw={700} size="lg">
@@ -277,7 +279,7 @@ export default function TimekeepView() {
                 c="dimmed"
                 mt="auto"
                 pt="xs"
-                style={{ borderTop: '1px solid var(--border)' }}
+                style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
               >
                 {queuedRuns.length} queued · {runningRuns.length} racing · {finishedCount} finished
                 · {dnfCount} DNF · {dnsCount} DNS
@@ -286,6 +288,6 @@ export default function TimekeepView() {
           );
         })}
       </SimpleGrid>
-    </div>
+    </Box>
   );
 }

@@ -11,6 +11,7 @@ import {
   Stack,
   Group,
   Text,
+  Title,
 } from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
@@ -270,8 +271,8 @@ export default function OrgMembersView() {
           )}
         </Stack>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-          <h1 style={{ marginBottom: 0 }}>{org.name}</h1>
+        <Group align="baseline" gap="xs" mb={4}>
+          <Title order={1}>{org.name}</Title>
           <OrgActionMenu
             open={orgMenuOpen}
             onToggle={() => setOrgMenuOpen(!orgMenuOpen)}
@@ -303,7 +304,7 @@ export default function OrgMembersView() {
             isAdmin={hasAccess}
             isOwner={isOwner}
           />
-        </div>
+        </Group>
       )}
       <Text size="sm" c="dimmed" mb="lg">
         Organization members and permissions

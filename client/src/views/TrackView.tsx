@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
-import { Table, Badge, Paper, Stack, Group, Text } from '@mantine/core';
+import { Table, Badge, Paper, Stack, Group, Text, Title } from '@mantine/core';
 import { tables } from '../module_bindings';
 import { useActiveOrgMaybe } from '../OrgContext';
 import type {
@@ -14,6 +14,8 @@ import type {
   EventRider,
   EventCategory,
 } from '../module_bindings/types';
+import BackLink from '../components/BackLink';
+import ConnectionIndicator from '../components/ConnectionIndicator';
 import ElapsedTimer from '../components/ElapsedTimer';
 import { formatElapsed } from '../utils';
 
@@ -106,20 +108,13 @@ export default function TrackView() {
   }
 
   return (
-    <div>
-      <Link to={`/event/${eventSlug}`} className="back-link">
-        &larr; Back to Event
-      </Link>
-
-      <div className="connection-bar">
-        <span className={`dot ${isConnected ? 'on' : ''}`} />
-        {isConnected ? 'Connected' : 'Disconnected'}
-      </div>
-
-      <h1>
+    <Stack gap="md">
+      <BackLink to={`/event/${eventSlug}`}>&larr; Back to Event</BackLink>
+      <ConnectionIndicator isConnected={isConnected} />
+      <Title order={1}>
         {track?.name ?? 'Track'}
         {tv ? ` — ${tv.name}` : ''}
-      </h1>
+      </Title>
       {tv && (
         <Text size="sm" c="dimmed" mb="lg">
           {tv.description}
@@ -136,18 +131,16 @@ export default function TrackView() {
             const rider = riderMap.get(run.riderId);
             const num = getRiderNumber(run.riderId);
             return (
-              <div className="running-card" key={String(run.id)}>
+              <Paper withBorder p="lg" key={String(run.id)} style={{ borderWidth: 2, borderColor: 'var(--mantine-color-green-6)' }}>
                 <Badge color="green" variant="light" mb="xs">
                   Racing
                 </Badge>
-                <h3 style={{ fontSize: '1.3rem', marginBottom: 8 }}>
-                  <span style={{ fontWeight: 700, marginRight: 6 }}>#{num ?? '?'}</span>
+                <Title order={3} size="h4" mb="xs">
+                  <Text component="span" fw={700} mr={6}>#{num ?? '?'}</Text>
                   {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
-                </h3>
-                <div>
-                  <ElapsedTimer startTime={Number(run.startTime)} className="elapsed large" />
-                </div>
-              </div>
+                </Title>
+                <ElapsedTimer startTime={Number(run.startTime)} size="lg" />
+              </Paper>
             );
           })}
         </Stack>
@@ -159,20 +152,20 @@ export default function TrackView() {
           <Text size="xs" fw={600} c="dimmed" tt="uppercase">
             Next Rider
           </Text>
-          <div className="next-rider-card">
+          <Paper withBorder p="lg" style={{ borderWidth: 2, borderColor: 'var(--mantine-color-blue-6)' }}>
             <Text size="sm" c="dimmed" mb="xs">
               Up next — #{nextQueued.sortOrder} in queue
             </Text>
-            <h3>
-              <span style={{ fontWeight: 700, marginRight: 6 }}>
+            <Title order={3} size="h4">
+              <Text component="span" fw={700} mr={6}>
                 #{getRiderNumber(nextQueued.riderId) ?? '?'}
-              </span>
+              </Text>
               {(() => {
                 const rider = riderMap.get(nextQueued.riderId);
                 return rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown';
               })()}
-            </h3>
-          </div>
+            </Title>
+          </Paper>
         </Stack>
       )}
 
@@ -262,11 +255,11 @@ export default function TrackView() {
                 const elapsed = Number(run.endTime) - Number(run.startTime);
                 const pos = idx + 1;
                 const posColor =
-                  pos === 1 ? '#fbbf24' : pos === 2 ? '#94a3b8' : pos === 3 ? '#d97706' : undefined;
+                  pos === 1 ? 'yellow' : pos === 2 ? 'gray' : pos === 3 ? 'orange' : undefined;
                 return (
                   <Table.Tr key={String(run.id)}>
                     <Table.Td>
-                      <Text fw={700} style={{ color: posColor ?? 'var(--accent)', minWidth: 28, textAlign: 'center' }}>
+                      <Text fw={700} c={posColor ?? 'blue'} style={{ minWidth: 28, textAlign: 'center' }}>
                         {pos}
                       </Text>
                     </Table.Td>
@@ -344,6 +337,6 @@ export default function TrackView() {
           })}
         </Stack>
       )}
-    </div>
+    </Stack>
   );
 }

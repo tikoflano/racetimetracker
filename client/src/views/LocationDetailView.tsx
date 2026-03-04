@@ -23,17 +23,21 @@ import {
   Text,
   Box,
   ColorInput,
+  Title,
+  UnstyledButton,
 } from '@mantine/core';
 import { tables, reducers } from '../module_bindings';
 import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import { IconPencil, IconTrash } from '../icons';
+import BackLink from '../components/BackLink';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
 import ImageCarousel from '../components/ImageCarousel';
 import type { Venue, Track, TrackVariation, Organization } from '../module_bindings/types';
 import { getErrorMessage } from '../utils';
 
+/* Leaflet divIcon requires HTML string - cannot use Mantine components */
 function pinIcon(color: string, label: string) {
   return L.divIcon({
     className: '',
@@ -346,10 +350,8 @@ export default function LocationDetailView() {
 
   return (
     <div>
-      <div className="location-header">
-        <Link to="/locations" className="back-link">
-          &larr; Locations
-        </Link>
+      <Paper withBorder p="lg" mb="xl">
+        <BackLink to="/locations">&larr; Locations</BackLink>
 
         {/* Venue header */}
         {editingVenue ? (
@@ -386,9 +388,9 @@ export default function LocationDetailView() {
             </Stack>
           </Paper>
         ) : (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <h1 style={{ marginBottom: 0 }}>{venue.name}</h1>
+          <Stack gap="xs" mb="sm">
+            <Group gap="xs" align="baseline">
+              <Title order={1}>{venue.name}</Title>
               <ActionMenu
                 open={menuOpen}
                 onToggle={() => setMenuOpen(!menuOpen)}
@@ -417,7 +419,7 @@ export default function LocationDetailView() {
                   },
                 ]}
               />
-            </div>
+            </Group>
             {venue.description && (
               <Text size="sm" c="dimmed">
                 {venue.description}
@@ -429,18 +431,18 @@ export default function LocationDetailView() {
                   href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: 'var(--accent)' }}
+                  style={{ color: 'var(--mantine-color-blue-6)' }}
                 >
                   {venue.address}
                 </a>
               </Text>
             )}
-          </div>
+          </Stack>
         )}
 
         {/* Venue images */}
         <ImageCarousel entityType="venue" entityId={vid} canEdit={hasAccess} />
-      </div>
+      </Paper>
 
       {/* Tracks section */}
       <Stack gap="md" mt="xl">
@@ -495,17 +497,18 @@ export default function LocationDetailView() {
         </Paper>
       )}
 
-      {/* Map */}
+      {/* Map - NOTE: Custom CSS for .location-map-container was removed. Leaflet map container
+          and popups may look broken (default Leaflet styling). */}
       {mapPositions.length > 0 && (
-        <div className="location-map-container" style={{ marginBottom: 20 }}>
+        <Box mb="xl">
           <MapContainer
             center={mapPositions[0]}
             zoom={14}
             style={{
               height: 400,
               width: '100%',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
+              borderRadius: 'var(--mantine-radius-sm)',
+              border: '1px solid var(--mantine-color-default-border)',
             }}
           >
             <TileLayer
@@ -524,50 +527,32 @@ export default function LocationDetailView() {
                 <span key={String(track.id)}>
                   <Marker position={start} icon={START_ICON}>
                     <Popup>
-                      <div
-                        style={{
-                          fontSize: '0.75rem',
-                          color: '#22c55e',
-                          fontWeight: 700,
-                          marginBottom: 2,
-                        }}
-                      >
-                        Start
-                      </div>
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleExpand(track.id);
-                        }}
-                        style={{ fontWeight: 600 }}
-                      >
-                        {track.name}
-                      </a>
+                      <Stack gap={4}>
+                        <Text size="xs" fw={700} c="green">
+                          Start
+                        </Text>
+                        <UnstyledButton
+                          onClick={() => toggleExpand(track.id)}
+                          style={{ fontWeight: 600, textAlign: 'left' }}
+                        >
+                          {track.name}
+                        </UnstyledButton>
+                      </Stack>
                     </Popup>
                   </Marker>
                   <Marker position={end} icon={END_ICON}>
                     <Popup>
-                      <div
-                        style={{
-                          fontSize: '0.75rem',
-                          color: '#ef4444',
-                          fontWeight: 700,
-                          marginBottom: 2,
-                        }}
-                      >
-                        End
-                      </div>
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleExpand(track.id);
-                        }}
-                        style={{ fontWeight: 600 }}
-                      >
-                        {track.name}
-                      </a>
+                      <Stack gap={4}>
+                        <Text size="xs" fw={700} c="red">
+                          End
+                        </Text>
+                        <UnstyledButton
+                          onClick={() => toggleExpand(track.id)}
+                          style={{ fontWeight: 600, textAlign: 'left' }}
+                        >
+                          {track.name}
+                        </UnstyledButton>
+                      </Stack>
                     </Popup>
                   </Marker>
                   <Polyline
@@ -589,7 +574,7 @@ export default function LocationDetailView() {
               </Group>
             ))}
           </Group>
-        </div>
+        </Box>
       )}
 
       {/* List view / Tracks */}
@@ -648,11 +633,11 @@ export default function LocationDetailView() {
 
                 {/* Expanded: images + variations */}
                 {isExpanded && (
-                  <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px' }}>
+                  <Box pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }} px="md" pb="md">
                     {showTrackImages.has(track.id) && (
-                      <div style={{ marginBottom: 8 }}>
+                      <Box mb="xs">
                         <ImageCarousel entityType="track" entityId={track.id} canEdit={hasAccess} />
-                      </div>
+                      </Box>
                     )}
 
                     <Group justify="space-between" align="center" mb="xs">
@@ -716,14 +701,7 @@ export default function LocationDetailView() {
                           }
                         };
                         return (
-                          <div
-                            style={{
-                              background: 'var(--bg)',
-                              borderRadius: 'var(--radius)',
-                              padding: 12,
-                              marginBottom: 8,
-                            }}
-                          >
+                          <Paper withBorder p="md" mb="xs" key="var-form">
                             <Stack gap="sm">
                               <TextInput
                                 label="Name *"
@@ -792,15 +770,16 @@ export default function LocationDetailView() {
                                     Click on the map to place the start pin
                                   </Text>
                                 )}
-                                <div className="location-map-container">
+                                {/* NOTE: Custom CSS for .location-map-container was removed - map may look broken */}
+                                <Box>
                                   <MapContainer
                                     center={mapPositions.length > 0 ? mapPositions[0] : [0, 0]}
                                     zoom={14}
                                     style={{
                                       height: 280,
                                       width: '100%',
-                                      borderRadius: 'var(--radius)',
-                                      border: '1px solid var(--border)',
+                                      borderRadius: 'var(--mantine-radius-sm)',
+                                      border: '1px solid var(--mantine-color-default-border)',
                                       cursor: placingPin ? 'crosshair' : '',
                                     }}
                                   >
@@ -822,7 +801,7 @@ export default function LocationDetailView() {
                                       />
                                     )}
                                   </MapContainer>
-                                </div>
+                                </Box>
                                 {/* Coordinate readout */}
                                 <Group gap="md" mt="xs">
                                   <Text size="xs" c="dimmed">
@@ -847,7 +826,7 @@ export default function LocationDetailView() {
                                 </Button>
                               </Group>
                             </Stack>
-                          </div>
+                          </Paper>
                         );
                       })()}
 
@@ -913,7 +892,7 @@ export default function LocationDetailView() {
                         )}
                       </Table.Tbody>
                     </Table>
-                  </div>
+                  </Box>
                 )}
               </Paper>
             );

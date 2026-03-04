@@ -188,10 +188,10 @@ function StatusMessage({ status }: { status: string | null }) {
       style={{
         marginTop: 8,
         padding: '8px 12px',
-        borderRadius: 'var(--radius)',
+        borderRadius: 'var(--mantine-radius-sm)',
         fontSize: '0.85rem',
         background: isError ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)',
-        color: isError ? 'var(--red, #ef4444)' : 'var(--green, #22c55e)',
+        color: isError ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-green-6)',
       }}
     >
       {status}

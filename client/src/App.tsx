@@ -106,6 +106,7 @@ export default function App() {
 
   if (showSkeleton) {
     return (
+      <Box maw={1200} mx="auto">
       <AppShell header={{ height: 48 }} padding="lg">
         <AppShell.Header>
           <Group justify="space-between" px="md" h="100%">
@@ -121,10 +122,12 @@ export default function App() {
           <EventViewSkeleton />
         </AppShell.Main>
       </AppShell>
+      </Box>
     );
   }
 
   return (
+    <Box maw={1200} mx="auto">
     <AppShell
       header={{ height: 48 }}
       navbar={
@@ -310,6 +313,7 @@ export default function App() {
         )}
       </AppShell.Main>
     </AppShell>
+    </Box>
   );
 }
 
