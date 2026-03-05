@@ -1,20 +1,73 @@
-import { Container, Title, Text } from '@mantine/core';
+import { Box, Text, Title } from '@mantine/core';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSpacetimeDB } from 'spacetimedb/react';
+import { useAuth } from './auth';
 import ConnectionIndicator from './components/ConnectionIndicator';
+import LoginPage from './views/LoginPage';
 
-export default function App() {
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+  const connState = useSpacetimeDB();
+  const isConnected = connState.isActive;
+
+  if (!isConnected) {
+    return (
+      <Box
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+        }}
+      >
+        <Title order={2} mb="xs">
+          Connecting…
+        </Title>
+        <Text c="dimmed" mb="md">
+          Unable to reach the server. Check that SpacetimeDB is running.
+        </Text>
+        <ConnectionIndicator isConnected={false} />
+      </Box>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={isAuthenticated ? <HomePage /> : <LoginPage />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function HomePage() {
   const connState = useSpacetimeDB();
   const isConnected = connState.isActive;
 
   return (
-    <Container size="sm" py="xl">
+    <Box
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+    >
       <Title order={1} mb="xs">
-        RaceTimeTracker client2
+        RaceTimeTracker
       </Title>
       <Text c="dimmed" mb="md">
-        New Mantine client — features will be ported incrementally.
+        You're signed in. More features coming soon.
       </Text>
       <ConnectionIndicator isConnected={isConnected} />
-    </Container>
+    </Box>
   );
+}
+
+export default function App() {
+  return <AppContent />;
 }
