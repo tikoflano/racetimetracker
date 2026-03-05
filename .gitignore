@@ -5,6 +5,7 @@ build/
 *.log
 .DS_Store
 client/src/module_bindings/
+client2/src/module_bindings/
 .vscode/
 .vercel
 .env*.local

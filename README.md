@@ -5,13 +5,14 @@ Real-time enduro bike race timing app. One person at the start line triggers a r
 ## Architecture
 
 ```
-├── client/          React frontend (Vite + TypeScript)
+├── client/          Original React frontend (Vite + TypeScript)
+├── client2/         New Mantine client — features ported incrementally (port 5174)
 ├── spacetimedb/     Server module (SpacetimeDB TypeScript)
 ├── spacetime.json   SpacetimeDB project config (module, client, database targets)
 └── package.json     npm workspace root
 ```
 
-**Client** — React 19, React Router, SpacetimeDB React SDK, Google OAuth (`@react-oauth/google`). Connects to SpacetimeDB over WebSocket. No traditional REST API.
+**Client** — React 19, React Router, SpacetimeDB React SDK, Google OAuth (`@react-oauth/google`). Connects to SpacetimeDB over WebSocket. No traditional REST API. `client2` is the active dev client (Mantine UI); `client` can still be run manually with `npm run dev -w client` on port 5173.
 
 **Server** — SpacetimeDB v2.0 TypeScript module. Defines tables, reducers, and RBAC logic. Runs inside SpacetimeDB (local standalone or cloud).
 
@@ -44,8 +45,8 @@ Real-time enduro bike race timing app. One person at the start line triggers a r
 # Install dependencies (npm workspaces)
 npm install
 
-# Generate client bindings from the server module
-spacetime generate --lang typescript --out-dir client/src/module_bindings --module-path spacetimedb
+# Generate client bindings from the server module (both client and client2)
+npm run generate
 ```
 
 ### Local development
@@ -56,7 +57,7 @@ Start the full dev stack with a single command:
 npm start
 ```
 
-This starts the local SpacetimeDB server, publishes the module, and launches `spacetime dev` which watches for file changes and auto-rebuilds/republishes/regenerates client bindings.
+This starts the local SpacetimeDB server, publishes the module, and launches `spacetime dev` which runs **client2** on port **5174** and watches for file changes.
 
 To seed demo data:
 
@@ -64,7 +65,7 @@ To seed demo data:
 spacetime call --server local racetimetracker-dev seed_demo_data
 ```
 
-`client/.env` is committed with local dev config. For tunneling, create `client/.env.local` from `client/.env.local.example` and add your Cloudflare token.
+`client/.env` and `client2/.env` are committed with local dev config. For tunneling, create `client/.env.local` from `client/.env.local.example` and add your Cloudflare token.
 
 The Vite proxy forwards `/v1/*` (including WebSocket) to `localhost:3000`.
 

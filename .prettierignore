@@ -3,5 +3,6 @@ dist
 build
 .vite
 client/src/module_bindings
+client2/src/module_bindings
 *.min.js
 package-lock.json
