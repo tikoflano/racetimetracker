@@ -16,6 +16,7 @@ export {
   IconShare3,
   IconUser,
   IconArrowLeftRight,
+  IconArrowRight,
   IconChevronLeft,
   IconChevronRight,
   IconMail,

@@ -28,8 +28,5 @@
       ]
     }
   },
-  "forwardPorts": [
-    5173,
-    5174
-  ]
+  "forwardPorts": [5173, 5174]
 }
