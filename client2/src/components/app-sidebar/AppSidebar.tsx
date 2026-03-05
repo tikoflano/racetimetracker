@@ -1,21 +1,21 @@
 import {
   IconLayoutDashboard,
-  IconChartBar,
-  IconUsers,
-  IconFolder,
   IconCalendar,
-  IconMail,
-  IconSettings,
-  IconHelp,
-  IconBolt,
+  IconClock,
+  IconTrophy,
+  IconMapPin,
+  IconBike,
+  IconUsersGroup,
+  IconTool,
 } from "@tabler/icons-react";
 import { Tooltip } from "@mantine/core";
 import classes from "./AppSidebar.module.css";
+import { IS_DEV } from "@/env";
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
-  badge?: string;
+  path: string;
 }
 
 interface NavSection {
@@ -27,21 +27,28 @@ const navigation: NavSection[] = [
   {
     title: "Main",
     items: [
-      { icon: IconLayoutDashboard, label: "Dashboard" },
-      { icon: IconChartBar, label: "Analytics" },
-      { icon: IconUsers, label: "Customers", badge: "128" },
-      { icon: IconFolder, label: "Projects" },
-      { icon: IconCalendar, label: "Schedule" },
-      { icon: IconMail, label: "Messages", badge: "3" },
+      { icon: IconLayoutDashboard, label: "Dashboard", path: "/" },
+      { icon: IconCalendar, label: "Calendar", path: "/calendar" },
+      { icon: IconClock, label: "Timekeeping", path: "/timekeep" },
     ],
   },
   {
-    title: "System",
+    title: "Manage",
     items: [
-      { icon: IconSettings, label: "Settings" },
-      { icon: IconHelp, label: "Help Center" },
+      { icon: IconTrophy, label: "Championships", path: "/championships" },
+      { icon: IconMapPin, label: "Locations", path: "/locations" },
+      { icon: IconBike, label: "Riders", path: "/riders" },
+      { icon: IconUsersGroup, label: "Members", path: "/members" },
     ],
   },
+  ...(IS_DEV
+    ? [
+        {
+          title: "Dev",
+          items: [{ icon: IconTool, label: "Dev Tools", path: "/dev" }],
+        } as NavSection,
+      ]
+    : []),
 ];
 
 interface AppSidebarProps {
@@ -62,12 +69,12 @@ export function AppSidebar({
       {/* Logo */}
       <div className={classes.logo}>
         <div className={classes.logoIcon}>
-          <IconBolt size={18} stroke={2} />
+          <IconClock size={18} stroke={2} />
         </div>
         <span
           className={`${classes.logoText} ${collapsed ? classes.logoTextHidden : ""}`}
         >
-          Voltex
+          RaceTimeTracker
         </span>
       </div>
 
@@ -97,13 +104,6 @@ export function AppSidebar({
                     >
                       {item.label}
                     </span>
-                    {item.badge && (
-                      <span
-                        className={`${classes.badge} ${collapsed ? classes.badgeHidden : ""}`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
                   </li>
                 );
 
