@@ -3,6 +3,7 @@
   top: 0;
   left: 0;
   bottom: 0;
+  height: 100vh;
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -164,72 +165,9 @@
   opacity: 0;
 }
 
-.spacer {
+.navContent {
   flex: 1;
-}
-
-.footer {
-  padding: 12px 8px 16px;
-  border-top: 1px solid var(--sidebar-border);
-}
-
-.userCard {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 150ms ease;
-  overflow: hidden;
-}
-
-.userCard:hover {
-  background: var(--sidebar-hover);
-}
-
-.userAvatar {
-  min-width: 32px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.userInfo {
-  display: flex;
-  flex-direction: column;
-  opacity: 1;
-  transition: opacity 200ms ease;
-  overflow: hidden;
-}
-
-.userInfoHidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.userName {
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffffff;
-  white-space: nowrap;
-}
-
-.userEmail {
-  font-size: 11px;
-  color: var(--sidebar-text);
-  white-space: nowrap;
-}
-
-.scrollArea {
-  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }

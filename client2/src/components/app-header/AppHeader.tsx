@@ -68,8 +68,6 @@ export function AppHeader({ collapsed, onToggle, activeItem }: AppHeaderProps) {
           <IconBell size={20} stroke={1.6} />
           <span className={classes.notificationDot} />
         </button>
-
-        <div className={classes.headerAvatar}>AM</div>
       </div>
     </header>
   );
