@@ -71,8 +71,8 @@ export function AppSidebar({
         </span>
       </div>
 
-      {/* Scrollable nav */}
-      <div className={classes.scrollArea}>
+      {/* Nav content */}
+      <div className={classes.navContent}>
         {navigation.map((section) => (
           <div key={section.title}>
             <div
@@ -126,28 +126,6 @@ export function AppSidebar({
             </ul>
           </div>
         ))}
-      </div>
-
-      <div className={classes.spacer} />
-
-      {/* User card */}
-      <div className={classes.footer}>
-        <Tooltip
-          label="Alex Morgan"
-          position="right"
-          withArrow
-          disabled={!collapsed}
-        >
-          <div className={classes.userCard}>
-            <div className={classes.userAvatar}>AM</div>
-            <div
-              className={`${classes.userInfo} ${collapsed ? classes.userInfoHidden : ""}`}
-            >
-              <span className={classes.userName}>Alex Morgan</span>
-              <span className={classes.userEmail}>alex@voltex.io</span>
-            </div>
-          </div>
-        </Tooltip>
       </div>
     </nav>
   );
