@@ -19,4 +19,12 @@ export {
   IconChevronLeft,
   IconChevronRight,
   IconMail,
+  IconCalendar,
+  IconCalendarEvent,
+  IconClock,
+  IconTrophy,
+  IconMapPin,
+  IconUsers,
+  IconUsersGroup,
+  IconTool,
 } from '@tabler/icons-react';

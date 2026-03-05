@@ -14,6 +14,8 @@ import {
   Box,
   ScrollArea,
   Stack,
+  ActionIcon,
+  Tooltip,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { tables, reducers } from './module_bindings';
@@ -21,7 +23,6 @@ import { useAuth } from './auth';
 import { OrgProvider } from './OrgContext';
 import LoginButton from './components/LoginButton';
 import Sidebar from './components/Sidebar';
-import { EventViewSkeleton } from './components/Skeleton';
 import EventView from './views/EventView';
 import TrackView from './views/TrackView';
 import OrgMembersView from './views/OrgMembersView';
@@ -37,7 +38,7 @@ import QRCodeView from './views/QRCodeView';
 import TimekeepView from './views/TimekeepView';
 import LeaderboardView from './views/LeaderboardView';
 import DevView from './views/DevView';
-import { IconLogout, IconArrowLeftRight } from './icons';
+import { IconLogout, IconArrowLeftRight, IconChevronLeft, IconChevronRight } from './icons';
 import type { Organization } from './module_bindings/types';
 
 const ACTIVE_ORG_KEY = 'active_org_id';
@@ -61,12 +62,6 @@ export default function App() {
   useEffect(() => {
     closeMobile();
   }, [location.pathname, closeMobile]);
-
-  const [timedOut, setTimedOut] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setTimedOut(true), 8000);
-    return () => clearTimeout(t);
-  }, []);
 
   const [activeOrgId, setActiveOrgIdRaw] = useState<bigint | null>(() => {
     const stored = localStorage.getItem(ACTIVE_ORG_KEY);
@@ -95,7 +90,6 @@ export default function App() {
   }, [activeOrgId, userOrgs]);
 
   const isConnected = connState.isActive;
-  const showSkeleton = !timedOut && !isConnected;
   const showNavbar = isAuthenticated && !isRegistrationPage && !isLeaderboardPage;
 
   const toggleCollapse = () => {
@@ -104,36 +98,13 @@ export default function App() {
     localStorage.setItem('sidebar_collapsed', String(next));
   };
 
-  if (showSkeleton) {
-    return (
-      <Box maw={1200} mx="auto">
-      <AppShell header={{ height: 48 }} padding="lg">
-        <AppShell.Header>
-          <Group justify="space-between" px="md" h="100%">
-            <Text fw={600} size="sm">
-              RaceTimeTracker
-            </Text>
-            <Text size="xs" c="dimmed">
-              Connecting...
-            </Text>
-          </Group>
-        </AppShell.Header>
-        <AppShell.Main>
-          <EventViewSkeleton />
-        </AppShell.Main>
-      </AppShell>
-      </Box>
-    );
-  }
-
   return (
-    <Box maw={1200} mx="auto">
     <AppShell
       header={{ height: 48 }}
       navbar={
         showNavbar
           ? {
-              width: sidebarCollapsed ? 48 : 220,
+              width: sidebarCollapsed ? 80 : 240,
               breakpoint: 'sm',
               collapsed: { mobile: !mobileOpened, desktop: false },
             }
@@ -146,7 +117,23 @@ export default function App() {
           <Group justify="space-between" px="md" h="100%">
             <Group gap="xs">
               {showNavbar && (
-                <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
+                <>
+                  <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
+                  <Tooltip label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                    <ActionIcon
+                      variant="subtle"
+                      size="lg"
+                      onClick={toggleCollapse}
+                      visibleFrom="sm"
+                    >
+                      {sidebarCollapsed ? (
+                        <IconChevronRight size={20} />
+                      ) : (
+                        <IconChevronLeft size={20} />
+                      )}
+                    </ActionIcon>
+                  </Tooltip>
+                </>
               )}
               <Text fw={600} size="sm">
                 RaceTimeTracker
@@ -164,12 +151,7 @@ export default function App() {
             </Group>
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
-                <Avatar
-                  src={user?.picture}
-                  radius="xl"
-                  color="blue"
-                  style={{ cursor: 'pointer' }}
-                >
+                <Avatar src={user?.picture} radius="xl" color="blue" style={{ cursor: 'pointer' }}>
                   {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
                 </Avatar>
               </Menu.Target>
@@ -206,7 +188,7 @@ export default function App() {
       )}
 
       {showNavbar && (
-        <AppShell.Navbar>
+        <AppShell.Navbar p={0} bg="blue.8">
           <AppShell.Section grow component={ScrollArea}>
             <Sidebar
               activeOrg={activeOrg}
@@ -263,12 +245,7 @@ export default function App() {
           <Text size="sm">
             Viewing as: <strong>{user.name || user.email}</strong>
           </Text>
-          <Button
-            variant="white"
-            color="dark"
-            size="xs"
-            onClick={() => stopImpersonation()}
-          >
+          <Button variant="white" color="dark" size="xs" onClick={() => stopImpersonation()}>
             Stop
           </Button>
         </Box>
@@ -289,10 +266,7 @@ export default function App() {
               <Route path="/event/:eventSlug/track/:eventTrackId" element={<TrackView />} />
               <Route path="/event/:eventSlug/leaderboard" element={<LeaderboardView />} />
               <Route path="/:orgSlug/event/:eventSlug" element={<EventView />} />
-              <Route
-                path="/:orgSlug/event/:eventSlug/leaderboard"
-                element={<LeaderboardView />}
-              />
+              <Route path="/:orgSlug/event/:eventSlug/leaderboard" element={<LeaderboardView />} />
               <Route path="/members" element={<OrgMembersView />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/championships" element={<ChampionshipsView />} />
@@ -313,7 +287,6 @@ export default function App() {
         )}
       </AppShell.Main>
     </AppShell>
-    </Box>
   );
 }
 
