@@ -1,0 +1,235 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  width: var(--sidebar-width);
+  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  --sidebar-bg: #0f1117;
+  --sidebar-border: #1e2028;
+  --sidebar-text: #a1a5b2;
+  --sidebar-text-active: #ffffff;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.12);
+  --sidebar-active-border: #3b82f6;
+  --sidebar-width: 260px;
+}
+
+.sidebarCollapsed {
+  --sidebar-width: 72px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  min-height: 64px;
+  overflow: hidden;
+}
+
+.logoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+.logoText {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.logoTextHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sectionLabel {
+  padding: 16px 20px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #565b6b;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.sectionLabelHidden {
+  opacity: 0;
+}
+
+.navList {
+  list-style: none;
+  padding: 0 8px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  transition: all 150ms ease;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.navItem:hover {
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-active);
+}
+
+.navItemActive {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-active);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.navItemActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-active-border);
+}
+
+.navItemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.navItemLabel {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.navItemLabelHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.badge {
+  margin-left: auto;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.badgeHidden {
+  opacity: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.footer {
+  padding: 12px 8px 16px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 150ms ease;
+  overflow: hidden;
+}
+
+.userCard:hover {
+  background: var(--sidebar-hover);
+}
+
+.userAvatar {
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transition: opacity 200ms ease;
+  overflow: hidden;
+}
+
+.userInfoHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.userEmail {
+  font-size: 11px;
+  color: var(--sidebar-text);
+  white-space: nowrap;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
