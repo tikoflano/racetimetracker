@@ -16,7 +16,7 @@ export default [
     },
   },
   {
-    files: ['client/**/*.{ts,tsx}'],
+    files: ['client/**/*.{ts,tsx}', 'client2/**/*.{ts,tsx}'],
     plugins: { react, 'react-hooks': reactHooks },
     rules: {
       ...react.configs.recommended.rules,
@@ -45,6 +45,7 @@ export default [
       '**/.vite/**',
       '**/.vercel/**',
       'client/src/module_bindings/**',
+      'client2/src/module_bindings/**',
       '**/*.min.js',
     ],
   },

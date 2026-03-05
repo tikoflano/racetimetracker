@@ -70,11 +70,7 @@ export {
   update_event_rider,
   import_riders_from_event,
 } from './reducers/event_rider';
-export {
-  queue_run,
-  generate_track_schedule,
-  clear_track_schedule,
-} from './reducers/run';
+export { queue_run, generate_track_schedule, clear_track_schedule } from './reducers/run';
 export { get_server_time } from './reducers/clock';
 export { start_impersonation, stop_impersonation } from './reducers/impersonation';
 export {
@@ -84,13 +80,6 @@ export {
   dnf_run,
   dns_run,
 } from './reducers/timekeeper';
-export {
-  add_image,
-  delete_image,
-  update_image_caption,
-} from './reducers/images';
+export { add_image, delete_image, update_image_caption } from './reducers/images';
 export { seed_demo_data } from './reducers/seed';
-export {
-  wipe_all_data,
-  transfer_org_ownership_by_email,
-} from './reducers/dev';
+export { wipe_all_data, transfer_org_ownership_by_email } from './reducers/dev';
