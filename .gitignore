@@ -7,5 +7,6 @@ build/
 client/src/module_bindings/
 client2/src/module_bindings/
 .vscode/
+.cursor/
 .vercel
 .env*.local
