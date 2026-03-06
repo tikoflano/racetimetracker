@@ -24,6 +24,7 @@ const wsUri =
     : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
 console.log(`[STDB] env=${stdbEnv} uri=${wsUri} db=${stdbDatabase}`);
+// Module bindings loaded
 
 const builder = DbConnection.builder()
   .withUri(wsUri)
