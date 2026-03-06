@@ -9,6 +9,7 @@ import {
 import classes from "./MainContent.module.css";
 import { EventPreviewView } from "./EventPreviewView";
 import { MembersView } from "./MembersView";
+import { CalendarView } from "./CalendarView";
 
 interface MainContentProps {
   collapsed: boolean;
@@ -237,6 +238,7 @@ function DashboardView() {
 export function MainContent({ collapsed, activeItem }: MainContentProps) {
   const isEventPreview = activeItem === "Event Preview";
   const isMembers = activeItem === "Members";
+  const isCalendar = activeItem === "Calendar";
 
   return (
     <main
@@ -245,7 +247,8 @@ export function MainContent({ collapsed, activeItem }: MainContentProps) {
     >
       {isEventPreview && <EventPreviewView />}
       {isMembers && <MembersView />}
-      {!isEventPreview && !isMembers && <DashboardView />}
+      {isCalendar && <CalendarView />}
+      {!isEventPreview && !isMembers && !isCalendar && <DashboardView />}
     </main>
   );
 }
