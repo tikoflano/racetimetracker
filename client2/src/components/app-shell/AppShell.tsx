@@ -19,7 +19,7 @@ export function AppShell() {
         onToggle={() => setCollapsed((prev) => !prev)}
         activeItem={activeItem}
       />
-      <MainContent collapsed={collapsed} />
+      <MainContent collapsed={collapsed} activeItem={activeItem} />
     </>
   );
 }
