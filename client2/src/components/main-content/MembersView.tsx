@@ -129,6 +129,9 @@ export function MembersView() {
   const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "timekeeper">("manager");
   const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameName, setRenameName] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const activeOrg = useMemo<Organization | null>(() => {
     if (orgs.length === 0) return null;
@@ -318,6 +321,41 @@ export function MembersView() {
     }
   };
 
+  const handleRename = async () => {
+    if (!orgId) return;
+    setRenameError(null);
+    const trimmed = renameName.trim();
+    if (!trimmed) {
+      setRenameError("Name cannot be empty");
+      return;
+    }
+    if (trimmed === activeOrg?.name) {
+      setRenameModalOpen(false);
+      return;
+    }
+    try {
+      await renameOrganization({ orgId, name: trimmed });
+      setRenameModalOpen(false);
+    } catch (e: unknown) {
+      setRenameError(getErrorMessage(e, "Failed to rename organization"));
+    }
+  };
+
+  if (orgs.length === 0) {
+    return (
+      <Stack gap="lg">
+        <Title order={2} fw={700}>
+          Members
+        </Title>
+        <Paper withBorder p="xl">
+          <Text c="dimmed" ta="center">
+            No organizations found. Create an organization in the main app to manage members here.
+          </Text>
+        </Paper>
+      </Stack>
+    );
+  }
+
   return (
     <Stack gap="lg">
       <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -351,7 +389,12 @@ export function MembersView() {
             </Menu.Item>
             <Menu.Item
               leftSection={<IconPencil size={14} />}
-              onClick={() => console.log("Rename (mocked)")}
+              onClick={() => {
+                if (!activeOrg) return;
+                setRenameName(activeOrg.name);
+                setRenameError(null);
+                setRenameModalOpen(true);
+              }}
             >
               Rename organization
             </Menu.Item>
@@ -403,7 +446,11 @@ export function MembersView() {
             records={filteredAndSortedRecords}
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
-            noRecordsText="No members match your search or filter."
+            noRecordsText={
+              memberRows.length > 0
+                ? "No members match your search or filter."
+                : "No members yet. Invite someone to get started."
+            }
             columns={[
               {
                 accessor: "name",
@@ -584,6 +631,44 @@ export function MembersView() {
               </Group>
             </>
           )}
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={renameModalOpen}
+        onClose={() => {
+          setRenameModalOpen(false);
+          setRenameError(null);
+        }}
+        title="Rename organization"
+      >
+        <Stack gap="md">
+          {renameError && (
+            <Text size="sm" c="red">
+              {renameError}
+            </Text>
+          )}
+          <TextInput
+            label="Organization name"
+            value={renameName}
+            onChange={(e) => setRenameName(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRename();
+            }}
+            autoFocus
+          />
+          <Group gap="xs">
+            <Button onClick={handleRename}>Save</Button>
+            <Button
+              variant="subtle"
+              onClick={() => {
+                setRenameModalOpen(false);
+                setRenameError(null);
+              }}
+            >
+              Cancel
+            </Button>
+          </Group>
         </Stack>
       </Modal>
     </Stack>
