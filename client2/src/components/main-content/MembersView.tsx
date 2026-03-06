@@ -6,10 +6,12 @@ import {
   Group,
   Menu,
   Modal,
+  Paper,
   Select,
   Stack,
   Text,
   TextInput,
+  Title,
 } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
@@ -21,8 +23,13 @@ import {
   IconUser,
   IconMail,
   IconTrash,
+  IconSearch,
+  IconShieldStar,
+  IconShield,
+  IconUserCog,
+  IconClock,
+  IconUsers,
 } from "@tabler/icons-react";
-import classes from "./MembersView.module.css";
 
 type MemberStatus = "active" | "pending";
 type MemberRole = "owner" | "admin" | "manager" | "timekeeper";
@@ -98,6 +105,22 @@ const ROLE_LABELS: Record<MemberRole | "all", string> = {
   admin: "Admin",
   manager: "Manager",
   timekeeper: "Timekeeper",
+};
+
+const ROLE_COLORS: Record<MemberRole | "all", string> = {
+  all: "gray",
+  owner: "blue",
+  admin: "green",
+  manager: "yellow",
+  timekeeper: "gray",
+};
+
+const ROLE_ICONS: Record<MemberRole | "all", React.ReactNode> = {
+  all: <IconUsers size={14} />,
+  owner: <IconShieldStar size={14} />,
+  admin: <IconShield size={14} />,
+  manager: <IconUserCog size={14} />,
+  timekeeper: <IconClock size={14} />,
 };
 
 function sortRecords(
@@ -194,13 +217,15 @@ export function MembersView() {
   };
 
   return (
-    <div className={classes.membersPage}>
-      <div className={classes.pageHeader}>
+    <Stack gap="lg">
+      <Group justify="space-between" align="flex-start" wrap="wrap">
         <div>
-          <h1 className={classes.pageTitle}>{MOCK_ORG_NAME}</h1>
-          <p className={classes.sectionSubtitle}>
+          <Title order={2} fw={700}>
+            {MOCK_ORG_NAME}
+          </Title>
+          <Text size="sm" c="dimmed" mt={4}>
             Organization members and permissions
-          </p>
+          </Text>
         </div>
         <Menu shadow="md" width={220} position="bottom-end">
           <Menu.Target>
@@ -238,42 +263,41 @@ export function MembersView() {
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
-      </div>
+      </Group>
 
-      <section className={classes.section}>
-        <div className={classes.sectionHeader}>
-          <Text size="sm" fw={600} c="dimmed" tt="uppercase">
-            Members
-          </Text>
-          <Group gap="md" wrap="wrap" className={classes.filtersRow}>
-            <TextInput
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
-              size="xs"
-              style={{ maxWidth: 280 }}
-            />
+      <Stack gap="md">
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+          <Group gap="xs" wrap="wrap">
             {ROLE_FILTER_OPTIONS.map((filter) => (
-              <button
+              <Badge
                 key={filter}
-                type="button"
-                className={`${classes.pillFilter} ${
-                  roleFilter === filter ? classes.pillFilterActive : ""
-                }`}
+                size="lg"
+                variant={roleFilter === filter ? "filled" : "light"}
+                color={ROLE_COLORS[filter]}
+                leftSection={ROLE_ICONS[filter]}
+                style={{ cursor: "pointer" }}
                 onClick={() => setRoleFilter(filter)}
               >
                 {ROLE_LABELS[filter]} ({roleCounts[filter]})
-              </button>
+              </Badge>
             ))}
           </Group>
-        </div>
+          <TextInput
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            size="sm"
+            leftSection={<IconSearch size={16} />}
+            style={{ minWidth: 240 }}
+          />
+        </Group>
 
-        <div className={classes.card}>
+        <Paper p="md" withBorder>
           <DataTable<MemberRow>
             withTableBorder={false}
             withColumnBorders={false}
             highlightOnHover
-            className={classes.table}
+            minHeight={150}
             records={filteredAndSortedRecords}
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
@@ -312,10 +336,11 @@ export function MembersView() {
                 render: (row) => (
                   <Badge
                     size="sm"
-                    color={row.role === "owner" || row.role === "admin" ? "green" : "yellow"}
+                    color={ROLE_COLORS[row.role]}
                     variant="light"
+                    leftSection={ROLE_ICONS[row.role]}
                   >
-                    {row.role === "owner" ? "owner/admin" : row.role}
+                    {ROLE_LABELS[row.role]}
                   </Badge>
                 ),
               },
@@ -365,8 +390,8 @@ export function MembersView() {
               },
             ]}
           />
-        </div>
-      </section>
+        </Paper>
+      </Stack>
 
       <Modal
         opened={inviteModalOpen}
@@ -454,6 +479,6 @@ export function MembersView() {
           )}
         </Stack>
       </Modal>
-    </div>
+    </Stack>
   );
 }

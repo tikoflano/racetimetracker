@@ -1,13 +1,29 @@
-import { createTheme } from '@mantine/core';
+import { createTheme, MantineColorsTuple } from '@mantine/core';
 
 /**
  * Custom color palettes (10 shades each, 0=lightest, 9=darkest).
  * Primary: #313B72, Success: #7A9B76, Danger: #AC3931, Warning: #ECE2D0
  */
+
+// Dark theme colors
+const dark: MantineColorsTuple = [
+  '#C1C2C5',
+  '#A6A7AB',
+  '#909296',
+  '#5c5f66',
+  '#373A40',
+  '#2C2E33',
+  '#1e2028',
+  '#13151b',
+  '#0f1117',
+  '#0a0b0e',
+];
+
 export const theme = createTheme({
   primaryColor: 'blue',
   defaultRadius: 'sm',
   colors: {
+    dark,
     // Primary: #313B72 (dark blue)
     blue: [
       '#F4F5F8',
@@ -60,5 +76,12 @@ export const theme = createTheme({
       '#A49788',
       '#8C7E70',
     ],
+  },
+  components: {
+    Paper: {
+      defaultProps: {
+        radius: 'md',
+      },
+    },
   },
 });
