@@ -12,7 +12,7 @@ import {
   Badge,
   ActionIcon,
 } from "@mantine/core";
-import { Calendar } from "@mantine/dates";
+
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -133,6 +133,162 @@ function toDateStr(date: Date | string): string {
   if (typeof date === "string") return date;
   const d = date;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+interface CalendarGridProps {
+  year: number;
+  month: number;
+  dateEvents: Map<string, Event[]>;
+  champMap: Map<bigint, Championship>;
+}
+
+function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) {
+  const weeks = useMemo(() => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    // Get days from previous month to fill first week
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+    
+    const cells: { date: Date; isCurrentMonth: boolean }[] = [];
+    
+    // Previous month days
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      cells.push({
+        date: new Date(prevYear, prevMonth, daysInPrevMonth - i),
+        isCurrentMonth: false,
+      });
+    }
+    
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      cells.push({
+        date: new Date(year, month, d),
+        isCurrentMonth: true,
+      });
+    }
+    
+    // Next month days to fill remaining cells (complete 6 weeks)
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    let nextDay = 1;
+    while (cells.length < 42) {
+      cells.push({
+        date: new Date(nextYear, nextMonth, nextDay++),
+        isCurrentMonth: false,
+      });
+    }
+    
+    // Split into weeks
+    const result: { date: Date; isCurrentMonth: boolean }[][] = [];
+    for (let i = 0; i < cells.length; i += 7) {
+      result.push(cells.slice(i, i + 7));
+    }
+    return result;
+  }, [year, month]);
+
+  const todayStr = dateKey(new Date());
+
+  return (
+    <Box>
+      <Box
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: 1,
+          marginBottom: 1,
+        }}
+      >
+        {DAY_NAMES.map((day) => (
+          <Box
+            key={day}
+            p="xs"
+            style={{
+              textAlign: "center",
+              background: "var(--mantine-color-dark-6)",
+            }}
+          >
+            <Text size="sm" fw={600} c="dimmed">
+              {day}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+      <Box
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: 1,
+        }}
+      >
+        {weeks.flat().map((cell, idx) => {
+          const dateStr = toDateStr(cell.date);
+          const evts = dateEvents.get(dateStr) ?? [];
+          const isToday = dateStr === todayStr;
+
+          return (
+            <Box
+              key={idx}
+              p="xs"
+              style={{
+                minHeight: 100,
+                background: !cell.isCurrentMonth
+                  ? "var(--mantine-color-dark-7)"
+                  : isToday
+                    ? "var(--mantine-color-dark-5)"
+                    : "var(--mantine-color-dark-6)",
+              }}
+            >
+              <Text
+                size="sm"
+                fw={isToday ? 700 : 500}
+                c={isToday ? "blue" : cell.isCurrentMonth ? undefined : "dark.4"}
+                mb={4}
+              >
+                {cell.date.getDate()}
+              </Text>
+              <Stack gap={2}>
+                {evts.slice(0, 2).map((evt) => {
+                  const champ = champMap.get(evt.championshipId);
+                  return (
+                    <Text
+                      key={String(evt.id)}
+                      size="xs"
+                      style={{
+                        display: "block",
+                        padding: "2px 6px",
+                        borderLeft: `3px solid ${champ?.color ?? "var(--mantine-color-blue-6)"}`,
+                        borderRadius: 2,
+                        background: "var(--mantine-color-dark-5)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        cursor: "pointer",
+                      }}
+                      title={evt.name}
+                    >
+                      {evt.name}
+                    </Text>
+                  );
+                })}
+                {evts.length > 2 && (
+                  <Text size="xs" c="dimmed">
+                    +{evts.length - 2} more
+                  </Text>
+                )}
+              </Stack>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
+  );
 }
 
 export function CalendarView() {
@@ -443,78 +599,12 @@ export function CalendarView() {
         ))}
       </Group>
 
-      <Paper withBorder p="md" radius="md" style={{ overflow: "hidden" }}>
-        <Calendar
-          date={displayedDate}
-          onDateChange={handleDateChange}
-          onNextMonth={(date) => date && handleDateChange(date)}
-          onPreviousMonth={(date) => date && handleDateChange(date)}
-          firstDayOfWeek={0}
-          static
-          renderDay={(date) => {
-            const dateStr = toDateStr(date);
-            const evts = dateEvents.get(dateStr) ?? [];
-            const [y, m, dayNum] = dateStr.split("-").map(Number);
-            const isCurrentMonth = m === month + 1 && y === year;
-            const todayStr = dateKey(new Date());
-            const isToday = dateStr === todayStr;
-
-            return (
-              <Box
-                p={4}
-                style={{
-                  minHeight: 90,
-                  background: !isCurrentMonth
-                    ? "var(--mantine-color-dark-6)"
-                    : isToday
-                      ? "var(--mantine-color-dark-5)"
-                      : "var(--mantine-color-dark-7)",
-                  borderRadius: 4,
-                }}
-              >
-                <Text
-                  size="xs"
-                  fw={isToday ? 700 : 500}
-                  c={isToday ? "blue" : isCurrentMonth ? "dimmed" : "dark.4"}
-                  mb={2}
-                >
-                  {dayNum}
-                </Text>
-                <Stack gap={2}>
-                  {evts.slice(0, 3).map((evt) => {
-                    const champ = champMap.get(evt.championshipId);
-                    return (
-                      <Text
-                        key={String(evt.id)}
-                        size="xs"
-                        style={{
-                          display: "block",
-                          padding: "2px 6px",
-                          borderLeft: `3px solid ${champ?.color ?? "var(--mantine-color-blue-6)"}`,
-                          borderRadius: 2,
-                          background: "var(--mantine-color-dark-6)",
-                          color: "inherit",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          cursor: "pointer",
-                        }}
-                        title={evt.name}
-                        onClick={() => console.log("Navigate to event:", evt.slug)}
-                      >
-                        {evt.name}
-                      </Text>
-                    );
-                  })}
-                  {evts.length > 3 && (
-                    <Text size="xs" c="dimmed" style={{ paddingLeft: 6 }}>
-                      +{evts.length - 3} more
-                    </Text>
-                  )}
-                </Stack>
-              </Box>
-            );
-          }}
+      <Paper withBorder p="md" radius="md">
+        <CalendarGrid
+          year={year}
+          month={month}
+          dateEvents={dateEvents}
+          champMap={champMap}
         />
       </Paper>
 
