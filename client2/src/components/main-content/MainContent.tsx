@@ -13,6 +13,7 @@ import { MembersView } from "./MembersView";
 import { CalendarView } from "./CalendarView";
 import { LocationsView } from "./LocationsView";
 import { LocationDetailView } from "./LocationDetailView";
+import { TimekeepView } from "./TimekeepView";
 
 interface MainContentProps {
   collapsed: boolean;
@@ -245,6 +246,7 @@ export function MainContent({ collapsed, activeItem }: MainContentProps) {
   const isMembers = activeItem === "Members";
   const isCalendar = activeItem === "Calendar";
   const isLocations = activeItem === "Locations";
+  const isTimekeeping = activeItem === "Timekeeping";
 
   // Reset location detail when navigating away from Locations
   const handleLocationSelect = (venueId: bigint) => {
@@ -270,7 +272,8 @@ export function MainContent({ collapsed, activeItem }: MainContentProps) {
           <LocationsView onSelectLocation={handleLocationSelect} />
         )
       )}
-      {!isEventPreview && !isMembers && !isCalendar && !isLocations && <DashboardView />}
+      {isTimekeeping && <TimekeepView />}
+      {!isEventPreview && !isMembers && !isCalendar && !isLocations && !isTimekeeping && <DashboardView />}
     </main>
   );
 }
