@@ -7,6 +7,7 @@ import {
   IconBike,
   IconUsersGroup,
   IconTool,
+  IconFlag,
 } from "@tabler/icons-react";
 import { Tooltip } from "@mantine/core";
 import classes from "./AppSidebar.module.css";
@@ -28,6 +29,7 @@ const navigation: NavSection[] = [
     title: "Main",
     items: [
       { icon: IconLayoutDashboard, label: "Dashboard", path: "/" },
+      { icon: IconFlag, label: "Event Preview", path: "/event-preview" },
       { icon: IconCalendar, label: "Calendar", path: "/calendar" },
       { icon: IconClock, label: "Timekeeping", path: "/timekeep" },
     ],

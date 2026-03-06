@@ -8,6 +8,7 @@ import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { theme } from './theme';
 import '@mantine/core/styles.css';
+import 'mantine-datatable/styles.css';
 import './index.css';
 
 // SpacetimeDB connection config

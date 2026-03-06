@@ -1,0 +1,347 @@
+.eventPage {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: #ffffff;
+}
+
+.eventHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.eventBreadcrumb {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6b7084;
+  margin-bottom: 6px;
+}
+
+.eventTitle {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.eventMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: #8a8fa1;
+}
+
+.metaSeparator {
+  color: #3a3e4f;
+}
+
+.eventStatusGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.statusBadge {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.statusSubtext {
+  font-size: 12px;
+  color: #a1a5b2;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.2fr);
+  gap: 16px;
+}
+
+.card {
+  background: #13151b;
+  border: 1px solid #1e2028;
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.cardHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.sectionSubtitle {
+  font-size: 13px;
+  color: #6b7084;
+  margin-top: 2px;
+}
+
+.eventDescription {
+  font-size: 14px;
+  color: #c5c9d6;
+  margin: 6px 0 10px;
+  line-height: 1.6;
+}
+
+.highlightsList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #a1a5b2;
+}
+
+.metricsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.metricRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metricCard {
+  background: #10121a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid #1e2028;
+}
+
+.metricLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6b7084;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.metricValue {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filtersRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pillFilter {
+  border-radius: 999px;
+  border: 1px solid #262a39;
+  background: #0f1117;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #a1a5b2;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.pillFilter:hover {
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.pillFilterActive {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.table {
+  font-size: 13px;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.monoCell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
+.stagesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stageCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  background: #13151b;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #1e2028;
+}
+
+.stageTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.stageTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.stageDescription {
+  font-size: 13px;
+  color: #a1a5b2;
+  margin: 0;
+}
+
+.stageMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #8a8fa1;
+  white-space: nowrap;
+}
+
+.liveTimingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.nextStageLabel {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nextStageTime {
+  font-size: 13px;
+  color: #a1a5b2;
+}
+
+.nextStageMeta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.helperText {
+  color: #6b7084;
+}
+
+.podiumGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.podiumCard {
+  background: #13151b;
+  border-radius: 12px;
+  border: 1px solid #1e2028;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.podium1 {
+  border-color: rgba(234, 179, 8, 0.6);
+}
+
+.podium2 {
+  border-color: rgba(148, 163, 184, 0.6);
+}
+
+.podium3 {
+  border-color: rgba(234, 88, 12, 0.6);
+}
+
+.podiumPlaceLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6b7084;
+}
+
+.podiumRider {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.podiumTime {
+  font-size: 13px;
+  color: #a1a5b2;
+}
+
+@media (max-width: 960px) {
+  .overviewGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .liveTimingGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eventHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .eventStatusGroup {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .podiumGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nextStageMeta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

@@ -7,9 +7,11 @@ import {
   IconEye,
 } from "@tabler/icons-react";
 import classes from "./MainContent.module.css";
+import { EventPreviewView } from "./EventPreviewView";
 
 interface MainContentProps {
   collapsed: boolean;
+  activeItem: string;
 }
 
 const stats = [
@@ -122,13 +124,9 @@ const projects = [
   },
 ];
 
-export function MainContent({ collapsed }: MainContentProps) {
+function DashboardView() {
   return (
-    <main
-      className={classes.main}
-      style={{ marginLeft: collapsed ? "72px" : "260px" }}
-    >
-      {/* Greeting */}
+    <>
       <div className={classes.greeting}>
         <h1 className={classes.greetingTitle}>Good morning, Alex</h1>
         <p className={classes.greetingSubtitle}>
@@ -136,7 +134,6 @@ export function MainContent({ collapsed }: MainContentProps) {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className={classes.statsGrid}>
         {stats.map((stat) => (
           <div key={stat.label} className={classes.statCard}>
@@ -164,9 +161,7 @@ export function MainContent({ collapsed }: MainContentProps) {
         ))}
       </div>
 
-      {/* Content Grid */}
       <div className={classes.contentGrid}>
-        {/* Recent Activity */}
         <div className={classes.contentCard}>
           <div className={classes.contentCardHeader}>
             <h3 className={classes.contentCardTitle}>Recent Activity</h3>
@@ -198,7 +193,6 @@ export function MainContent({ collapsed }: MainContentProps) {
           </div>
         </div>
 
-        {/* Active Projects */}
         <div className={classes.contentCard}>
           <div className={classes.contentCardHeader}>
             <h3 className={classes.contentCardTitle}>Active Projects</h3>
@@ -235,6 +229,19 @@ export function MainContent({ collapsed }: MainContentProps) {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+export function MainContent({ collapsed, activeItem }: MainContentProps) {
+  const isEventPreview = activeItem === "Event Preview";
+
+  return (
+    <main
+      className={classes.main}
+      style={{ marginLeft: collapsed ? "72px" : "260px" }}
+    >
+      {isEventPreview ? <EventPreviewView /> : <DashboardView />}
     </main>
   );
 }
