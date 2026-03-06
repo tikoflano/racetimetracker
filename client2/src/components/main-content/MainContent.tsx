@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   IconArrowUpRight,
   IconArrowDownRight,
@@ -10,6 +11,8 @@ import classes from "./MainContent.module.css";
 import { EventPreviewView } from "./EventPreviewView";
 import { MembersView } from "./MembersView";
 import { CalendarView } from "./CalendarView";
+import { LocationsView } from "./LocationsView";
+import { LocationDetailView } from "./LocationDetailView";
 
 interface MainContentProps {
   collapsed: boolean;
@@ -236,9 +239,21 @@ function DashboardView() {
 }
 
 export function MainContent({ collapsed, activeItem }: MainContentProps) {
+  const [selectedLocationId, setSelectedLocationId] = useState<bigint | null>(null);
+  
   const isEventPreview = activeItem === "Event Preview";
   const isMembers = activeItem === "Members";
   const isCalendar = activeItem === "Calendar";
+  const isLocations = activeItem === "Locations";
+
+  // Reset location detail when navigating away from Locations
+  const handleLocationSelect = (venueId: bigint) => {
+    setSelectedLocationId(venueId);
+  };
+
+  const handleLocationBack = () => {
+    setSelectedLocationId(null);
+  };
 
   return (
     <main
@@ -248,7 +263,14 @@ export function MainContent({ collapsed, activeItem }: MainContentProps) {
       {isEventPreview && <EventPreviewView />}
       {isMembers && <MembersView />}
       {isCalendar && <CalendarView />}
-      {!isEventPreview && !isMembers && !isCalendar && <DashboardView />}
+      {isLocations && (
+        selectedLocationId !== null ? (
+          <LocationDetailView venueId={selectedLocationId} onBack={handleLocationBack} />
+        ) : (
+          <LocationsView onSelectLocation={handleLocationSelect} />
+        )
+      )}
+      {!isEventPreview && !isMembers && !isCalendar && !isLocations && <DashboardView />}
     </main>
   );
 }
