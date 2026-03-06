@@ -31,6 +31,10 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 
+import { useTable, useReducer } from "spacetimedb/react";
+import { tables, reducers } from "@/module_bindings";
+import type { Organization, OrgMember, User } from "@/module_bindings/types";
+
 type MemberStatus = "active" | "pending";
 type MemberRole = "owner" | "admin" | "manager" | "timekeeper";
 
@@ -40,54 +44,10 @@ interface MemberRow {
   email: string;
   status: MemberStatus;
   role: MemberRole;
+  userId?: bigint;
+  orgMemberId?: bigint;
+  isPending?: boolean;
 }
-
-const MOCK_ORG_NAME = "Acme Racing";
-
-const MOCK_MEMBERS: MemberRow[] = [
-  {
-    id: "1",
-    name: "Alex Morgan",
-    email: "alex.morgan@acme.racing",
-    status: "active",
-    role: "owner",
-  },
-  {
-    id: "2",
-    name: "Sam Chen",
-    email: "sam.chen@acme.racing",
-    status: "active",
-    role: "admin",
-  },
-  {
-    id: "3",
-    name: "Jordan Lee",
-    email: "jordan.lee@acme.racing",
-    status: "pending",
-    role: "manager",
-  },
-  {
-    id: "4",
-    name: "Casey Rivera",
-    email: "casey.rivera@acme.racing",
-    status: "active",
-    role: "manager",
-  },
-  {
-    id: "5",
-    name: "Morgan Taylor",
-    email: "morgan.taylor@acme.racing",
-    status: "active",
-    role: "timekeeper",
-  },
-  {
-    id: "6",
-    name: "Riley Kim",
-    email: "riley.kim@acme.racing",
-    status: "active",
-    role: "timekeeper",
-  },
-];
 
 const ROLE_FILTER_OPTIONS = [
   "all",
@@ -123,6 +83,11 @@ const ROLE_ICONS: Record<MemberRole | "all", React.ReactNode> = {
   timekeeper: <IconClock size={14} />,
 };
 
+function getErrorMessage(e: unknown, fallback: string): string {
+  if (e instanceof Error && e.message) return e.message;
+  return fallback;
+}
+
 function sortRecords(
   records: MemberRow[],
   sortStatus: DataTableSortStatus<MemberRow>
@@ -139,6 +104,18 @@ function sortRecords(
 }
 
 export function MembersView() {
+  const [orgs] = useTable(tables.organization);
+  const [orgMembers] = useTable(tables.org_member);
+  const [users] = useTable(tables.user);
+
+  const inviteOrgMember = useReducer(reducers.inviteOrgMember);
+  const resendOrgInvitation = useReducer(reducers.resendOrgInvitation);
+  const removeOrgMember = useReducer(reducers.removeOrgMember);
+  const renameOrganization = useReducer(reducers.renameOrganization);
+  const transferOrgOwnership = useReducer(reducers.transferOrgOwnership);
+  const leaveOrganization = useReducer(reducers.leaveOrganization);
+  const startImpersonation = useReducer(reducers.startImpersonation);
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<MemberRow>>({
@@ -151,6 +128,90 @@ export function MembersView() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "timekeeper">("manager");
   const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const activeOrg = useMemo<Organization | null>(() => {
+    if (orgs.length === 0) return null;
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("active_org_id");
+      if (stored) {
+        const id = BigInt(stored);
+        const found = orgs.find((o: Organization) => o.id === id);
+        if (found) return found;
+      }
+    }
+    return orgs[0] as Organization;
+  }, [orgs]);
+
+  const orgId = activeOrg?.id ?? null;
+
+  const { memberRows, roleCounts, adminCandidates } = useMemo(() => {
+    if (!orgId || orgs.length === 0) {
+      return {
+        memberRows: [] as MemberRow[],
+        roleCounts: {
+          all: 0,
+          owner: 0,
+          admin: 0,
+          manager: 0,
+          timekeeper: 0,
+        } as Record<RoleFilter, number>,
+        adminCandidates: [] as MemberRow[],
+      };
+    }
+
+    const org = activeOrg as Organization;
+    const ownerUser =
+      users.find((u: User) => u.id === org.ownerUserId) ?? null;
+
+    const rows: MemberRow[] = [];
+
+    if (ownerUser) {
+      rows.push({
+        id: String(ownerUser.id),
+        name: ownerUser.name || ownerUser.email || `User #${ownerUser.id}`,
+        email: ownerUser.email || "",
+        status: "active",
+        role: "owner",
+        userId: ownerUser.id,
+        isPending: false,
+      });
+    }
+
+    const orgMembersForOrg = orgMembers.filter(
+      (m: OrgMember) => m.orgId === org.id
+    );
+
+    for (const m of orgMembersForOrg) {
+      if (ownerUser && m.userId === ownerUser.id) continue;
+      const u = users.find((user: User) => user.id === m.userId) ?? null;
+      const isPending = !!u?.googleSub?.startsWith("pending:");
+      rows.push({
+        id: String(m.id),
+        name: u ? u.name || u.email || `User #${u.id}` : `User #${m.userId}`,
+        email: u?.email || "",
+        status: isPending ? "pending" : "active",
+        role: m.role as MemberRole,
+        userId: u?.id,
+        orgMemberId: m.id,
+        isPending,
+      });
+    }
+
+    const roleCounts: Record<RoleFilter, number> = {
+      all: rows.length,
+      owner: rows.filter((m) => m.role === "owner").length,
+      admin: rows.filter((m) => m.role === "admin").length,
+      manager: rows.filter((m) => m.role === "manager").length,
+      timekeeper: rows.filter((m) => m.role === "timekeeper").length,
+    };
+
+    const adminCandidates = rows.filter(
+      (m) => m.role === "admin" && m.status === "active" && m.userId != null
+    );
+
+    return { memberRows: rows, roleCounts, adminCandidates };
+  }, [activeOrg, orgId, orgMembers, orgs.length, users]);
 
   const filteredAndSortedRecords = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -164,56 +225,97 @@ export function MembersView() {
       if (roleFilter === "all") return true;
       return row.role === roleFilter;
     };
-    const filtered = MOCK_MEMBERS.filter(
+    const filtered = memberRows.filter(
       (row) => matchesSearch(row) && matchesRole(row)
     );
     return sortRecords(filtered, sortStatus);
-  }, [search, roleFilter, sortStatus]);
+  }, [memberRows, roleFilter, search, sortStatus]);
 
-  const roleCounts = useMemo(() => {
-    const counts: Record<RoleFilter, number> = {
-      all: MOCK_MEMBERS.length,
-      owner: MOCK_MEMBERS.filter((m) => m.role === "owner").length,
-      admin: MOCK_MEMBERS.filter((m) => m.role === "admin").length,
-      manager: MOCK_MEMBERS.filter((m) => m.role === "manager").length,
-      timekeeper: MOCK_MEMBERS.filter((m) => m.role === "timekeeper").length,
-    };
-    return counts;
-  }, []);
-
-  const adminCandidates = useMemo(
-    () => MOCK_MEMBERS.filter((m) => m.role === "admin" && m.status === "active"),
-    []
-  );
-
-  const handleInvite = () => {
-    console.log("Invite (mocked):", { inviteName, inviteEmail, inviteRole });
-    setInviteName("");
-    setInviteEmail("");
-    setInviteRole("manager");
-    setInviteModalOpen(false);
+  const handleInvite = async () => {
+    if (!orgId) return;
+    setError(null);
+    const email = inviteEmail.trim();
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    try {
+      await inviteOrgMember({
+        orgId,
+        email,
+        name: inviteName.trim(),
+        role: inviteRole,
+      });
+      setInviteName("");
+      setInviteEmail("");
+      setInviteRole("manager");
+      setInviteModalOpen(false);
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to invite member"));
+    }
   };
 
-  const handleTransfer = () => {
-    console.log("Transfer ownership (mocked):", transferTargetId);
-    setTransferTargetId(null);
-    setTransferModalOpen(false);
+  const handleTransfer = async () => {
+    if (!orgId || !transferTargetId) return;
+    if (
+      !confirm(
+        "Are you sure you want to transfer ownership? You will become a regular admin."
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    try {
+      await transferOrgOwnership({
+        orgId,
+        newOwnerUserId: BigInt(transferTargetId),
+      });
+      setTransferTargetId(null);
+      setTransferModalOpen(false);
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to transfer ownership"));
+    }
   };
 
-  const handleLeave = () => {
-    console.log("Leave organization (mocked)");
+  const handleLeave = async () => {
+    if (!orgId) return;
+    if (!confirm("Are you sure you want to leave this organization?")) return;
+    setError(null);
+    try {
+      await leaveOrganization({ orgId });
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to leave organization"));
+    }
   };
 
-  const handleImpersonate = (member: MemberRow) => {
-    console.log("Impersonate (mocked):", member.id);
+  const handleImpersonate = async (member: MemberRow) => {
+    if (!member.userId) return;
+    setError(null);
+    try {
+      await startImpersonation({ targetUserId: member.userId });
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to start impersonation"));
+    }
   };
 
-  const handleResendInvite = (member: MemberRow) => {
-    console.log("Resend invite (mocked):", member.id);
+  const handleResendInvite = async (member: MemberRow) => {
+    if (!member.orgMemberId) return;
+    setError(null);
+    try {
+      await resendOrgInvitation({ orgMemberId: member.orgMemberId });
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to resend invitation"));
+    }
   };
 
-  const handleRemove = (member: MemberRow) => {
-    console.log("Remove member (mocked):", member.id);
+  const handleRemove = async (member: MemberRow) => {
+    if (!member.orgMemberId) return;
+    setError(null);
+    try {
+      await removeOrgMember({ orgMemberId: member.orgMemberId });
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "Failed to remove member"));
+    }
   };
 
   return (
@@ -221,7 +323,7 @@ export function MembersView() {
       <Group justify="space-between" align="flex-start" wrap="wrap">
         <div>
           <Title order={2} fw={700}>
-            {MOCK_ORG_NAME}
+            {activeOrg?.name ?? "Organization"}
           </Title>
           <Text size="sm" c="dimmed" mt={4}>
             Organization members and permissions
@@ -399,6 +501,11 @@ export function MembersView() {
         title="Invite Member"
       >
         <Stack gap="md">
+          {error && (
+            <Text size="sm" c="red">
+              {error}
+            </Text>
+          )}
           <TextInput
             label="Name"
             placeholder="Name"
@@ -454,7 +561,7 @@ export function MembersView() {
                 value={transferTargetId}
                 onChange={setTransferTargetId}
                 data={adminCandidates.map((m) => ({
-                  value: m.id,
+                  value: m.userId ? String(m.userId) : "",
                   label: m.name || m.email,
                 }))}
               />
