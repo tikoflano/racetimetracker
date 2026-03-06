@@ -1,8 +1,8 @@
 .main {
   margin-left: var(--content-offset);
-  margin-top: 64px;
-  min-height: calc(100vh - 64px);
-  padding: 32px;
+  height: calc(100vh - 64px);
+  padding: 96px 32px 32px;
+  overflow-y: auto;
   transition: margin-left 280ms cubic-bezier(0.4, 0, 0.2, 1);
   background-color: #0a0b0f;
 }
