@@ -7,7 +7,6 @@ import {
   Menu,
   Modal,
   Paper,
-  SegmentedControl,
   Select,
   Stack,
   Text,
@@ -24,6 +23,12 @@ import {
   IconUser,
   IconMail,
   IconTrash,
+  IconSearch,
+  IconShieldStar,
+  IconShield,
+  IconUserCog,
+  IconClock,
+  IconUsers,
 } from "@tabler/icons-react";
 
 type MemberStatus = "active" | "pending";
@@ -100,6 +105,22 @@ const ROLE_LABELS: Record<MemberRole | "all", string> = {
   admin: "Admin",
   manager: "Manager",
   timekeeper: "Timekeeper",
+};
+
+const ROLE_COLORS: Record<MemberRole | "all", string> = {
+  all: "gray",
+  owner: "blue",
+  admin: "green",
+  manager: "yellow",
+  timekeeper: "gray",
+};
+
+const ROLE_ICONS: Record<MemberRole | "all", React.ReactNode> = {
+  all: <IconUsers size={14} />,
+  owner: <IconShieldStar size={14} />,
+  admin: <IconShield size={14} />,
+  manager: <IconUserCog size={14} />,
+  timekeeper: <IconClock size={14} />,
 };
 
 function sortRecords(
@@ -195,11 +216,6 @@ export function MembersView() {
     console.log("Remove member (mocked):", member.id);
   };
 
-  const segmentedControlData = ROLE_FILTER_OPTIONS.map((filter) => ({
-    value: filter,
-    label: `${ROLE_LABELS[filter]} (${roleCounts[filter]})`,
-  }));
-
   return (
     <Stack gap="lg">
       <Group justify="space-between" align="flex-start" wrap="wrap">
@@ -249,26 +265,31 @@ export function MembersView() {
         </Menu>
       </Group>
 
-      <Stack gap="sm">
+      <Stack gap="md">
         <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Text size="sm" fw={600} c="dimmed" tt="uppercase">
-            Members
-          </Text>
-          <Group gap="md" wrap="wrap">
-            <TextInput
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
-              size="xs"
-              style={{ minWidth: 200 }}
-            />
-            <SegmentedControl
-              size="xs"
-              value={roleFilter}
-              onChange={(value) => setRoleFilter(value as RoleFilter)}
-              data={segmentedControlData}
-            />
+          <Group gap="xs" wrap="wrap">
+            {ROLE_FILTER_OPTIONS.map((filter) => (
+              <Badge
+                key={filter}
+                size="lg"
+                variant={roleFilter === filter ? "filled" : "light"}
+                color={ROLE_COLORS[filter]}
+                leftSection={ROLE_ICONS[filter]}
+                style={{ cursor: "pointer" }}
+                onClick={() => setRoleFilter(filter)}
+              >
+                {ROLE_LABELS[filter]} ({roleCounts[filter]})
+              </Badge>
+            ))}
           </Group>
+          <TextInput
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            size="sm"
+            leftSection={<IconSearch size={16} />}
+            style={{ minWidth: 240 }}
+          />
         </Group>
 
         <Paper p="md" withBorder>
@@ -315,10 +336,11 @@ export function MembersView() {
                 render: (row) => (
                   <Badge
                     size="sm"
-                    color={row.role === "owner" || row.role === "admin" ? "green" : "yellow"}
+                    color={ROLE_COLORS[row.role]}
                     variant="light"
+                    leftSection={ROLE_ICONS[row.role]}
                   >
-                    {row.role === "owner" ? "owner/admin" : row.role}
+                    {ROLE_LABELS[row.role]}
                   </Badge>
                 ),
               },
