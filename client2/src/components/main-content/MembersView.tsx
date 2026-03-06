@@ -6,10 +6,13 @@ import {
   Group,
   Menu,
   Modal,
+  Paper,
+  SegmentedControl,
   Select,
   Stack,
   Text,
   TextInput,
+  Title,
 } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
@@ -22,7 +25,6 @@ import {
   IconMail,
   IconTrash,
 } from "@tabler/icons-react";
-import classes from "./MembersView.module.css";
 
 type MemberStatus = "active" | "pending";
 type MemberRole = "owner" | "admin" | "manager" | "timekeeper";
@@ -193,14 +195,21 @@ export function MembersView() {
     console.log("Remove member (mocked):", member.id);
   };
 
+  const segmentedControlData = ROLE_FILTER_OPTIONS.map((filter) => ({
+    value: filter,
+    label: `${ROLE_LABELS[filter]} (${roleCounts[filter]})`,
+  }));
+
   return (
-    <div className={classes.membersPage}>
-      <div className={classes.pageHeader}>
+    <Stack gap="lg">
+      <Group justify="space-between" align="flex-start" wrap="wrap">
         <div>
-          <h1 className={classes.pageTitle}>{MOCK_ORG_NAME}</h1>
-          <p className={classes.sectionSubtitle}>
+          <Title order={2} fw={700}>
+            {MOCK_ORG_NAME}
+          </Title>
+          <Text size="sm" c="dimmed" mt={4}>
             Organization members and permissions
-          </p>
+          </Text>
         </div>
         <Menu shadow="md" width={220} position="bottom-end">
           <Menu.Target>
@@ -238,42 +247,36 @@ export function MembersView() {
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
-      </div>
+      </Group>
 
-      <section className={classes.section}>
-        <div className={classes.sectionHeader}>
+      <Stack gap="sm">
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
           <Text size="sm" fw={600} c="dimmed" tt="uppercase">
             Members
           </Text>
-          <Group gap="md" wrap="wrap" className={classes.filtersRow}>
+          <Group gap="md" wrap="wrap">
             <TextInput
               placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
               size="xs"
-              style={{ maxWidth: 280 }}
+              style={{ minWidth: 200 }}
             />
-            {ROLE_FILTER_OPTIONS.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                className={`${classes.pillFilter} ${
-                  roleFilter === filter ? classes.pillFilterActive : ""
-                }`}
-                onClick={() => setRoleFilter(filter)}
-              >
-                {ROLE_LABELS[filter]} ({roleCounts[filter]})
-              </button>
-            ))}
+            <SegmentedControl
+              size="xs"
+              value={roleFilter}
+              onChange={(value) => setRoleFilter(value as RoleFilter)}
+              data={segmentedControlData}
+            />
           </Group>
-        </div>
+        </Group>
 
-        <div className={classes.card}>
+        <Paper p="md" withBorder>
           <DataTable<MemberRow>
             withTableBorder={false}
             withColumnBorders={false}
             highlightOnHover
-            className={classes.table}
+            minHeight={150}
             records={filteredAndSortedRecords}
             sortStatus={sortStatus}
             onSortStatusChange={setSortStatus}
@@ -365,8 +368,8 @@ export function MembersView() {
               },
             ]}
           />
-        </div>
-      </section>
+        </Paper>
+      </Stack>
 
       <Modal
         opened={inviteModalOpen}
@@ -454,6 +457,6 @@ export function MembersView() {
           )}
         </Stack>
       </Modal>
-    </div>
+    </Stack>
   );
 }
