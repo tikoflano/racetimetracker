@@ -8,6 +8,7 @@ import {
 } from "@tabler/icons-react";
 import classes from "./MainContent.module.css";
 import { EventPreviewView } from "./EventPreviewView";
+import { MembersView } from "./MembersView";
 
 interface MainContentProps {
   collapsed: boolean;
@@ -235,13 +236,16 @@ function DashboardView() {
 
 export function MainContent({ collapsed, activeItem }: MainContentProps) {
   const isEventPreview = activeItem === "Event Preview";
+  const isMembers = activeItem === "Members";
 
   return (
     <main
       className={classes.main}
       style={{ marginLeft: collapsed ? "72px" : "260px" }}
     >
-      {isEventPreview ? <EventPreviewView /> : <DashboardView />}
+      {isEventPreview && <EventPreviewView />}
+      {isMembers && <MembersView />}
+      {!isEventPreview && !isMembers && <DashboardView />}
     </main>
   );
 }
