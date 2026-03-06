@@ -7,7 +7,8 @@
   ],
   "scripts": {
     "start": "npm run dev",
-    "dev": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev",
+    "dev": "npm run dev -w client",
+    "dev:full": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev",
     "tunnel": "set -a && . ./client/.env && [ -f ./client/.env.local ] && . ./client/.env.local; set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\"",
     "reset": "kill $(pgrep spacetime) 2>/dev/null || true; sleep 1; spacetime server clear -y; spacetime logout",
     "deploy:preview": "spacetime publish --env preview -y && npm run deploy:preview -w client",
