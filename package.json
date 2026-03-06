@@ -7,8 +7,9 @@
     "client2"
   ],
   "scripts": {
-    "start": "npm run dev",
+    "start": "npm run dev -w client2",
     "dev": "spacetime start & sleep 5 && spacetime publish -y && spacetime dev",
+    "dev:client2": "npm run dev -w client2",
     "generate": "spacetime generate --lang typescript --out-dir client/src/module_bindings --module-path spacetimedb && spacetime generate --lang typescript --out-dir client2/src/module_bindings --module-path spacetimedb",
     "tunnel": "set -a && . ./client/.env && [ -f ./client/.env.local ] && . ./client/.env.local; set +a && cloudflared tunnel run --token \"$CLOUDFLARE_TUNNEL_TOKEN\"",
     "reset": "kill $(pgrep spacetime) 2>/dev/null || true; sleep 1; spacetime server clear -y; spacetime logout",
