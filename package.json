@@ -31,12 +31,15 @@
     "typescript-eslint": "^8.18.0"
   },
   "dependencies": {
+    "@mantine/carousel": "^8.3.16",
     "@mantine/core": "^8.3.16",
     "@mantine/dates": "^8.3.16",
     "@tabler/icons-react": "^3.39.0",
+    "leaflet": "^1.9.4",
     "mantine-datatable": "^8.3.13",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.1",
     "spacetimedb": "^2.0.3"
   }
