@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   ActionIcon,
   Badge,
@@ -7,14 +7,29 @@ import {
   ColorInput,
   Group,
   Menu,
+  Modal,
+  Overlay,
   Paper,
+  SimpleGrid,
   Stack,
   Table,
   Text,
   Textarea,
   TextInput,
   Title,
+  UnstyledButton,
 } from "@mantine/core";
+import { Carousel } from "@mantine/carousel";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  Popup,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   IconArrowLeft,
   IconDotsVertical,
@@ -26,9 +41,49 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconPhoto,
+  IconX,
+  IconChevronLeft,
+  IconChevronRight,
 } from "@tabler/icons-react";
 
+// Leaflet pin icons
+function pinIcon(color: string, label: string) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="display:flex;flex-direction:column;align-items:center">
+      <div style="background:${color};color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.4)">${label}</div>
+      <div style="width:2px;height:8px;background:${color}"></div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>
+    </div>`,
+    iconSize: [40, 30],
+    iconAnchor: [20, 30],
+  });
+}
+
+const START_ICON = pinIcon("#22c55e", "START");
+const END_ICON = pinIcon("#ef4444", "END");
+
+// Auto-fit map bounds
+function FitBounds({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length > 0) {
+      const bounds = L.latLngBounds(positions.map((p) => L.latLng(p[0], p[1])));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    }
+  }, [positions, map]);
+  return null;
+}
+
 // Types
+interface VenueImage {
+  id: bigint;
+  venueId: bigint;
+  url: string;
+  caption: string;
+  isBanner: boolean;
+}
+
 interface Venue {
   id: bigint;
   name: string;
@@ -83,6 +138,72 @@ const MOCK_TRACKS: Track[] = [
   { id: 4n, venueId: 2n, name: "Sand Storm", color: "#f59e0b" },
   { id: 5n, venueId: 2n, name: "Cactus Trail", color: "#8b5cf6" },
   { id: 6n, venueId: 3n, name: "Pine Loop", color: "#22c55e" },
+];
+
+const MOCK_VENUE_IMAGES: VenueImage[] = [
+  {
+    id: 1n,
+    venueId: 1n,
+    url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=400&fit=crop",
+    caption: "Mountain Ridge Park - Main Entrance",
+    isBanner: true,
+  },
+  {
+    id: 2n,
+    venueId: 1n,
+    url: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&h=600&fit=crop",
+    caption: "Summit Run - Starting Area",
+    isBanner: false,
+  },
+  {
+    id: 3n,
+    venueId: 1n,
+    url: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&h=600&fit=crop",
+    caption: "Ridge Line - Technical Section",
+    isBanner: false,
+  },
+  {
+    id: 4n,
+    venueId: 1n,
+    url: "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&h=600&fit=crop",
+    caption: "Valley Drop - Finish Line",
+    isBanner: false,
+  },
+  {
+    id: 5n,
+    venueId: 1n,
+    url: "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=800&h=600&fit=crop",
+    caption: "Spectator Area",
+    isBanner: false,
+  },
+  {
+    id: 6n,
+    venueId: 2n,
+    url: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&h=400&fit=crop",
+    caption: "Desert Dunes Complex - Overview",
+    isBanner: true,
+  },
+  {
+    id: 7n,
+    venueId: 2n,
+    url: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?w=800&h=600&fit=crop",
+    caption: "Sand Storm Trail",
+    isBanner: false,
+  },
+  {
+    id: 8n,
+    venueId: 3n,
+    url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=400&fit=crop",
+    caption: "Forest Trail Center - Entrance",
+    isBanner: true,
+  },
+  {
+    id: 9n,
+    venueId: 3n,
+    url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop",
+    caption: "Pine Loop Trail",
+    isBanner: false,
+  },
 ];
 
 const MOCK_VARIATIONS: TrackVariation[] = [
@@ -167,6 +288,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
   const [venues, setVenues] = useState<Venue[]>(MOCK_VENUES);
   const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
   const [variations, setVariations] = useState<TrackVariation[]>(MOCK_VARIATIONS);
+  const [venueImages] = useState<VenueImage[]>(MOCK_VENUE_IMAGES);
 
   const [editingVenue, setEditingVenue] = useState(false);
   const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "" });
@@ -191,6 +313,10 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
   const [error, setError] = useState("");
   const trackRefs = useRef(new Map<bigint, HTMLDivElement>());
 
+  // Image gallery state
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
   const venue = venues.find((v) => v.id === venueId);
   const venueTracks = useMemo(
     () => tracks.filter((t) => t.venueId === venueId).sort((a, b) => a.name.localeCompare(b.name)),
@@ -210,6 +336,36 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
     }
     return m;
   }, [variations, venueTracks]);
+
+  // Get images for this venue
+  const currentVenueImages = useMemo(
+    () => venueImages.filter((img) => img.venueId === venueId),
+    [venueImages, venueId]
+  );
+  const bannerImage = currentVenueImages.find((img) => img.isBanner);
+  const galleryImages = currentVenueImages.filter((img) => !img.isBanner);
+
+  // Get default variation for each track for the map
+  const defaultVariations = useMemo(() => {
+    const m = new Map<bigint, TrackVariation>();
+    for (const [trackId, vars] of variationsByTrack) {
+      const def = vars.find((v) => v.name === "Default") ?? vars[0];
+      if (def) m.set(trackId, def);
+    }
+    return m;
+  }, [variationsByTrack]);
+
+  // All map positions for bounds fitting
+  const mapPositions = useMemo(() => {
+    const pts: [number, number][] = [];
+    for (const [, tv] of defaultVariations) {
+      if (tv.startLatitude !== 0 || tv.startLongitude !== 0)
+        pts.push([tv.startLatitude, tv.startLongitude]);
+      if (tv.endLatitude !== 0 || tv.endLongitude !== 0)
+        pts.push([tv.endLatitude, tv.endLongitude]);
+    }
+    return pts;
+  }, [defaultVariations]);
 
   const scrollToTrack = useCallback((trackId: bigint) => {
     const el = trackRefs.current.get(trackId);
@@ -438,44 +594,70 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
         Back to Locations
       </Button>
 
-      {/* Venue header */}
-      <Paper withBorder p="lg">
-        {editingVenue ? (
-          <Stack gap="sm">
-            {error && (
-              <Text size="sm" c="red">
-                {error}
-              </Text>
-            )}
-            <TextInput
-              label="Name"
-              value={venueForm.name}
-              onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
-              autoFocus
+      {/* Banner with venue header */}
+      <Paper
+        withBorder
+        radius="md"
+        style={{
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        {/* Banner image */}
+        {bannerImage ? (
+          <Box
+            style={{
+              height: 200,
+              backgroundImage: `url(${bannerImage.url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              position: "relative",
+            }}
+          >
+            <Overlay
+              gradient="linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%)"
+              opacity={1}
             />
-            <TextInput
-              label="Description"
-              placeholder="Description (optional)"
-              value={venueForm.description}
-              onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
-            />
-            <TextInput
-              label="Address"
-              placeholder="Address (optional)"
-              value={venueForm.address}
-              onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
-            />
-            <Group gap="xs">
-              <Button size="sm" onClick={saveVenue}>
-                Save
-              </Button>
-              <Button variant="subtle" size="sm" onClick={() => setEditingVenue(false)}>
-                Cancel
-              </Button>
-            </Group>
-          </Stack>
+            <Box
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: "var(--mantine-spacing-lg)",
+              }}
+            >
+              <Group justify="space-between" align="flex-end">
+                <div>
+                  <Title order={2} c="white">
+                    {venue.name}
+                  </Title>
+                  {venue.description && (
+                    <Text size="sm" c="white" style={{ opacity: 0.9 }}>
+                      {venue.description}
+                    </Text>
+                  )}
+                </div>
+                <Menu shadow="md" width={180} position="bottom-end">
+                  <Menu.Target>
+                    <ActionIcon variant="light" size="lg" color="gray">
+                      <IconDotsVertical size={18} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                      Edit
+                    </Menu.Item>
+                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={deleteVenue}>
+                      Delete
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+            </Box>
+          </Box>
         ) : (
-          <Stack gap="xs">
+          <Box p="lg" style={{ background: "var(--mantine-color-dark-6)" }}>
             <Group justify="space-between" align="flex-start">
               <Group gap="xs" align="center">
                 <IconMapPin size={24} color="var(--mantine-color-blue-6)" />
@@ -498,25 +680,269 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
               </Menu>
             </Group>
             {venue.description && (
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="dimmed" mt="xs">
                 {venue.description}
               </Text>
             )}
-            {venue.address && (
-              <Text
-                component="a"
-                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                c="blue"
-                size="sm"
-              >
-                {venue.address}
-              </Text>
-            )}
-          </Stack>
+          </Box>
         )}
+
+        {/* Venue info below banner */}
+        <Box p="lg">
+          {editingVenue ? (
+            <Stack gap="sm">
+              {error && (
+                <Text size="sm" c="red">
+                  {error}
+                </Text>
+              )}
+              <TextInput
+                label="Name"
+                value={venueForm.name}
+                onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
+                autoFocus
+              />
+              <TextInput
+                label="Description"
+                placeholder="Description (optional)"
+                value={venueForm.description}
+                onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
+              />
+              <TextInput
+                label="Address"
+                placeholder="Address (optional)"
+                value={venueForm.address}
+                onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
+              />
+              <Group gap="xs">
+                <Button size="sm" onClick={saveVenue}>
+                  Save
+                </Button>
+                <Button variant="subtle" size="sm" onClick={() => setEditingVenue(false)}>
+                  Cancel
+                </Button>
+              </Group>
+            </Stack>
+          ) : (
+            <Stack gap="md">
+              {/* Address */}
+              {venue.address && (
+                <Group gap="xs">
+                  <IconMapPin size={16} color="var(--mantine-color-dimmed)" />
+                  <Text
+                    component="a"
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    c="blue"
+                    size="sm"
+                  >
+                    {venue.address}
+                  </Text>
+                </Group>
+              )}
+
+              {/* Image gallery */}
+              {galleryImages.length > 0 && (
+                <Stack gap="xs">
+                  <Group gap="xs" align="center">
+                    <IconPhoto size={16} color="var(--mantine-color-dimmed)" />
+                    <Text size="sm" fw={600} c="dimmed" tt="uppercase">
+                      Gallery
+                    </Text>
+                    <Badge size="sm" variant="light" color="gray">
+                      {galleryImages.length}
+                    </Badge>
+                  </Group>
+                  <SimpleGrid cols={{ base: 3, sm: 4, md: 5 }} spacing="xs">
+                    {galleryImages.map((img, idx) => (
+                      <UnstyledButton
+                        key={String(img.id)}
+                        onClick={() => {
+                          setGalleryIndex(idx);
+                          setGalleryOpen(true);
+                        }}
+                        style={{
+                          aspectRatio: "1",
+                          borderRadius: "var(--mantine-radius-sm)",
+                          overflow: "hidden",
+                          border: "1px solid var(--mantine-color-dark-4)",
+                        }}
+                      >
+                        <img
+                          src={img.url}
+                          alt={img.caption}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      </UnstyledButton>
+                    ))}
+                  </SimpleGrid>
+                </Stack>
+              )}
+            </Stack>
+          )}
+        </Box>
       </Paper>
+
+      {/* Image gallery modal */}
+      <Modal
+        opened={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        size="xl"
+        padding={0}
+        withCloseButton={false}
+        centered
+      >
+        <Box style={{ position: "relative", background: "var(--mantine-color-dark-7)" }}>
+          <ActionIcon
+            variant="filled"
+            color="dark"
+            size="lg"
+            style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+            onClick={() => setGalleryOpen(false)}
+          >
+            <IconX size={18} />
+          </ActionIcon>
+          <Carousel
+            initialSlide={galleryIndex}
+            withIndicators={galleryImages.length > 1}
+            withControls={galleryImages.length > 1}
+            onSlideChange={setGalleryIndex}
+            height="70vh"
+            nextControlIcon={<IconChevronRight size={24} />}
+            previousControlIcon={<IconChevronLeft size={24} />}
+            styles={{
+              control: {
+                background: "var(--mantine-color-dark-6)",
+                border: "none",
+                color: "white",
+              },
+            }}
+          >
+            {galleryImages.map((img) => (
+              <Carousel.Slide key={String(img.id)}>
+                <Box
+                  style={{
+                    height: "70vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <img
+                    src={img.url}
+                    alt={img.caption}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
+                  />
+                </Box>
+              </Carousel.Slide>
+            ))}
+          </Carousel>
+          {galleryImages[galleryIndex] && (
+            <Box p="md" style={{ borderTop: "1px solid var(--mantine-color-dark-5)" }}>
+              <Text size="sm" c="dimmed" ta="center">
+                {galleryImages[galleryIndex].caption}
+              </Text>
+              <Text size="xs" c="dimmed" ta="center" mt={4}>
+                {galleryIndex + 1} / {galleryImages.length}
+              </Text>
+            </Box>
+          )}
+        </Box>
+      </Modal>
+
+      {/* Map section */}
+      {mapPositions.length > 0 && (
+        <Paper withBorder radius="md" style={{ overflow: "hidden" }}>
+          <Box p="md" style={{ borderBottom: "1px solid var(--mantine-color-dark-5)" }}>
+            <Group gap="xs" align="center">
+              <IconRoute size={20} color="var(--mantine-color-dimmed)" />
+              <Text size="sm" fw={600} c="dimmed" tt="uppercase">
+                Track Map
+              </Text>
+            </Group>
+          </Box>
+          <MapContainer
+            center={mapPositions[0]}
+            zoom={14}
+            style={{ height: 400, width: "100%" }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <FitBounds positions={mapPositions} />
+            {venueTracks.map((track) => {
+              const tv = defaultVariations.get(track.id);
+              if (!tv) return null;
+              const start: [number, number] = [tv.startLatitude, tv.startLongitude];
+              const end: [number, number] = [tv.endLatitude, tv.endLongitude];
+              const hasCoords = tv.startLatitude !== 0 || tv.startLongitude !== 0;
+              if (!hasCoords) return null;
+              return (
+                <span key={String(track.id)}>
+                  <Marker position={start} icon={START_ICON}>
+                    <Popup>
+                      <Stack gap={4}>
+                        <Text size="xs" fw={700} c="green">
+                          Start
+                        </Text>
+                        <UnstyledButton
+                          onClick={() => toggleExpand(track.id)}
+                          style={{ fontWeight: 600, textAlign: "left" }}
+                        >
+                          {track.name}
+                        </UnstyledButton>
+                      </Stack>
+                    </Popup>
+                  </Marker>
+                  <Marker position={end} icon={END_ICON}>
+                    <Popup>
+                      <Stack gap={4}>
+                        <Text size="xs" fw={700} c="red">
+                          End
+                        </Text>
+                        <UnstyledButton
+                          onClick={() => toggleExpand(track.id)}
+                          style={{ fontWeight: 600, textAlign: "left" }}
+                        >
+                          {track.name}
+                        </UnstyledButton>
+                      </Stack>
+                    </Popup>
+                  </Marker>
+                  <Polyline
+                    positions={[start, end]}
+                    pathOptions={{ color: track.color, weight: 3, dashArray: "6 4" }}
+                  />
+                </span>
+              );
+            })}
+          </MapContainer>
+          {/* Map legend */}
+          <Box p="md" style={{ borderTop: "1px solid var(--mantine-color-dark-5)" }}>
+            <Group gap="md" wrap="wrap">
+              {venueTracks.map((t) => (
+                <Group key={String(t.id)} gap="xs">
+                  <Box w={12} h={12} style={{ borderRadius: "50%", background: t.color }} />
+                  <Text size="sm" c="dimmed">
+                    {t.name}
+                  </Text>
+                </Group>
+              ))}
+            </Group>
+          </Box>
+        </Paper>
+      )}
 
       {/* Tracks section */}
       <Stack gap="md">
