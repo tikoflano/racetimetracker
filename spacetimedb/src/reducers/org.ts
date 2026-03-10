@@ -134,6 +134,14 @@ export const remove_org_member = spacetimedb.reducer({ org_member_id: t.u64() },
   const member = ctx.db.org_member.id.find(args.org_member_id);
   if (!member) throw new SenderError('Member not found');
   requireOrgAdmin(ctx, member.org_id);
+  // Remove scoped championship assignments within this org
+  for (const c of ctx.db.championship.iter()) {
+    if (c.org_id !== member.org_id) continue;
+    for (const cm of ctx.db.championship_member.iter()) {
+      if (cm.championship_id === c.id && cm.user_id === member.user_id)
+        ctx.db.championship_member.id.delete(cm.id);
+    }
+  }
   ctx.db.org_member.id.delete(member.id);
 });
 
@@ -167,6 +175,14 @@ export const leave_organization = spacetimedb.reducer({ org_id: t.u64() }, (ctx,
     }
   }
 
+  // Remove scoped championship assignments within this org
+  for (const c of ctx.db.championship.iter()) {
+    if (c.org_id !== args.org_id) continue;
+    for (const cm of ctx.db.championship_member.iter()) {
+      if (cm.championship_id === c.id && cm.user_id === user.id)
+        ctx.db.championship_member.id.delete(cm.id);
+    }
+  }
   // Remove membership
   if (myMember) ctx.db.org_member.id.delete(myMember.id);
 

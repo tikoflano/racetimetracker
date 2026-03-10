@@ -5,21 +5,15 @@ import { MainContent } from "@/components/main-content/MainContent";
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeItem, setActiveItem] = useState("Dashboard");
 
   return (
     <>
-      <AppSidebar
-        collapsed={collapsed}
-        activeItem={activeItem}
-        onItemClick={setActiveItem}
-      />
+      <AppSidebar collapsed={collapsed} />
       <AppHeader
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}
-        activeItem={activeItem}
       />
-      <MainContent collapsed={collapsed} activeItem={activeItem} />
+      <MainContent collapsed={collapsed} />
     </>
   );
 }

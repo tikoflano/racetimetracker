@@ -35,7 +35,18 @@ export const org_member = table(
   }
 );
 
-// role: 'organizer' | 'timekeeper'
+// role: 'manager' | 'timekeeper'
+export const championship_member = table(
+  { public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    championship_id: t.u64().index('btree'),
+    user_id: t.u64().index('btree'),
+    role: t.string(), // 'manager' | 'timekeeper'
+  }
+);
+
+// role: 'manager' | 'timekeeper'
 export const event_member = table(
   { public: true },
   {
@@ -65,6 +76,7 @@ export const venue = table(
     name: t.string(),
     description: t.string(),
     address: t.string(),
+    cover_image: t.string(), // base64 data URL or empty string
   }
 );
 

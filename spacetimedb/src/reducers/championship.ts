@@ -1,6 +1,6 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
-import { requireOrgEventManager } from '../lib/auth';
+import { requireOrgEventManager, requireChampionshipManager } from '../lib/auth';
 
 export const create_championship = spacetimedb.reducer(
   {
@@ -31,7 +31,7 @@ export const update_championship = spacetimedb.reducer(
   (ctx, args) => {
     const champ = ctx.db.championship.id.find(args.championship_id);
     if (!champ) throw new SenderError('Championship not found');
-    requireOrgEventManager(ctx, champ.org_id);
+    requireChampionshipManager(ctx, args.championship_id);
     const trimmed = args.name.trim();
     if (trimmed.length === 0) throw new SenderError('Name cannot be empty');
     ctx.db.championship.id.update({
@@ -48,7 +48,7 @@ export const delete_championship = spacetimedb.reducer(
   (ctx, args) => {
     const champ = ctx.db.championship.id.find(args.championship_id);
     if (!champ) throw new SenderError('Championship not found');
-    requireOrgEventManager(ctx, champ.org_id);
+    requireChampionshipManager(ctx, args.championship_id);
     // Delete all events in this championship and their associated data
     for (const evt of ctx.db.event.iter()) {
       if (evt.championship_id !== champ.id) continue;
@@ -82,6 +82,9 @@ export const delete_championship = spacetimedb.reducer(
         if (pe.event_id === evt.id) ctx.db.pinned_event.id.delete(pe.id);
       }
       ctx.db.event.id.delete(evt.id);
+    }
+    for (const cm of ctx.db.championship_member.iter()) {
+      if (cm.championship_id === champ.id) ctx.db.championship_member.id.delete(cm.id);
     }
     ctx.db.championship.id.delete(champ.id);
   }

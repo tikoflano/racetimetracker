@@ -77,6 +77,12 @@ export function requireUser(ctx: Ctx) {
   return user;
 }
 
+export function requireSuperAdmin(ctx: Ctx) {
+  const user = getRealUser(ctx);
+  if (!user || !user.is_super_admin) throw new SenderError('Super admin access required');
+  return user;
+}
+
 export function isOrgOwner(ctx: Ctx, userId: bigint, orgId: bigint): boolean {
   const org = ctx.db.organization.id.find(orgId);
   return org !== null && org.owner_user_id === userId;
@@ -86,6 +92,13 @@ export function getOrgRole(ctx: Ctx, userId: bigint, orgId: bigint): string | nu
   if (isOrgOwner(ctx, userId, orgId)) return 'admin';
   for (const m of ctx.db.org_member.iter()) {
     if (m.user_id === userId && m.org_id === orgId) return m.role;
+  }
+  return null;
+}
+
+export function getChampionshipRole(ctx: Ctx, userId: bigint, championshipId: bigint): string | null {
+  for (const m of ctx.db.championship_member.iter()) {
+    if (m.user_id === userId && m.championship_id === championshipId) return m.role;
   }
   return null;
 }
@@ -122,16 +135,47 @@ export function requireOrgEventManager(ctx: Ctx, orgId: bigint) {
   return user;
 }
 
-export function requireEventOrganizer(ctx: Ctx, eventId: bigint) {
+// Can manage a specific championship and create/manage its events.
+export function requireChampionshipManager(ctx: Ctx, championshipId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  const champ = ctx.db.championship.id.find(championshipId);
+  if (!champ) throw new SenderError('Championship not found');
+  const orgRole = getOrgRole(ctx, user.id, champ.org_id);
+  if (orgRole === 'admin' || orgRole === 'manager') return user;
+  const champRole = getChampionshipRole(ctx, user.id, championshipId);
+  if (champRole === 'manager') return user;
+  throw new SenderError('Championship manager access required');
+}
+
+// Can create an event scoped to an org + optional championship.
+export function requireEventCreator(ctx: Ctx, orgId: bigint, championshipId: bigint) {
+  const user = requireUser(ctx);
+  if (user.is_super_admin) return user;
+  const orgRole = getOrgRole(ctx, user.id, orgId);
+  if (orgRole === 'admin' || orgRole === 'manager') return user;
+  if (championshipId) {
+    const champRole = getChampionshipRole(ctx, user.id, championshipId);
+    if (champRole === 'manager') return user;
+  }
+  throw new SenderError('Event manager access required');
+}
+
+// Can manage a specific event (org admin/manager, championship manager, or event manager).
+export function requireEventManager(ctx: Ctx, eventId: bigint) {
   const user = requireUser(ctx);
   if (user.is_super_admin) return user;
   const evt = ctx.db.event.id.find(eventId);
   if (!evt) throw new SenderError('Event not found');
   const orgRole = getOrgRole(ctx, user.id, evt.org_id);
   if (orgRole === 'admin' || orgRole === 'manager') return user;
+  if (evt.championship_id) {
+    const champRole = getChampionshipRole(ctx, user.id, evt.championship_id);
+    if (champRole === 'manager') return user;
+  }
   const evtRole = getEventRole(ctx, user.id, eventId);
-  if (evtRole === 'organizer') return user;
-  throw new SenderError('Event organizer access required');
+  if (evtRole === 'manager') return user;
+  throw new SenderError('Event manager access required');
 }
 
 export function requireTimekeeper(ctx: Ctx, eventId: bigint) {
@@ -141,8 +185,12 @@ export function requireTimekeeper(ctx: Ctx, eventId: bigint) {
   if (!evt) throw new SenderError('Event not found');
   const orgRole = getOrgRole(ctx, user.id, evt.org_id);
   if (orgRole) return user;
+  if (evt.championship_id) {
+    const champRole = getChampionshipRole(ctx, user.id, evt.championship_id);
+    if (champRole === 'manager' || champRole === 'timekeeper') return user;
+  }
   const evtRole = getEventRole(ctx, user.id, eventId);
-  if (evtRole === 'organizer' || evtRole === 'timekeeper') return user;
+  if (evtRole === 'manager' || evtRole === 'timekeeper') return user;
   throw new SenderError('Timekeeper access required');
 }
 

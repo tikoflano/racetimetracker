@@ -1,69 +1,16 @@
-import {
-  IconLayoutDashboard,
-  IconCalendar,
-  IconClock,
-  IconTrophy,
-  IconMapPin,
-  IconBike,
-  IconUsersGroup,
-  IconTool,
-  IconFlag,
-} from "@tabler/icons-react";
+import { IconClock } from "@tabler/icons-react";
 import { Tooltip } from "@mantine/core";
+import { useNavigate, useLocation } from "react-router-dom";
 import classes from "./AppSidebar.module.css";
-import { IS_DEV } from "@/env";
-
-interface NavItem {
-  icon: React.ElementType;
-  label: string;
-  path: string;
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
-}
-
-const navigation: NavSection[] = [
-  {
-    title: "Main",
-    items: [
-      { icon: IconLayoutDashboard, label: "Dashboard", path: "/" },
-      { icon: IconFlag, label: "Event Preview", path: "/event-preview" },
-      { icon: IconCalendar, label: "Calendar", path: "/calendar" },
-      { icon: IconClock, label: "Timekeeping", path: "/timekeep" },
-    ],
-  },
-  {
-    title: "Manage",
-    items: [
-      { icon: IconTrophy, label: "Championships", path: "/championships" },
-      { icon: IconMapPin, label: "Locations", path: "/locations" },
-      { icon: IconBike, label: "Riders", path: "/riders" },
-      { icon: IconUsersGroup, label: "Members", path: "/members" },
-    ],
-  },
-  ...(IS_DEV
-    ? [
-        {
-          title: "Dev",
-          items: [{ icon: IconTool, label: "Dev Tools", path: "/dev" }],
-        } as NavSection,
-      ]
-    : []),
-];
+import { navigation } from "./navigation";
 
 interface AppSidebarProps {
   collapsed: boolean;
-  activeItem: string;
-  onItemClick: (label: string) => void;
 }
 
-export function AppSidebar({
-  collapsed,
-  activeItem,
-  onItemClick,
-}: AppSidebarProps) {
+export function AppSidebar({ collapsed }: AppSidebarProps) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   return (
     <nav
       className={`${classes.sidebar} ${collapsed ? classes.sidebarCollapsed : ""}`}
@@ -91,12 +38,12 @@ export function AppSidebar({
             </div>
             <ul className={classes.navList}>
               {section.items.map((item) => {
-                const isActive = activeItem === item.label;
+                const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
                 const content = (
                   <li
                     key={item.label}
                     className={`${classes.navItem} ${isActive ? classes.navItemActive : ""}`}
-                    onClick={() => onItemClick(item.label)}
+                    onClick={() => navigate(item.path)}
                   >
                     <span className={classes.navItemIcon}>
                       <item.icon size={20} stroke={1.6} />
