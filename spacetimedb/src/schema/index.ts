@@ -5,6 +5,7 @@ const spacetimedb = schema({
   user: tables.user,
   organization: tables.organization,
   org_member: tables.org_member,
+  championship_member: tables.championship_member,
   event_member: tables.event_member,
   championship: tables.championship,
   venue: tables.venue,

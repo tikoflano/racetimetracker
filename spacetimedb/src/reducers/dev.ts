@@ -1,7 +1,9 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
+import { requireSuperAdmin } from '../lib/auth';
 
 export const wipe_all_data = spacetimedb.reducer((ctx) => {
+  requireSuperAdmin(ctx);
   const tables = [
     ctx.db.run,
     ctx.db.event_track_schedule,
@@ -34,6 +36,7 @@ export const wipe_all_data = spacetimedb.reducer((ctx) => {
 export const transfer_org_ownership_by_email = spacetimedb.reducer(
   { org_id: t.u64(), email: t.string() },
   (ctx, args) => {
+    requireSuperAdmin(ctx);
     const org = ctx.db.organization.id.find(args.org_id);
     if (!org) throw new SenderError('Organization not found');
     const trimmedEmail = args.email.trim().toLowerCase();

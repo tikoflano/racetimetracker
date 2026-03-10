@@ -1,11 +1,11 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
-import { requireEventOrganizer } from '../lib/auth';
+import { requireEventManager } from '../lib/auth';
 
 export const add_rider_to_event = spacetimedb.reducer(
   { event_id: t.u64(), rider_id: t.u64() },
   (ctx, args) => {
-    requireEventOrganizer(ctx, args.event_id);
+    requireEventManager(ctx, args.event_id);
     // Prevent duplicates
     for (const er of ctx.db.event_rider.iter()) {
       if (er.event_id === args.event_id && er.rider_id === args.rider_id) {
@@ -33,7 +33,7 @@ export const update_event_rider = spacetimedb.reducer(
   (ctx, args) => {
     const er = ctx.db.event_rider.id.find(args.event_rider_id);
     if (!er) throw new SenderError('Event rider not found');
-    requireEventOrganizer(ctx, er.event_id);
+    requireEventManager(ctx, er.event_id);
     // Validate category belongs to this event (0 = no category)
     if (args.category_id !== 0n) {
       const cat = ctx.db.event_category.id.find(args.category_id);
@@ -52,7 +52,7 @@ export const update_event_rider = spacetimedb.reducer(
 export const import_riders_from_event = spacetimedb.reducer(
   { target_event_id: t.u64(), source_event_id: t.u64() },
   (ctx, args) => {
-    requireEventOrganizer(ctx, args.target_event_id);
+    requireEventManager(ctx, args.target_event_id);
     const existing = new Set<bigint>();
     for (const er of ctx.db.event_rider.iter()) {
       if (er.event_id === args.target_event_id) existing.add(er.rider_id);

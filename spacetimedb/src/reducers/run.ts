@@ -1,13 +1,13 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
-import { requireEventOrganizer, getEventIdFromEventTrack } from '../lib/auth';
+import { requireEventManager, getEventIdFromEventTrack } from '../lib/auth';
 import { parseEventDateStart, parseEventDateEnd } from '../lib/utils';
 
 export const queue_run = spacetimedb.reducer(
   { event_track_id: t.u64(), rider_id: t.u64(), sort_order: t.u32() },
   (ctx, args) => {
     const eventId = getEventIdFromEventTrack(ctx, args.event_track_id);
-    requireEventOrganizer(ctx, eventId);
+    requireEventManager(ctx, eventId);
     ctx.db.run.insert({
       id: 0n,
       event_track_id: args.event_track_id,
@@ -26,7 +26,7 @@ export const generate_track_schedule = spacetimedb.reducer(
     const et = ctx.db.event_track.id.find(args.event_track_id);
     if (!et) throw new SenderError('Event track not found');
     const eventId = et.event_id;
-    requireEventOrganizer(ctx, eventId);
+    requireEventManager(ctx, eventId);
 
     const evt = ctx.db.event.id.find(eventId);
     if (!evt) throw new SenderError('Event not found');
@@ -129,7 +129,7 @@ export const clear_track_schedule = spacetimedb.reducer(
   { event_track_id: t.u64() },
   (ctx, args) => {
     const eventId = getEventIdFromEventTrack(ctx, args.event_track_id);
-    requireEventOrganizer(ctx, eventId);
+    requireEventManager(ctx, eventId);
 
     for (const run of ctx.db.run.iter()) {
       if (run.event_track_id === args.event_track_id) {

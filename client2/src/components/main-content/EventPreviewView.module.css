@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 24px;
   color: #ffffff;
+  min-height: 100%;
 }
 
 .eventHeader {

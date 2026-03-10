@@ -1,6 +1,6 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
-import { requireUser, requireOrgEventManager } from '../lib/auth';
+import { requireUser, requireEventCreator, requireEventManager } from '../lib/auth';
 import { uniqueEventSlug } from '../lib/auth';
 import { slugify } from '../lib/utils';
 
@@ -15,7 +15,7 @@ export const create_event = spacetimedb.reducer(
     end_date: t.string(),
   },
   (ctx, args) => {
-    requireOrgEventManager(ctx, args.org_id);
+    requireEventCreator(ctx, args.org_id, args.championship_id);
     const trimmed = args.name.trim();
     if (!trimmed) throw new SenderError('Event name cannot be empty');
     for (const e of ctx.db.event.iter()) {
@@ -48,7 +48,7 @@ export const update_event = spacetimedb.reducer(
   (ctx, args) => {
     const evt = ctx.db.event.id.find(args.event_id);
     if (!evt) throw new SenderError('Event not found');
-    requireOrgEventManager(ctx, evt.org_id);
+    requireEventManager(ctx, args.event_id);
     // Enforce unique name within championship
     const trimmed = args.name.trim();
     if (!trimmed) throw new SenderError('Event name cannot be empty');

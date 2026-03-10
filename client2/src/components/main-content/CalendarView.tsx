@@ -6,10 +6,10 @@ import {
   Checkbox,
   Text,
   Title,
+  ThemeIcon,
   Box,
   Stack,
   Paper,
-  Badge,
   ActionIcon,
 } from "@mantine/core";
 
@@ -352,9 +352,7 @@ export function CalendarView() {
     return m;
   }, [filteredEvents]);
 
-  const displayedDate = useMemo(() => new Date(year, month, 1), [year, month]);
-
-  const prevMonth = () => {
+  const prevMonth =() => {
     if (month === 0) {
       setMonth(11);
       setYear((y) => y - 1);
@@ -372,13 +370,6 @@ export function CalendarView() {
     const now = new Date();
     setYear(now.getFullYear());
     setMonth(now.getMonth());
-  };
-
-  const handleDateChange = (d: Date | string | null) => {
-    if (!d) return;
-    const date = typeof d === "string" ? new Date(d + "T00:00:00") : d;
-    setYear(date.getFullYear());
-    setMonth(date.getMonth());
   };
 
   const { lastEvent, nextEvent } = useMemo(() => {
@@ -435,105 +426,101 @@ export function CalendarView() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="center" wrap="wrap" gap="md">
-        <Title order={2} fw={700}>
-          Calendar
-        </Title>
-        <Menu
-          shadow="md"
-          width={260}
-          position="bottom-end"
-          closeOnClickOutside
-        >
-          <Menu.Target>
-            <Button
-              variant="default"
-              leftSection={<IconFilter size={16} />}
-              style={{ minWidth: 200, justifyContent: "space-between" }}
-            >
-              <Group gap="xs">
-                {!allSelected && !noneSelected && (
-                  <Group gap={4}>
-                    {[...activeChampIds].slice(0, 4).map((id) => {
-                      const c = champMap.get(id);
-                      return c ? (
-                        <span
-                          key={String(id)}
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: "50%",
-                            background: c.color,
-                          }}
-                        />
-                      ) : null;
-                    })}
-                  </Group>
-                )}
-                {dropdownLabel}
-              </Group>
-            </Button>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Group gap="xs" p="xs" justify="flex-end">
+      {/* Header banner */}
+      <Box
+        p="xl"
+        style={{
+          background:
+            "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+          borderRadius: "var(--mantine-radius-md)",
+          border: "1px solid #1e2028",
+        }}
+      >
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+          <Group gap="md" align="center">
+            <ThemeIcon size={52} radius="md" color="blue" variant="light">
+              <IconCalendarEvent size={28} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
+                Schedule
+              </Text>
+              <Title order={2} c="white" fw={700}>
+                Calendar
+              </Title>
+              <Text size="sm" c="blue.2" mt={2}>
+                {filteredEvents.length} event
+                {filteredEvents.length !== 1 ? "s" : ""}
+              </Text>
+            </div>
+          </Group>
+          <Menu
+            shadow="md"
+            width={260}
+            position="bottom-end"
+            closeOnItemClick={false}
+          >
+            <Menu.Target>
               <Button
-                variant="subtle"
-                size="xs"
+                variant="white"
+                color="dark"
+                leftSection={<IconFilter size={16} />}
+              >
+                {dropdownLabel}
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
                 onClick={selectAll}
                 disabled={allSelected}
+                fw={500}
               >
-                All
-              </Button>
-              <Button
-                variant="subtle"
-                size="xs"
+                Select all
+              </Menu.Item>
+              <Menu.Item
                 onClick={selectNone}
                 disabled={noneSelected}
+                fw={500}
               >
-                None
-              </Button>
-            </Group>
-            <Stack gap={0}>
+                Select none
+              </Menu.Item>
+              <Menu.Divider />
               {championships.map((c) => (
-                <Box
+                <Menu.Item
                   key={String(c.id)}
-                  p="xs"
-                  style={{ cursor: "pointer" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleChamp(c.id);
-                  }}
+                  onClick={() => toggleChamp(c.id)}
+                  leftSection={
+                    <Checkbox
+                      checked={activeChampIds.has(c.id)}
+                      onChange={() => toggleChamp(c.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      size="xs"
+                    />
+                  }
                 >
-                  <Checkbox
-                    checked={activeChampIds.has(c.id)}
-                    onChange={() => toggleChamp(c.id)}
-                    label={
-                      <Group gap="xs">
-                        <span
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: "50%",
-                            background: c.color,
-                          }}
-                        />
-                        {c.name}
-                      </Group>
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Box>
+                  <Group gap="xs">
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: c.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    {c.name}
+                  </Group>
+                </Menu.Item>
               ))}
-            </Stack>
-            {championships.length === 0 && (
-              <Text size="sm" c="dimmed" p="xs">
-                No championships
-              </Text>
-            )}
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
+              {championships.length === 0 && (
+                <Menu.Item disabled>No championships</Menu.Item>
+              )}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Box>
 
+      {/* Month navigation */}
       <Group gap="sm" wrap="wrap">
         <Group gap={4}>
           <ActionIcon variant="subtle" onClick={prevMonth}>
@@ -569,34 +556,6 @@ export function CalendarView() {
             Next event
           </Button>
         </Group>
-      </Group>
-
-      <Group gap="xs" wrap="wrap">
-        {championships.map((c) => (
-          <Badge
-            key={String(c.id)}
-            size="sm"
-            variant={activeChampIds.has(c.id) ? "filled" : "light"}
-            color="gray"
-            leftSection={
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: c.color,
-                }}
-              />
-            }
-            style={{
-              cursor: "pointer",
-              opacity: activeChampIds.has(c.id) ? 1 : 0.5,
-            }}
-            onClick={() => toggleChamp(c.id)}
-          >
-            {c.name}
-          </Badge>
-        ))}
       </Group>
 
       <Paper withBorder p="md" radius="md">

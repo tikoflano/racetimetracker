@@ -1,7 +1,7 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
 import {
-  requireEventOrganizer,
+  requireEventManager,
   requireTimekeeper,
   getEventIdFromRun,
   getEventIdFromEventTrack,
@@ -13,7 +13,7 @@ export const set_track_timekeepers = spacetimedb.reducer(
   { event_track_id: t.u64(), start_user_id: t.u64(), end_user_id: t.u64() },
   (ctx, args) => {
     const eventId = getEventIdFromEventTrack(ctx, args.event_track_id);
-    requireEventOrganizer(ctx, eventId);
+    requireEventManager(ctx, eventId);
     for (const uid of [args.start_user_id, args.end_user_id]) {
       if (uid !== 0n) {
         const u = ctx.db.user.id.find(uid);

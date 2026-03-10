@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import {
   IconArrowUpRight,
   IconArrowDownRight,
@@ -18,7 +19,6 @@ import { DevToolsView } from "./DevToolsView";
 
 interface MainContentProps {
   collapsed: boolean;
-  activeItem: string;
 }
 
 const stats = [
@@ -240,48 +240,38 @@ function DashboardView() {
   );
 }
 
-export function MainContent({ collapsed, activeItem }: MainContentProps) {
+function LocationsRouter() {
+  const navigate = useNavigate();
   const [selectedLocationId, setSelectedLocationId] = useState<bigint | null>(null);
 
-  const isEventPreview = activeItem === "Event Preview";
-  const isMembers = activeItem === "Members";
-  const isCalendar = activeItem === "Calendar";
-  const isLocations = activeItem === "Locations";
-  const isTimekeeping = activeItem === "Timekeeping";
-  const isDevTools = activeItem === "Dev Tools";
+  if (selectedLocationId !== null) {
+    return (
+      <LocationDetailView
+        venueId={selectedLocationId}
+        onBack={() => setSelectedLocationId(null)}
+      />
+    );
+  }
+  return (
+    <LocationsView onSelectLocation={(id) => { setSelectedLocationId(id); navigate("/locations"); }} />
+  );
+}
 
-  // Reset location detail when navigating away from Locations
-  const handleLocationSelect = (venueId: bigint) => {
-    setSelectedLocationId(venueId);
-  };
-
-  const handleLocationBack = () => {
-    setSelectedLocationId(null);
-  };
-
+export function MainContent({ collapsed }: MainContentProps) {
   return (
     <main
       className={classes.main}
       style={{ marginLeft: collapsed ? "72px" : "260px" }}
     >
-      {isEventPreview && <EventPreviewView />}
-      {isMembers && <MembersView />}
-      {isCalendar && <CalendarView />}
-      {isLocations && (
-        selectedLocationId !== null ? (
-          <LocationDetailView venueId={selectedLocationId} onBack={handleLocationBack} />
-        ) : (
-          <LocationsView onSelectLocation={handleLocationSelect} />
-        )
-      )}
-      {isTimekeeping && <TimekeepView />}
-      {isDevTools && <DevToolsView />}
-      {!isEventPreview &&
-        !isMembers &&
-        !isCalendar &&
-        !isLocations &&
-        !isTimekeeping &&
-        !isDevTools && <DashboardView />}
+      <Routes>
+        <Route path="/" element={<DashboardView />} />
+        <Route path="/event-preview" element={<EventPreviewView />} />
+        <Route path="/calendar" element={<CalendarView />} />
+        <Route path="/locations/*" element={<LocationsRouter />} />
+        <Route path="/timekeep" element={<TimekeepView />} />
+        <Route path="/members" element={<MembersView />} />
+        <Route path="/dev" element={<DevToolsView />} />
+      </Routes>
     </main>
   );
 }

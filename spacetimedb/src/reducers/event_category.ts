@@ -1,6 +1,6 @@
 import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from '../schema';
-import { requireEventOrganizer, checkCategoryRangeOverlap } from '../lib/auth';
+import { requireEventManager, checkCategoryRangeOverlap } from '../lib/auth';
 
 export const create_event_category = spacetimedb.reducer(
   {
@@ -11,7 +11,7 @@ export const create_event_category = spacetimedb.reducer(
     number_range_end: t.u32(),
   },
   (ctx, args) => {
-    requireEventOrganizer(ctx, args.event_id);
+    requireEventManager(ctx, args.event_id);
     if (!args.name.trim()) throw new SenderError('Category name is required');
     if (args.number_range_start > args.number_range_end)
       throw new SenderError('Range start must be <= range end');
@@ -44,7 +44,7 @@ export const update_event_category = spacetimedb.reducer(
   (ctx, args) => {
     const cat = ctx.db.event_category.id.find(args.category_id);
     if (!cat) throw new SenderError('Category not found');
-    requireEventOrganizer(ctx, cat.event_id);
+    requireEventManager(ctx, cat.event_id);
     if (!args.name.trim()) throw new SenderError('Category name is required');
     if (args.number_range_start > args.number_range_end)
       throw new SenderError('Range start must be <= range end');
@@ -68,7 +68,7 @@ export const update_event_category = spacetimedb.reducer(
 export const delete_event_category = spacetimedb.reducer({ category_id: t.u64() }, (ctx, args) => {
   const cat = ctx.db.event_category.id.find(args.category_id);
   if (!cat) throw new SenderError('Category not found');
-  requireEventOrganizer(ctx, cat.event_id);
+  requireEventManager(ctx, cat.event_id);
   for (const ct of ctx.db.category_track.iter()) {
     if (ct.category_id === cat.id) ctx.db.category_track.id.delete(ct.id);
   }
@@ -80,7 +80,7 @@ export const add_track_to_category = spacetimedb.reducer(
   (ctx, args) => {
     const cat = ctx.db.event_category.id.find(args.category_id);
     if (!cat) throw new SenderError('Category not found');
-    requireEventOrganizer(ctx, cat.event_id);
+    requireEventManager(ctx, cat.event_id);
     const et = ctx.db.event_track.id.find(args.event_track_id);
     if (!et) throw new SenderError('Event track not found');
     if (et.event_id !== cat.event_id)
@@ -105,7 +105,7 @@ export const remove_track_from_category = spacetimedb.reducer(
     if (!ct) throw new SenderError('Category track not found');
     const cat = ctx.db.event_category.id.find(ct.category_id);
     if (!cat) throw new SenderError('Category not found');
-    requireEventOrganizer(ctx, cat.event_id);
+    requireEventManager(ctx, cat.event_id);
     ctx.db.category_track.id.delete(ct.id);
   }
 );
@@ -113,7 +113,7 @@ export const remove_track_from_category = spacetimedb.reducer(
 export const import_categories_from_event = spacetimedb.reducer(
   { target_event_id: t.u64(), source_event_id: t.u64() },
   (ctx, args) => {
-    requireEventOrganizer(ctx, args.target_event_id);
+    requireEventManager(ctx, args.target_event_id);
     // Collect source categories first, then validate all ranges before inserting
     const toImport: {
       name: string;

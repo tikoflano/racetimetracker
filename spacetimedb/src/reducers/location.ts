@@ -8,8 +8,11 @@ export const create_venue = spacetimedb.reducer(
     name: t.string(),
     description: t.string(),
     address: t.string(),
+    cover_image: t.string(),
   },
   (ctx, args) => {
+    if (!args.name.trim()) throw new SenderError('Name is required');
+    if (!args.address.trim()) throw new SenderError('Address is required');
     requireOrgEventManager(ctx, args.org_id);
     ctx.db.venue.insert({
       id: 0n,
@@ -17,6 +20,7 @@ export const create_venue = spacetimedb.reducer(
       name: args.name,
       description: args.description,
       address: args.address,
+      cover_image: args.cover_image,
     });
   }
 );
@@ -27,8 +31,11 @@ export const update_venue = spacetimedb.reducer(
     name: t.string(),
     description: t.string(),
     address: t.string(),
+    cover_image: t.string(),
   },
   (ctx, args) => {
+    if (!args.name.trim()) throw new SenderError('Name is required');
+    if (!args.address.trim()) throw new SenderError('Address is required');
     const venue = ctx.db.venue.id.find(args.venue_id);
     if (!venue) throw new SenderError('Venue not found');
     requireOrgEventManager(ctx, venue.org_id);
@@ -37,6 +44,7 @@ export const update_venue = spacetimedb.reducer(
       name: args.name,
       description: args.description,
       address: args.address,
+      cover_image: args.cover_image,
     });
   }
 );

@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   ActionIcon,
+  Avatar,
   Badge,
+  Box,
   Button,
   Group,
   Menu,
@@ -11,6 +13,7 @@ import {
   Stack,
   Text,
   TextInput,
+  ThemeIcon,
   Title,
 } from "@mantine/core";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
@@ -29,6 +32,7 @@ import {
   IconUserCog,
   IconClock,
   IconUsers,
+  IconBuilding,
 } from "@tabler/icons-react";
 
 import { useTable, useReducer } from "spacetimedb/react";
@@ -71,7 +75,7 @@ const ROLE_COLORS: Record<MemberRole | "all", string> = {
   all: "gray",
   owner: "blue",
   admin: "green",
-  manager: "yellow",
+  manager: "orange",
   timekeeper: "gray",
 };
 
@@ -102,6 +106,7 @@ function sortRecords(
     return cmp * dir;
   });
 }
+
 
 export function MembersView() {
   const [orgs] = useTable(tables.organization);
@@ -171,7 +176,7 @@ export function MembersView() {
 
     if (ownerUser) {
       rows.push({
-        id: String(ownerUser.id),
+        id: `owner-${String(org.id)}-${String(ownerUser.id)}`,
         name: ownerUser.name || ownerUser.email || `User #${ownerUser.id}`,
         email: ownerUser.email || "",
         status: "active",
@@ -181,16 +186,21 @@ export function MembersView() {
       });
     }
 
+    const seenUserIds = new Set<string>();
+    if (ownerUser) seenUserIds.add(String(ownerUser.id));
+
     const orgMembersForOrg = orgMembers.filter(
       (m: OrgMember) => m.orgId === org.id
     );
 
     for (const m of orgMembersForOrg) {
-      if (ownerUser && m.userId === ownerUser.id) continue;
+      const userIdKey = String(m.userId);
+      if (seenUserIds.has(userIdKey)) continue;
+      seenUserIds.add(userIdKey);
       const u = users.find((user: User) => user.id === m.userId) ?? null;
       const isPending = !!u?.googleSub?.startsWith("pending:");
       rows.push({
-        id: String(m.id),
+        id: `member-${String(org.id)}-${String(m.id)}`,
         name: u ? u.name || u.email || `User #${u.id}` : `User #${m.userId}`,
         email: u?.email || "",
         status: isPending ? "pending" : "active",
@@ -358,59 +368,85 @@ export function MembersView() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between" align="flex-start" wrap="wrap">
-        <div>
-          <Title order={2} fw={700}>
-            {activeOrg?.name ?? "Organization"}
-          </Title>
-          <Text size="sm" c="dimmed" mt={4}>
-            Organization members and permissions
-          </Text>
-        </div>
-        <Menu shadow="md" width={220} position="bottom-end">
-          <Menu.Target>
-            <ActionIcon variant="subtle" size="lg" color="gray">
-              <IconDotsVertical size={18} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item
-              leftSection={<IconUserPlus size={14} />}
+      {/* Header Banner */}
+      <Box
+        p="xl"
+        style={{
+          background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+          borderRadius: "var(--mantine-radius-md)",
+          border: "1px solid #1e2028",
+        }}
+      >
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+          <Group gap="md" align="center">
+            <ThemeIcon size={52} radius="md" color="blue" variant="light">
+              <IconBuilding size={28} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
+                Organization
+              </Text>
+              <Title order={2} c="white" fw={700}>
+                {activeOrg?.name ?? "Organization"}
+              </Title>
+              <Text size="sm" c="blue.2" mt={2}>
+                {roleCounts.all} member{roleCounts.all !== 1 ? "s" : ""} · manage roles and permissions
+              </Text>
+            </div>
+          </Group>
+          <Group gap="sm">
+            <Button
+              leftSection={<IconUserPlus size={16} />}
+              variant="white"
+              color="dark"
               onClick={() => setInviteModalOpen(true)}
             >
-              Invite member
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconArrowLeftRight size={14} />}
-              onClick={() => setTransferModalOpen(true)}
-              disabled={adminCandidates.length === 0}
-            >
-              Transfer ownership
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconPencil size={14} />}
-              onClick={() => {
-                if (!activeOrg) return;
-                setRenameName(activeOrg.name);
-                setRenameError(null);
-                setRenameModalOpen(true);
-              }}
-            >
-              Rename organization
-            </Menu.Item>
-            <Menu.Divider />
-            <Menu.Item
-              leftSection={<IconLogout size={14} />}
-              color="red"
-              onClick={handleLeave}
-            >
-              Leave organization
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
+              Invite Member
+            </Button>
+            <Menu shadow="md" width={220} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" size="lg" color="gray">
+                  <IconDotsVertical size={18} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconArrowLeftRight size={14} />}
+                  onClick={() => setTransferModalOpen(true)}
+                  disabled={adminCandidates.length === 0}
+                >
+                  Transfer ownership
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconPencil size={14} />}
+                  onClick={() => {
+                    if (!activeOrg) return;
+                    setRenameName(activeOrg.name);
+                    setRenameError(null);
+                    setRenameModalOpen(true);
+                  }}
+                >
+                  Rename organization
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconLogout size={14} />}
+                  color="red"
+                  onClick={handleLeave}
+                >
+                  Leave organization
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Group>
+      </Box>
 
-      <Stack gap="md">
+      {/* Filter + Search */}
+      <Paper
+        p="sm"
+        style={{ background: "#13151b", border: "1px solid #1e2028" }}
+      >
         <Group justify="space-between" align="center" wrap="wrap" gap="md">
           <Group gap="xs" wrap="wrap">
             {ROLE_FILTER_OPTIONS.map((filter) => (
@@ -436,112 +472,127 @@ export function MembersView() {
             style={{ minWidth: 240 }}
           />
         </Group>
+      </Paper>
 
-        <Paper p="md" withBorder>
-          <DataTable<MemberRow>
-            withTableBorder={false}
-            withColumnBorders={false}
-            highlightOnHover
-            minHeight={150}
-            records={filteredAndSortedRecords}
-            sortStatus={sortStatus}
-            onSortStatusChange={setSortStatus}
-            noRecordsText={
-              memberRows.length > 0
-                ? "No members match your search or filter."
-                : "No members yet. Invite someone to get started."
-            }
-            columns={[
-              {
-                accessor: "name",
-                title: "Name",
-                sortable: true,
-              },
-              {
-                accessor: "email",
-                title: "Email",
-                sortable: true,
-                render: (row) => (
-                  <Text size="sm" c="dimmed">
-                    {row.email}
-                  </Text>
-                ),
-              },
-              {
-                accessor: "status",
-                title: "Status",
-                sortable: true,
-                render: (row) =>
-                  row.status === "pending" ? (
-                    <Badge size="sm" color="yellow" variant="light">
-                      Pending
-                    </Badge>
-                  ) : null,
-              },
-              {
-                accessor: "role",
-                title: "Role",
-                sortable: true,
-                render: (row) => (
-                  <Badge
+      {/* Members Table */}
+      <Paper p="md" withBorder>
+        <DataTable<MemberRow>
+          withTableBorder={false}
+          withColumnBorders={false}
+          highlightOnHover
+          minHeight={filteredAndSortedRecords.length === 0 ? 150 : undefined}
+          records={filteredAndSortedRecords}
+          sortStatus={sortStatus}
+          onSortStatusChange={setSortStatus}
+          noRecordsText={
+            memberRows.length > 0
+              ? "No members match your search or filter."
+              : "No members yet. Invite someone to get started."
+          }
+          columns={[
+            {
+              accessor: "name",
+              title: "Name",
+              sortable: true,
+              render: (row) => (
+                <Group gap="sm">
+                  <Avatar
                     size="sm"
+                    radius="xl"
                     color={ROLE_COLORS[row.role]}
                     variant="light"
-                    leftSection={ROLE_ICONS[row.role]}
                   >
-                    {ROLE_LABELS[row.role]}
+                    {row.name.slice(0, 2).toUpperCase()}
+                  </Avatar>
+                  <Text size="sm">{row.name}</Text>
+                </Group>
+              ),
+            },
+            {
+              accessor: "email",
+              title: "Email",
+              sortable: true,
+              render: (row) => (
+                <Text size="sm" c="dimmed">
+                  {row.email}
+                </Text>
+              ),
+            },
+            {
+              accessor: "status",
+              title: "Status",
+              sortable: true,
+              render: (row) =>
+                row.status === "pending" ? (
+                  <Badge size="sm" color="orange" variant="light">
+                    Pending
                   </Badge>
-                ),
-              },
-              {
-                accessor: "actions",
-                title: "",
-                width: 40,
-                render: (row) => {
-                  if (row.role === "owner") return null;
-                  const canImpersonate = row.role !== "admin" && row.status === "active";
-                  const isPending = row.status === "pending";
-                  return (
-                    <Menu shadow="md" width={200} position="bottom-end">
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" size="sm" color="gray">
-                          <IconDotsVertical size={14} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        {canImpersonate && (
-                          <Menu.Item
-                            leftSection={<IconUser size={14} />}
-                            onClick={() => handleImpersonate(row)}
-                          >
-                            Impersonate
-                          </Menu.Item>
-                        )}
-                        {isPending && (
-                          <Menu.Item
-                            leftSection={<IconMail size={14} />}
-                            onClick={() => handleResendInvite(row)}
-                          >
-                            Resend invitation
-                          </Menu.Item>
-                        )}
+                ) : null,
+            },
+            {
+              accessor: "role",
+              title: "Role",
+              sortable: true,
+              render: (row) => (
+                <Badge
+                  size="sm"
+                  color={ROLE_COLORS[row.role]}
+                  variant="light"
+                  leftSection={ROLE_ICONS[row.role]}
+                >
+                  {ROLE_LABELS[row.role]}
+                </Badge>
+              ),
+            },
+            {
+              accessor: "actions",
+              title: "",
+              width: 40,
+              render: (row) => {
+                if (row.role === "owner") return null;
+                const canImpersonate = row.role !== "admin" && row.status === "active";
+                const isPending = row.status === "pending";
+                return (
+                  <Menu shadow="md" width={200} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" size="sm" color="gray">
+                        <IconDotsVertical size={14} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {canImpersonate && (
                         <Menu.Item
-                          leftSection={<IconTrash size={14} />}
-                          color="red"
-                          onClick={() => handleRemove(row)}
+                          leftSection={<IconUser size={14} />}
+                          onClick={() => handleImpersonate(row)}
                         >
-                          Remove
+                          Impersonate
                         </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  );
-                },
+                      )}
+                      {isPending && (
+                        <Menu.Item
+                          leftSection={<IconMail size={14} />}
+                          onClick={() => handleResendInvite(row)}
+                        >
+                          Resend invitation
+                        </Menu.Item>
+                      )}
+                      <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        onClick={() => handleRemove(row)}
+                      >
+                        Remove
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                );
               },
-            ]}
-          />
-        </Paper>
-      </Stack>
+            },
+          ]}
+        />
+      </Paper>
 
+      {/* Invite Modal */}
       <Modal
         opened={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
@@ -587,6 +638,7 @@ export function MembersView() {
         </Stack>
       </Modal>
 
+      {/* Transfer Ownership Modal */}
       <Modal
         opened={transferModalOpen}
         onClose={() => {
@@ -634,6 +686,7 @@ export function MembersView() {
         </Stack>
       </Modal>
 
+      {/* Rename Modal */}
       <Modal
         opened={renameModalOpen}
         onClose={() => {
