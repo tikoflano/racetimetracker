@@ -17,7 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "remote-control": "while true; do claude remote-control; sleep 5; done"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
