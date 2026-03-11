@@ -5,17 +5,21 @@ import {
   Badge,
   Box,
   Button,
+  Collapse,
   Group,
   Menu,
   Modal,
   Paper,
   Select,
   Stack,
+  Table,
   Text,
   TextInput,
   ThemeIcon,
   Title,
 } from "@mantine/core";
+import type { BadgeProps } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconDotsVertical,
@@ -33,14 +37,47 @@ import {
   IconClock,
   IconUsers,
   IconBuilding,
+  IconTrophy,
+  IconCalendarEvent,
+  IconChevronDown,
+  IconChevronRight,
+  IconInfoCircle,
 } from "@tabler/icons-react";
+
+/** Styles to disable Badge truncation so full text is visible */
+const BADGE_FULL_STYLES: BadgeProps["styles"] = {
+  root: { overflow: "visible", minWidth: "max-content" },
+  label: { overflow: "visible", textOverflow: "unset" },
+};
 
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
-import type { Organization, OrgMember, User } from "@/module_bindings/types";
+import type {
+  Organization,
+  OrgMember,
+  User,
+  Championship,
+  ChampionshipMember,
+  Event,
+  EventMember,
+} from "@/module_bindings/types";
 
 type MemberStatus = "active" | "pending";
 type MemberRole = "owner" | "admin" | "manager" | "timekeeper";
+
+interface ScopeChampionship {
+  id: bigint;
+  championshipId: bigint;
+  championshipName: string;
+  role: "manager" | "timekeeper";
+}
+
+interface ScopeEvent {
+  id: bigint;
+  eventId: bigint;
+  eventName: string;
+  role: "manager" | "timekeeper";
+}
 
 interface MemberRow {
   id: string;
@@ -51,6 +88,8 @@ interface MemberRow {
   userId?: bigint;
   orgMemberId?: bigint;
   isPending?: boolean;
+  championshipScopes: ScopeChampionship[];
+  eventScopes: ScopeEvent[];
 }
 
 const ROLE_FILTER_OPTIONS = [
@@ -87,9 +126,528 @@ const ROLE_ICONS: Record<MemberRole | "all", React.ReactNode> = {
   timekeeper: <IconClock size={14} />,
 };
 
+const ROLES_PERMISSIONS_ROWS: {
+  scope: string;
+  scopeIcon: React.ReactNode;
+  scopeColor: string;
+  role: string;
+  roleIcon: React.ReactNode;
+  roleColor: string;
+  access: string;
+}[] = [
+  { scope: "Organization", scopeIcon: <IconBuilding size={12} />, scopeColor: "green", role: "Owner", roleIcon: <IconShieldStar size={12} />, roleColor: "blue", access: "Full access: manage org, members, championships, events, locations, riders, and timekeeping." },
+  { scope: "Organization", scopeIcon: <IconBuilding size={12} />, scopeColor: "green", role: "Admin", roleIcon: <IconShield size={12} />, roleColor: "green", access: "Manage org and members (invite, remove, rename). Full access to championships, events, locations, riders, and timekeeping." },
+  { scope: "Organization", scopeIcon: <IconBuilding size={12} />, scopeColor: "green", role: "Manager", roleIcon: <IconUserCog size={12} />, roleColor: "orange", access: "Manage championships, events, locations, riders. Can organize events and assign timekeepers. Cannot manage org members." },
+  { scope: "Organization", scopeIcon: <IconBuilding size={12} />, scopeColor: "green", role: "Timekeeper", roleIcon: <IconClock size={12} />, roleColor: "gray", access: "Timekeeping only: start/finish runs, DNF, DNS at any event in the org." },
+  { scope: "Championship", scopeIcon: <IconTrophy size={12} />, scopeColor: "blue", role: "Manager", roleIcon: <IconUserCog size={12} />, roleColor: "orange", access: "Manage this championship's events, tracks, categories, riders, schedule, timekeeper assignments." },
+  { scope: "Championship", scopeIcon: <IconTrophy size={12} />, scopeColor: "blue", role: "Timekeeper", roleIcon: <IconClock size={12} />, roleColor: "gray", access: "Timekeeping at this championship's events." },
+  { scope: "Event", scopeIcon: <IconCalendarEvent size={12} />, scopeColor: "violet", role: "Manager", roleIcon: <IconUserCog size={12} />, roleColor: "orange", access: "Manage this event: tracks, categories, riders, schedule, timekeeper assignments." },
+  { scope: "Event", scopeIcon: <IconCalendarEvent size={12} />, scopeColor: "violet", role: "Timekeeper", roleIcon: <IconClock size={12} />, roleColor: "gray", access: "Timekeeping at this event." },
+];
+
+function RolesPermissionsModal({
+  opened,
+  onClose,
+}: {
+  opened: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Roles & permissions"
+      size="lg"
+    >
+      <Paper p="md" withBorder style={{ background: "#13151b", border: "1px solid #1e2028" }}>
+        <Table withTableBorder={false} withColumnBorders={false} highlightOnHover style={{ tableLayout: "auto" }}>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ whiteSpace: "nowrap" }}>Scope</Table.Th>
+              <Table.Th style={{ whiteSpace: "nowrap" }}>Role</Table.Th>
+              <Table.Th>Access</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {ROLES_PERMISSIONS_ROWS.map((row, i) => (
+              <Table.Tr key={i}>
+                <Table.Td style={{ whiteSpace: "nowrap" }}>
+                  <Badge
+                    size="sm"
+                    color={row.scopeColor}
+                    variant="light"
+                    leftSection={row.scopeIcon}
+                    styles={BADGE_FULL_STYLES}
+                  >
+                    {row.scope}
+                  </Badge>
+                </Table.Td>
+                <Table.Td style={{ whiteSpace: "nowrap" }}>
+                  <Badge
+                    size="sm"
+                    color={row.roleColor}
+                    variant="light"
+                    leftSection={row.roleIcon}
+                    styles={BADGE_FULL_STYLES}
+                  >
+                    {row.role}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {row.access}
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Paper>
+      <Group justify="flex-end" mt="md">
+        <Button variant="subtle" onClick={onClose}>
+          Close
+        </Button>
+      </Group>
+    </Modal>
+  );
+}
+
 function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error && e.message) return e.message;
   return fallback;
+}
+
+function MemberEditModal({
+  member,
+  championships,
+  events,
+  onClose,
+  updateOrgMember,
+  addChampionshipMember,
+  updateChampionshipMember,
+  removeChampionshipMember,
+  addEventMember,
+  updateEventMember,
+  removeEventMember,
+}: {
+  member: MemberRow;
+  championships: Championship[];
+  events: Event[];
+  onClose: () => void;
+  updateOrgMember: (args: {
+    orgMemberId: bigint;
+    role: string;
+  }) => Promise<unknown>;
+  addChampionshipMember: (args: {
+    championshipId: bigint;
+    userId: bigint;
+    role: string;
+  }) => Promise<unknown>;
+  updateChampionshipMember: (args: {
+    championshipMemberId: bigint;
+    role: string;
+  }) => Promise<unknown>;
+  removeChampionshipMember: (args: {
+    championshipMemberId: bigint;
+  }) => Promise<unknown>;
+  addEventMember: (args: {
+    eventId: bigint;
+    userId: bigint;
+    role: string;
+  }) => Promise<unknown>;
+  updateEventMember: (args: {
+    eventMemberId: bigint;
+    role: string;
+  }) => Promise<unknown>;
+  removeEventMember: (args: { eventMemberId: bigint }) => Promise<unknown>;
+}) {
+  const [role, setRole] = useState<"admin" | "manager" | "timekeeper">(
+    member.role === "owner" ? "admin" : (member.role as "admin" | "manager" | "timekeeper")
+  );
+  const [addChampId, setAddChampId] = useState<string | null>(null);
+  const [addChampRole, setAddChampRole] = useState<"manager" | "timekeeper">("manager");
+  const [addEventId, setAddEventId] = useState<string | null>(null);
+  const [addEventRole, setAddEventRole] = useState<"manager" | "timekeeper">("manager");
+  const [loading, setLoading] = useState(false);
+  const [scopeError, setScopeError] = useState<string | null>(null);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+
+  const availableChampionships = championships.filter(
+    (c) => !member.championshipScopes.some((s) => s.championshipId === c.id)
+  );
+  const availableEvents = events.filter(
+    (e) => !member.eventScopes.some((s) => s.eventId === e.id)
+  );
+
+  const handleSaveRole = async () => {
+    if (member.role === "owner" || !member.orgMemberId) return;
+    if (role === member.role) return;
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await updateOrgMember({ orgMemberId: member.orgMemberId, role });
+      onClose();
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to update role"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddChampionship = async () => {
+    if (!addChampId || !member.userId) return;
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await addChampionshipMember({
+        championshipId: BigInt(addChampId),
+        userId: member.userId,
+        role: addChampRole,
+      });
+      setAddChampId(null);
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to add championship scope"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddEvent = async () => {
+    if (!addEventId || !member.userId) return;
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await addEventMember({
+        eventId: BigInt(addEventId),
+        userId: member.userId,
+        role: addEventRole,
+      });
+      setAddEventId(null);
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to add event scope"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveChampionship = async (scope: ScopeChampionship) => {
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await removeChampionshipMember({ championshipMemberId: scope.id });
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to remove championship scope"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveEvent = async (scope: ScopeEvent) => {
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await removeEventMember({ eventMemberId: scope.id });
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to remove event scope"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateChampionshipRole = async (
+    scope: ScopeChampionship,
+    newRole: "manager" | "timekeeper"
+  ) => {
+    if (scope.role === newRole) return;
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await updateChampionshipMember({
+        championshipMemberId: scope.id,
+        role: newRole,
+      });
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to update championship role"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateEventRole = async (
+    scope: ScopeEvent,
+    newRole: "manager" | "timekeeper"
+  ) => {
+    if (scope.role === newRole) return;
+    setLoading(true);
+    setScopeError(null);
+    try {
+      await updateEventMember({
+        eventMemberId: scope.id,
+        role: newRole,
+      });
+    } catch (e: unknown) {
+      setScopeError(getErrorMessage(e, "Failed to update event role"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+    <Modal
+      opened
+      onClose={onClose}
+      title={`Edit roles & scopes: ${member.name}`}
+      size="lg"
+    >
+      <Stack gap="lg">
+        {scopeError && (
+          <Text size="sm" c="red">
+            {scopeError}
+          </Text>
+        )}
+
+        {/* Org role */}
+        <Box>
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
+            Organization role
+          </Text>
+          {member.role === "owner" ? (
+            <Badge color="green" variant="light" size="lg" styles={BADGE_FULL_STYLES}>
+              Owner (full access)
+            </Badge>
+          ) : (
+            <Group gap="xs" align="flex-start">
+              <Select
+                value={role}
+                onChange={(v) =>
+                  setRole((v as "admin" | "manager" | "timekeeper") || "manager")
+                }
+                data={[
+                  { value: "admin", label: "Admin" },
+                  { value: "manager", label: "Manager" },
+                  { value: "timekeeper", label: "Timekeeper" },
+                ]}
+                style={{ width: 140 }}
+              />
+              {role !== member.role && (
+                <Button
+                  size="xs"
+                  loading={loading}
+                  onClick={handleSaveRole}
+                >
+                  Save role
+                </Button>
+              )}
+            </Group>
+          )}
+        </Box>
+
+        {/* Championship scopes */}
+        <Box>
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
+            Championship scopes
+          </Text>
+          <Text size="xs" c="dimmed" mb="xs">
+            Grant access to specific championships. Manager: manage events, tracks, riders, schedule. Timekeeper: timekeeping only.
+          </Text>
+          {member.championshipScopes.length > 0 && (
+            <Stack gap="xs" mb="sm">
+              {member.championshipScopes.map((s) => (
+                <Group key={String(s.id)} justify="space-between" wrap="nowrap">
+                  <Group gap="xs">
+                    <Badge
+                      size="sm"
+                      color="blue"
+                      variant="light"
+                      leftSection={<IconTrophy size={12} />}
+                      styles={BADGE_FULL_STYLES}
+                    >
+                      {s.championshipName}
+                    </Badge>
+                    <Select
+                      value={s.role}
+                      onChange={(v) =>
+                        handleUpdateChampionshipRole(
+                          s,
+                          (v as "manager" | "timekeeper") || "manager"
+                        )
+                      }
+                      data={[
+                        { value: "manager", label: "Manager" },
+                        { value: "timekeeper", label: "Timekeeper" },
+                      ]}
+                      size="xs"
+                      style={{ width: 110 }}
+                      disabled={loading}
+                    />
+                  </Group>
+                  <ActionIcon
+                    size="sm"
+                    color="red"
+                    variant="subtle"
+                    onClick={() => handleRemoveChampionship(s)}
+                    disabled={loading}
+                  >
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Group>
+              ))}
+            </Stack>
+          )}
+          {availableChampionships.length > 0 && (
+            <Group gap="xs" align="center">
+              <Select
+                placeholder="Add championship..."
+                value={addChampId}
+                onChange={setAddChampId}
+                data={availableChampionships.map((c) => ({
+                  value: String(c.id),
+                  label: c.name,
+                }))}
+                searchable
+                clearable
+                style={{ flex: 1 }}
+              />
+              <Select
+                value={addChampRole}
+                onChange={(v) =>
+                  setAddChampRole((v as "manager" | "timekeeper") || "manager")
+                }
+                data={[
+                  { value: "manager", label: "Manager" },
+                  { value: "timekeeper", label: "Timekeeper" },
+                ]}
+                style={{ width: 110 }}
+              />
+              <Button
+                size="xs"
+                onClick={handleAddChampionship}
+                disabled={!addChampId || loading}
+              >
+                Add
+              </Button>
+            </Group>
+          )}
+          {member.championshipScopes.length === 0 &&
+            availableChampionships.length === 0 && (
+              <Text size="sm" c="dimmed">
+                No championships in this org. Create one first.
+              </Text>
+            )}
+        </Box>
+
+        {/* Event scopes */}
+        <Box>
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
+            Event scopes
+          </Text>
+          <Text size="xs" c="dimmed" mb="xs">
+            Grant access to specific events. Manager: manage tracks, categories, riders, schedule. Timekeeper: timekeeping only.
+          </Text>
+          {member.eventScopes.length > 0 && (
+            <Stack gap="xs" mb="sm">
+              {member.eventScopes.map((s) => (
+                <Group key={String(s.id)} justify="space-between" wrap="nowrap">
+                  <Group gap="xs">
+                    <Badge
+                      size="sm"
+                      color="violet"
+                      variant="light"
+                      leftSection={<IconCalendarEvent size={12} />}
+                      styles={BADGE_FULL_STYLES}
+                    >
+                      {s.eventName}
+                    </Badge>
+                    <Select
+                      value={s.role}
+                      onChange={(v) =>
+                        handleUpdateEventRole(
+                          s,
+                          (v as "manager" | "timekeeper") || "manager"
+                        )
+                      }
+                      data={[
+                        { value: "manager", label: "Manager" },
+                        { value: "timekeeper", label: "Timekeeper" },
+                      ]}
+                      size="xs"
+                      style={{ width: 110 }}
+                      disabled={loading}
+                    />
+                  </Group>
+                  <ActionIcon
+                    size="sm"
+                    color="red"
+                    variant="subtle"
+                    onClick={() => handleRemoveEvent(s)}
+                    disabled={loading}
+                  >
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Group>
+              ))}
+            </Stack>
+          )}
+          {availableEvents.length > 0 && (
+            <Group gap="xs" align="center">
+              <Select
+                placeholder="Add event..."
+                value={addEventId}
+                onChange={setAddEventId}
+                data={availableEvents.map((e) => ({
+                  value: String(e.id),
+                  label: e.name,
+                }))}
+                searchable
+                clearable
+                style={{ flex: 1 }}
+              />
+              <Select
+                value={addEventRole}
+                onChange={(v) =>
+                  setAddEventRole((v as "manager" | "timekeeper") || "manager")
+                }
+                data={[
+                  { value: "manager", label: "Manager" },
+                  { value: "timekeeper", label: "Timekeeper" },
+                ]}
+                style={{ width: 110 }}
+              />
+              <Button
+                size="xs"
+                onClick={handleAddEvent}
+                disabled={!addEventId || loading}
+              >
+                Add
+              </Button>
+            </Group>
+          )}
+          {member.eventScopes.length === 0 && availableEvents.length === 0 && (
+            <Text size="sm" c="dimmed">
+              No events in this org. Create one first.
+            </Text>
+          )}
+        </Box>
+
+        <Group justify="space-between">
+          <Button
+            variant="subtle"
+            size="xs"
+            leftSection={<IconInfoCircle size={14} />}
+            onClick={() => setInfoModalOpen(true)}
+          >
+            More information
+          </Button>
+          <Button variant="subtle" onClick={onClose}>
+            Done
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+    <RolesPermissionsModal opened={infoModalOpen} onClose={() => setInfoModalOpen(false)} />
+    </>
+  );
 }
 
 function sortRecords(
@@ -112,14 +670,25 @@ export function MembersView() {
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
   const [users] = useTable(tables.user);
+  const [championships] = useTable(tables.championship);
+  const [championshipMembers] = useTable(tables.championship_member);
+  const [events] = useTable(tables.event);
+  const [eventMembers] = useTable(tables.event_member);
 
   const inviteOrgMember = useReducer(reducers.inviteOrgMember);
   const resendOrgInvitation = useReducer(reducers.resendOrgInvitation);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
+  const updateOrgMember = useReducer(reducers.updateOrgMember);
   const renameOrganization = useReducer(reducers.renameOrganization);
   const transferOrgOwnership = useReducer(reducers.transferOrgOwnership);
   const leaveOrganization = useReducer(reducers.leaveOrganization);
   const startImpersonation = useReducer(reducers.startImpersonation);
+  const addChampionshipMember = useReducer(reducers.addChampionshipMember);
+  const updateChampionshipMember = useReducer(reducers.updateChampionshipMember);
+  const removeChampionshipMember = useReducer(reducers.removeChampionshipMember);
+  const addEventMember = useReducer(reducers.addEventMember);
+  const updateEventMember = useReducer(reducers.updateEventMember);
+  const removeEventMember = useReducer(reducers.removeEventMember);
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
@@ -137,6 +706,8 @@ export function MembersView() {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renameName, setRenameName] = useState("");
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [editMemberModal, setEditMemberModal] = useState<MemberRow | null>(null);
+  const [inviteScopesOpen, { toggle: toggleInviteScopes }] = useDisclosure(false);
 
   const activeOrg = useMemo<Organization | null>(() => {
     if (orgs.length === 0) return null;
@@ -173,21 +744,68 @@ export function MembersView() {
       users.find((u: User) => u.id === org.ownerUserId) ?? null;
 
     const rows: MemberRow[] = [];
+    const orgChampionships = championships.filter(
+      (c: Championship) => c.orgId === org.id
+    );
+    const orgEvents = events.filter((e: Event) => e.orgId === org.id);
 
-    if (ownerUser) {
+    const getChampionshipScopes = (userId: bigint): ScopeChampionship[] => {
+      return championshipMembers
+        .filter(
+          (cm: ChampionshipMember) =>
+            cm.userId === userId &&
+            orgChampionships.some((c: Championship) => c.id === cm.championshipId)
+        )
+        .map((cm: ChampionshipMember) => {
+          const champ = orgChampionships.find(
+            (c: Championship) => c.id === cm.championshipId
+          );
+          return {
+            id: cm.id,
+            championshipId: cm.championshipId,
+            championshipName: champ?.name ?? `Championship #${cm.championshipId}`,
+            role: cm.role as "manager" | "timekeeper",
+          };
+        });
+    };
+
+    const getEventScopes = (userId: bigint): ScopeEvent[] => {
+      return eventMembers
+        .filter(
+          (em: EventMember) =>
+            em.userId === userId &&
+            orgEvents.some((e: Event) => e.id === em.eventId)
+        )
+        .map((em: EventMember) => {
+          const evt = orgEvents.find((e: Event) => e.id === em.eventId);
+          return {
+            id: em.id,
+            eventId: em.eventId,
+            eventName: evt?.name ?? `Event #${em.eventId}`,
+            role: em.role as "manager" | "timekeeper",
+          };
+        });
+    };
+
+    // Always show owner when org has ownerUserId; use fallback if User not found
+    if (org.ownerUserId) {
       rows.push({
-        id: `owner-${String(org.id)}-${String(ownerUser.id)}`,
-        name: ownerUser.name || ownerUser.email || `User #${ownerUser.id}`,
-        email: ownerUser.email || "",
+        id: `owner-${String(org.id)}-${String(org.ownerUserId)}`,
+        name: ownerUser
+          ? ownerUser.name || ownerUser.email || `User #${ownerUser.id}`
+          : `User #${org.ownerUserId}`,
+        email: ownerUser?.email || "",
         status: "active",
         role: "owner",
-        userId: ownerUser.id,
+        userId: org.ownerUserId,
         isPending: false,
+        championshipScopes: getChampionshipScopes(org.ownerUserId),
+        eventScopes: getEventScopes(org.ownerUserId),
       });
     }
 
     const seenUserIds = new Set<string>();
-    if (ownerUser) seenUserIds.add(String(ownerUser.id));
+    if (org.ownerUserId) seenUserIds.add(String(org.ownerUserId));
 
     const orgMembersForOrg = orgMembers.filter(
       (m: OrgMember) => m.orgId === org.id
@@ -208,6 +826,8 @@ export function MembersView() {
         userId: u?.id,
         orgMemberId: m.id,
         isPending,
+        championshipScopes: getChampionshipScopes(m.userId),
+        eventScopes: getEventScopes(m.userId),
       });
     }
 
@@ -224,7 +844,17 @@ export function MembersView() {
     );
 
     return { memberRows: rows, roleCounts, adminCandidates };
-  }, [activeOrg, orgId, orgMembers, orgs.length, users]);
+  }, [
+    activeOrg,
+    orgId,
+    orgMembers,
+    orgs.length,
+    users,
+    championships,
+    championshipMembers,
+    events,
+    eventMembers,
+  ]);
 
   const filteredAndSortedRecords = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -456,6 +1086,7 @@ export function MembersView() {
                 variant={roleFilter === filter ? "filled" : "light"}
                 color={ROLE_COLORS[filter]}
                 leftSection={ROLE_ICONS[filter]}
+                styles={BADGE_FULL_STYLES}
                 style={{ cursor: "pointer" }}
                 onClick={() => setRoleFilter(filter)}
               >
@@ -539,10 +1170,49 @@ export function MembersView() {
                   color={ROLE_COLORS[row.role]}
                   variant="light"
                   leftSection={ROLE_ICONS[row.role]}
+                  styles={BADGE_FULL_STYLES}
                 >
                   {ROLE_LABELS[row.role]}
                 </Badge>
               ),
+            },
+            {
+              accessor: "scopes",
+              title: "Scopes",
+              render: (row) => {
+                const hasScopes =
+                  row.championshipScopes.length > 0 ||
+                  row.eventScopes.length > 0;
+                if (!hasScopes) return <Text size="xs" c="dimmed">—</Text>;
+                return (
+                  <Group gap={4} wrap="wrap">
+                    {row.championshipScopes.map((s) => (
+                      <Badge
+                        key={String(s.id)}
+                        size="xs"
+                        color="blue"
+                        variant="light"
+                        leftSection={<IconTrophy size={10} />}
+                        styles={BADGE_FULL_STYLES}
+                      >
+                        {s.championshipName} ({s.role})
+                      </Badge>
+                    ))}
+                    {row.eventScopes.map((s) => (
+                      <Badge
+                        key={String(s.id)}
+                        size="xs"
+                        color="violet"
+                        variant="light"
+                        leftSection={<IconCalendarEvent size={10} />}
+                        styles={BADGE_FULL_STYLES}
+                      >
+                        {s.eventName} ({s.role})
+                      </Badge>
+                    ))}
+                  </Group>
+                );
+              },
             },
             {
               accessor: "actions",
@@ -560,6 +1230,12 @@ export function MembersView() {
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconPencil size={14} />}
+                        onClick={() => setEditMemberModal(row)}
+                      >
+                        Edit role & scopes
+                      </Menu.Item>
                       {canImpersonate && (
                         <Menu.Item
                           leftSection={<IconUser size={14} />}
@@ -629,6 +1305,28 @@ export function MembersView() {
               { value: "admin", label: "Admin" },
             ]}
           />
+          <Collapse in={inviteScopesOpen}>
+            <Paper p="sm" withBorder mt="xs" style={{ background: "#0d1117" }}>
+              <Text size="xs" c="dimmed" mb="xs">
+                To add championship or event scopes, invite the member first, then
+                click <strong>Edit role & scopes</strong> on their row.
+              </Text>
+            </Paper>
+          </Collapse>
+          <Button
+            variant="subtle"
+            size="xs"
+            leftSection={
+              inviteScopesOpen ? (
+                <IconChevronDown size={14} />
+              ) : (
+                <IconChevronRight size={14} />
+              )
+            }
+            onClick={toggleInviteScopes}
+          >
+            {inviteScopesOpen ? "Hide" : "About scopes"}
+          </Button>
           <Group gap="xs">
             <Button onClick={handleInvite}>Invite</Button>
             <Button variant="subtle" onClick={() => setInviteModalOpen(false)}>
@@ -724,6 +1422,25 @@ export function MembersView() {
           </Group>
         </Stack>
       </Modal>
+
+      {/* Edit Member Scopes Modal */}
+      {editMemberModal && editMemberModal.userId && orgId && (
+        <MemberEditModal
+          member={editMemberModal}
+          championships={championships.filter(
+            (c: Championship) => c.orgId === orgId
+          )}
+          events={events.filter((e: Event) => e.orgId === orgId)}
+          onClose={() => setEditMemberModal(null)}
+          updateOrgMember={updateOrgMember}
+          addChampionshipMember={addChampionshipMember}
+          updateChampionshipMember={updateChampionshipMember}
+          removeChampionshipMember={removeChampionshipMember}
+          addEventMember={addEventMember}
+          updateEventMember={updateEventMember}
+          removeEventMember={removeEventMember}
+        />
+      )}
     </Stack>
   );
 }

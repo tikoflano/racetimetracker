@@ -27,4 +27,9 @@ export {
   IconUsers,
   IconUsersGroup,
   IconTool,
+  IconInfoCircle,
+  IconBuilding,
+  IconShieldStar,
+  IconShield,
+  IconUserCog,
 } from '@tabler/icons-react';
