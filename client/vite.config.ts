@@ -8,7 +8,7 @@ export default defineConfig({
     rewrites: [{ source: '/(.*)', destination: '/index.html' }],
   },
   server: {
-    port: 5173,
+    port: 5174,
     host: '0.0.0.0',
     allowedHosts: ['.tikoflano.work'],
     proxy: {
