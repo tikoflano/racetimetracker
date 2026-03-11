@@ -372,24 +372,24 @@ export function MembersView() {
       <Box
         p="xl"
         style={{
-          background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+          background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
           borderRadius: "var(--mantine-radius-md)",
-          border: "1px solid #1e2028",
+          border: "1px solid #1a3a2a",
         }}
       >
         <Group justify="space-between" align="center" wrap="wrap" gap="md">
           <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="blue" variant="light">
+            <ThemeIcon size={52} radius="md" color="green" variant="light">
               <IconBuilding size={28} />
             </ThemeIcon>
             <div>
-              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
+              <Text size="xs" c="green.3" tt="uppercase" fw={600} mb={2}>
                 Organization
               </Text>
               <Title order={2} c="white" fw={700}>
                 {activeOrg?.name ?? "Organization"}
               </Title>
-              <Text size="sm" c="blue.2" mt={2}>
+              <Text size="sm" c="green.2" mt={2}>
                 {roleCounts.all} member{roleCounts.all !== 1 ? "s" : ""} · manage roles and permissions
               </Text>
             </div>
