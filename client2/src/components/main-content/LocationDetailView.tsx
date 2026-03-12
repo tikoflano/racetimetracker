@@ -258,7 +258,7 @@ export function LocationDetailView() {
   const trackRefs = useRef(new Map<bigint, HTMLDivElement>());
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [isMapCollapsed, setIsMapCollapsed] = useState(false);
+  const [isMapCollapsed, setIsMapCollapsed] = useState(true);
 
   const venue = venues.find((v) => v.id === venueId);
 
@@ -863,21 +863,28 @@ export function LocationDetailView() {
                 zIndex: 2,
               }}
             >
-              <ActionIcon
+              <Button
+                size="xs"
                 variant="filled"
-                size="md"
                 color="dark"
-                aria-label={isMapCollapsed ? 'Expand map' : 'Collapse map'}
+                aria-label={isMapCollapsed ? 'Show map' : 'Hide map'}
                 onClick={() => setIsMapCollapsed((v) => !v)}
+                leftSection={
+                  isMapCollapsed ? (
+                    <IconChevronDown size={14} />
+                  ) : (
+                    <IconChevronUp size={14} />
+                  )
+                }
                 style={{
                   backgroundColor: 'rgba(15, 23, 42, 0.92)',
                   color: 'white',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
-                  borderRadius: '999px',
+                  borderRadius: 999,
                 }}
               >
-                {isMapCollapsed ? <IconChevronDown size={16} /> : <IconChevronUp size={16} />}
-              </ActionIcon>
+                {isMapCollapsed ? 'Show map' : 'Hide map'}
+              </Button>
             </Box>
 
             <Box
