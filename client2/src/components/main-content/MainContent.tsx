@@ -17,6 +17,8 @@ import { LocationDetailView } from "./LocationDetailView";
 import { TimekeepView } from "./TimekeepView";
 import { DevToolsView } from "./DevToolsView";
 import { RidersView } from "./RidersView";
+import { ChampionshipsView } from "./ChampionshipsView";
+import { ChampionshipDetailView } from "./ChampionshipDetailView";
 
 interface MainContentProps {
   collapsed: boolean;
@@ -271,6 +273,8 @@ export function MainContent({ collapsed }: MainContentProps) {
         <Route path="/locations/*" element={<LocationsRouter />} />
         <Route path="/timekeep" element={<TimekeepView />} />
         <Route path="/riders" element={<RidersView />} />
+        <Route path="/championships" element={<ChampionshipsView />} />
+        <Route path="/championships/:champId" element={<ChampionshipDetailView />} />
         <Route path="/members" element={<MembersView />} />
         <Route path="/dev" element={<DevToolsView />} />
       </Routes>
