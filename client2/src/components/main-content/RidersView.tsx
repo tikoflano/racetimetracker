@@ -17,8 +17,11 @@ import {
   Select,
   RangeSlider,
   Avatar,
+  Popover,
+  Indicator,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
+import { useMediaQuery } from "@mantine/hooks";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconUsers,
@@ -29,6 +32,7 @@ import {
   IconShare,
   IconSearch,
   IconX,
+  IconFilter,
 } from "@tabler/icons-react";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
@@ -276,132 +280,281 @@ export function RidersView() {
     ? `${window.location.origin}/register/${activeOrg.slug}`
     : "";
 
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const activeFilterCount = (sexFilter !== "all" ? 1 : 0) + (ageFiltered ? 1 : 0);
+
   if (!activeOrg) return null;
 
   return (
     <Stack gap="lg">
       {/* Header banner */}
       <Box
-        p="xl"
+        p={isMobile ? "md" : "xl"}
         style={{
           background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
           borderRadius: "var(--mantine-radius-md)",
           border: "1px solid #1e2028",
         }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="blue" variant="light">
-              <IconUsers size={28} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
-                {activeOrg.name}
-              </Text>
-              <Title order={2} c="white" fw={700}>
+        <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+          <Group gap="sm" align="center" style={{ minWidth: 0 }}>
+            {!isMobile && (
+              <ThemeIcon size={52} radius="md" color="blue" variant="light">
+                <IconUsers size={28} />
+              </ThemeIcon>
+            )}
+            <div style={{ minWidth: 0 }}>
+              {!isMobile && (
+                <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
+                  {activeOrg.name}
+                </Text>
+              )}
+              <Title order={isMobile ? 4 : 2} c="white" fw={700} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Riders
               </Title>
-              <Text size="sm" c="blue.2" mt={2}>
+              <Text size={isMobile ? "xs" : "sm"} c="blue.2" mt={2}>
                 {orgRiders.length} rider{orgRiders.length !== 1 ? "s" : ""}
+                {!isMobile && ` · ${activeOrg.name}`}
               </Text>
             </div>
           </Group>
-          <Group gap="xs">
-            <Button
-              variant="subtle"
-              color="gray"
-              leftSection={<IconShare size={16} />}
-              onClick={() => setShowRegModal(true)}
-            >
-              Registration link
-            </Button>
-            <Button
-              variant="white"
-              color="dark"
-              leftSection={<IconPlus size={16} />}
-              onClick={() => { setEditingId(null); setForm(emptyForm); setFormError(""); setShowForm(true); }}
-            >
-              Add Rider
-            </Button>
+          <Group gap="sm" style={{ flexShrink: 0 }}>
+            {!isMobile && (
+              <>
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  leftSection={<IconShare size={16} />}
+                  onClick={() => setShowRegModal(true)}
+                >
+                  Registration link
+                </Button>
+                <Button
+                  variant="white"
+                  color="dark"
+                  leftSection={<IconPlus size={16} />}
+                  onClick={() => { setEditingId(null); setForm(emptyForm); setFormError(""); setShowForm(true); }}
+                >
+                  Add Rider
+                </Button>
+              </>
+            )}
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" size="lg" color="gray">
+                  <IconDotsVertical size={18} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {isMobile && (
+                  <>
+                    <Menu.Item
+                      leftSection={<IconPlus size={14} />}
+                      onClick={() => { setEditingId(null); setForm(emptyForm); setFormError(""); setShowForm(true); }}
+                    >
+                      Add Rider
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconShare size={14} />}
+                      onClick={() => setShowRegModal(true)}
+                    >
+                      Registration link
+                    </Menu.Item>
+                    <Menu.Divider />
+                  </>
+                )}
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
       </Box>
 
       {/* Filter / search toolbar */}
       <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="xs" align="center">
-            <Badge
-              size="lg"
-              variant={!hasActiveFilter ? "filled" : "light"}
-              color="blue"
-              style={{ cursor: "pointer" }}
-              onClick={() => { setSearch(""); setSexFilter("all"); setAgeRange(null); }}
+        <Group justify="space-between" align="center" gap="sm">
+          <Group gap="sm" align="center">
+            <Popover
+              opened={filterOpen}
+              onChange={setFilterOpen}
+              position="bottom-start"
+              shadow="md"
+              withinPortal
             >
-              All ({orgRiders.length})
-            </Badge>
-            <Badge
-              size="lg"
-              variant={sexFilter === "male" ? "filled" : "light"}
-              color="blue"
-              style={{ cursor: "pointer" }}
-              onClick={() => setSexFilter(sexFilter === "male" ? "all" : "male")}
-            >
-              Male ({orgRiders.filter((r) => r.sex === "male").length})
-            </Badge>
-            <Badge
-              size="lg"
-              variant={sexFilter === "female" ? "filled" : "light"}
-              color="pink"
-              style={{ cursor: "pointer" }}
-              onClick={() => setSexFilter(sexFilter === "female" ? "all" : "female")}
-            >
-              Female ({orgRiders.filter((r) => r.sex === "female").length})
-            </Badge>
+              <Popover.Target>
+                <Indicator
+                  disabled={activeFilterCount === 0}
+                  label={activeFilterCount}
+                  size={16}
+                  color="blue"
+                >
+                  <ActionIcon
+                    variant={activeFilterCount > 0 ? "filled" : "subtle"}
+                    color={activeFilterCount > 0 ? "blue" : "gray"}
+                    size="md"
+                    onClick={() => setFilterOpen((o) => !o)}
+                    aria-label="Filter riders"
+                  >
+                    <IconFilter size={16} />
+                  </ActionIcon>
+                </Indicator>
+              </Popover.Target>
+              <Popover.Dropdown p="sm">
+                <Stack gap="xs">
+                  <Badge
+                    size="lg"
+                    variant={sexFilter === "male" ? "filled" : "light"}
+                    color="blue"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setSexFilter(sexFilter === "male" ? "all" : "male")}
+                  >
+                    Male ({orgRiders.filter((r) => r.sex === "male").length})
+                  </Badge>
+                  <Badge
+                    size="lg"
+                    variant={sexFilter === "female" ? "filled" : "light"}
+                    color="pink"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setSexFilter(sexFilter === "female" ? "all" : "female")}
+                  >
+                    Female ({orgRiders.filter((r) => r.sex === "female").length})
+                  </Badge>
+                  {ageRangeMin < ageRangeMax && (
+                    <Group align="center" gap="xs" mt={4}>
+                      <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>Age</Text>
+                      <Text size="xs" c="dimmed" w={20} ta="right">{sliderValue[0]}</Text>
+                      <RangeSlider
+                        w={140}
+                        min={ageRangeMin}
+                        max={ageRangeMax}
+                        minRange={0}
+                        value={sliderValue}
+                        onChange={(v) =>
+                          setAgeRange(v[0] === ageRangeMin && v[1] === ageRangeMax ? null : v)
+                        }
+                        label={null}
+                        size="sm"
+                      />
+                      <Text size="xs" c="dimmed" w={20}>{sliderValue[1]}</Text>
+                    </Group>
+                  )}
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="subtle"
+                      size="xs"
+                      mt="xs"
+                      fullWidth
+                      onClick={() => { setSexFilter("all"); setAgeRange(null); }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </Stack>
+              </Popover.Dropdown>
+            </Popover>
+            <Text size="xs" c="dimmed">
+              {filteredRiders.length === orgRiders.length
+                ? `${orgRiders.length} rider${orgRiders.length !== 1 ? "s" : ""}`
+                : `${filteredRiders.length} of ${orgRiders.length}`}
+            </Text>
           </Group>
-          <Group gap="sm" align="center" wrap="wrap">
-            {ageRangeMin < ageRangeMax && (
-              <Group align="center" gap="xs">
-                <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>Age</Text>
-                <Text size="xs" c="dimmed" w={20} ta="right">{sliderValue[0]}</Text>
-                <RangeSlider
-                  w={160}
-                  min={ageRangeMin}
-                  max={ageRangeMax}
-                  minRange={0}
-                  value={sliderValue}
-                  onChange={(v) =>
-                    setAgeRange(
-                      v[0] === ageRangeMin && v[1] === ageRangeMax ? null : v
-                    )
-                  }
-                  label={null}
-                  size="sm"
-                />
-                <Text size="xs" c="dimmed" w={20}>{sliderValue[1]}</Text>
-              </Group>
-            )}
+          {searchOpen ? (
             <TextInput
               placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ minWidth: 240 }}
               size="sm"
               leftSection={<IconSearch size={14} />}
               rightSection={
-                search ? (
-                  <ActionIcon variant="subtle" size="xs" color="gray" onClick={() => setSearch("")}>
-                    <IconX size={12} />
-                  </ActionIcon>
-                ) : null
+                <ActionIcon variant="subtle" size="sm" color="gray" onClick={() => { setSearchOpen(false); setSearch(""); }}>
+                  <IconX size={12} />
+                </ActionIcon>
               }
+              autoFocus
+              style={{ flex: 1, minWidth: 0 }}
             />
-          </Group>
+          ) : (
+            <ActionIcon
+              variant={search ? "filled" : "subtle"}
+              color={search ? "blue" : "gray"}
+              size="md"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search riders"
+            >
+              <IconSearch size={16} />
+            </ActionIcon>
+          )}
         </Group>
       </Paper>
 
-      {/* Table */}
-      {filteredRiders.length === 0 ? (
+      {/* Riders — card list on mobile, table on desktop */}
+      {isMobile ? (
+        <Stack gap="xs">
+          {filteredRiders.length === 0 && (
+            <Paper p="sm" withBorder>
+              <Text size="sm" c="dimmed" ta="center">
+                {hasActiveFilter
+                  ? "No riders match your filters."
+                  : "No riders yet. Add one or share the registration link."}
+              </Text>
+            </Paper>
+          )}
+          {filteredRiders.map((r) => {
+            const age = calcAge(r.dateOfBirth);
+            return (
+              <Paper key={String(r.id)} p="sm" withBorder>
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                    <RiderAvatar rider={r} size={36} />
+                    <div style={{ minWidth: 0 }}>
+                      <Text size="sm" fw={600} style={{ lineHeight: 1.3 }}>
+                        {r.firstName} {r.lastName}
+                      </Text>
+                      {r.email && (
+                        <Text size="xs" c="dimmed" truncate style={{ lineHeight: 1.3 }}>
+                          {r.email}
+                        </Text>
+                      )}
+                      {r.phone && (
+                        <Text size="xs" c="dimmed" style={{ lineHeight: 1.3 }}>
+                          {r.phone}
+                        </Text>
+                      )}
+                      <Group gap="xs" mt={4}>
+                        {r.sex && (
+                          <Badge size="xs" variant="light" color={r.sex === "female" ? "pink" : "blue"}>
+                            {r.sex === "male" ? "Male" : "Female"}
+                          </Badge>
+                        )}
+                        {age !== null && (
+                          <Text size="xs" c="dimmed">Age {age}</Text>
+                        )}
+                      </Group>
+                    </div>
+                  </Group>
+                  <Menu shadow="md" width={160} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" size="sm" color="gray" onClick={(e) => e.stopPropagation()}>
+                        <IconDotsVertical size={14} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => startEdit(r)}>
+                        Edit
+                      </Menu.Item>
+                      <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={() => handleDelete(r)}>
+                        Delete
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              </Paper>
+            );
+          })}
+        </Stack>
+      ) : filteredRiders.length === 0 ? (
         <Paper withBorder p="xl">
           <Stack align="center" gap="sm">
             <IconUsers size={48} color="var(--mantine-color-dimmed)" />
