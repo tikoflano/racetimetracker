@@ -1,17 +1,24 @@
 import { IconClock } from "@tabler/icons-react";
 import { Tooltip } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { useNavigate, useLocation } from "react-router-dom";
 import classes from "./AppSidebar.module.css";
 import { navigation } from "./navigation";
 
 interface AppSidebarProps {
   collapsed: boolean;
+  onClose?: () => void;
 }
 
-export function AppSidebar({ collapsed }: AppSidebarProps) {
+export function AppSidebar({ collapsed, onClose }: AppSidebarProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   return (
+    <>
+      {isMobile && !collapsed && (
+        <div className={classes.backdrop} onClick={onClose} />
+      )}
     <nav
       className={`${classes.sidebar} ${collapsed ? classes.sidebarCollapsed : ""}`}
     >
@@ -43,7 +50,7 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
                   <li
                     key={item.label}
                     className={`${classes.navItem} ${isActive ? classes.navItemActive : ""}`}
-                    onClick={() => navigate(item.path)}
+                    onClick={() => { navigate(item.path); if (isMobile) onClose?.(); }}
                   >
                     <span className={classes.navItemIcon}>
                       <item.icon size={20} stroke={1.6} />
@@ -77,5 +84,6 @@ export function AppSidebar({ collapsed }: AppSidebarProps) {
         ))}
       </div>
     </nav>
+    </>
   );
 }

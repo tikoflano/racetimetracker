@@ -1233,181 +1233,295 @@ export function MembersView() {
         </Group>
       </Paper>
 
-      {/* Members Table */}
-      <Paper p="md" withBorder>
-        <DataTable<MemberRow>
-          withTableBorder={false}
-          withColumnBorders={false}
-          highlightOnHover
-          minHeight={filteredAndSortedRecords.length === 0 ? 150 : undefined}
-          records={filteredAndSortedRecords}
-          sortStatus={sortStatus}
-          onSortStatusChange={setSortStatus}
-          noRecordsText={
-            memberRows.length > 0
-              ? "No members match your search or filter."
-              : "No members yet. Invite someone to get started."
-          }
-          columns={[
-            {
-              accessor: "name",
-              title: "Member",
-              sortable: true,
-              render: (row) => (
-                <Group gap="sm" wrap="nowrap">
-                  <Avatar
+      {/* Members — card list on mobile, table on desktop */}
+      {isMobile ? (
+        <Stack gap="sm">
+          {filteredAndSortedRecords.length === 0 && (
+            <Paper p="md" withBorder>
+              <Text size="sm" c="dimmed" ta="center">
+                {memberRows.length > 0
+                  ? "No members match your search or filter."
+                  : "No members yet. Invite someone to get started."}
+              </Text>
+            </Paper>
+          )}
+          {filteredAndSortedRecords.map((row) => {
+            const totalChamp = row.championshipScopes.length;
+            const totalEvent = row.eventScopes.length;
+            const canImpersonate =
+              userCanImpersonate &&
+              row.role !== "admin" &&
+              row.status === "active" &&
+              !!row.userId;
+            const isPending = row.status === "pending";
+            return (
+              <Paper key={row.id} p="md" withBorder>
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                    <Avatar
+                      size="md"
+                      radius="xl"
+                      color={ROLE_COLORS[row.role]}
+                      variant="light"
+                      style={{ flexShrink: 0 }}
+                    >
+                      {row.name.slice(0, 2).toUpperCase()}
+                    </Avatar>
+                    <div style={{ minWidth: 0 }}>
+                      <Text size="sm" fw={600} style={{ lineHeight: 1.3 }}>
+                        {row.name}
+                      </Text>
+                      {row.email && (
+                        <Text size="xs" c="dimmed" truncate style={{ lineHeight: 1.3 }}>
+                          {row.email}
+                        </Text>
+                      )}
+                    </div>
+                  </Group>
+                  {row.role !== "owner" && (
+                    <Menu shadow="md" width={200} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" size="sm" color="gray" style={{ flexShrink: 0 }}>
+                          <IconDotsVertical size={14} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconPencil size={14} />}
+                          onClick={() => setEditMemberModal(row)}
+                        >
+                          Edit role & scopes
+                        </Menu.Item>
+                        {canImpersonate && (
+                          <Menu.Item
+                            leftSection={<IconUser size={14} />}
+                            onClick={() => handleImpersonate(row)}
+                          >
+                            Impersonate
+                          </Menu.Item>
+                        )}
+                        {isPending && (
+                          <Menu.Item
+                            leftSection={<IconMail size={14} />}
+                            onClick={() => handleResendInvite(row)}
+                          >
+                            Resend invitation
+                          </Menu.Item>
+                        )}
+                        <Menu.Item
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleRemove(row)}
+                        >
+                          Remove
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  )}
+                </Group>
+
+                <Stack gap={6} mt="sm">
+                  <Group justify="space-between" align="center">
+                    <Text size="xs" c="dimmed" fw={500}>Role</Text>
+                    <Badge
+                      size="sm"
+                      color={ROLE_COLORS[row.role]}
+                      variant="light"
+                      leftSection={ROLE_ICONS[row.role]}
+                      styles={BADGE_FULL_STYLES}
+                    >
+                      {ROLE_LABELS[row.role]}
+                    </Badge>
+                  </Group>
+                  {isPending && (
+                    <Group justify="space-between" align="center">
+                      <Text size="xs" c="dimmed" fw={500}>Status</Text>
+                      <Badge size="xs" color="orange" variant="light">Pending</Badge>
+                    </Group>
+                  )}
+                  {(totalChamp > 0 || totalEvent > 0) && (
+                    <Group justify="space-between" align="center">
+                      <Text size="xs" c="dimmed" fw={500}>Scopes</Text>
+                      <Group gap={4}>
+                        {totalChamp > 0 && (
+                          <Badge size="xs" color="blue" variant="light" leftSection={<IconTrophy size={10} />} styles={BADGE_FULL_STYLES}>
+                            {totalChamp}
+                          </Badge>
+                        )}
+                        {totalEvent > 0 && (
+                          <Badge size="xs" color="violet" variant="light" leftSection={<IconCalendarEvent size={10} />} styles={BADGE_FULL_STYLES}>
+                            {totalEvent}
+                          </Badge>
+                        )}
+                      </Group>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Paper p="md" withBorder>
+          <DataTable<MemberRow>
+            withTableBorder={false}
+            withColumnBorders={false}
+            highlightOnHover
+            minHeight={filteredAndSortedRecords.length === 0 ? 150 : undefined}
+            records={filteredAndSortedRecords}
+            sortStatus={sortStatus}
+            onSortStatusChange={setSortStatus}
+            noRecordsText={
+              memberRows.length > 0
+                ? "No members match your search or filter."
+                : "No members yet. Invite someone to get started."
+            }
+            columns={[
+              {
+                accessor: "name",
+                title: "Member",
+                sortable: true,
+                render: (row) => (
+                  <Group gap="sm" wrap="nowrap">
+                    <Avatar
+                      size="sm"
+                      radius="xl"
+                      color={ROLE_COLORS[row.role]}
+                      variant="light"
+                      style={{ flexShrink: 0 }}
+                    >
+                      {row.name.slice(0, 2).toUpperCase()}
+                    </Avatar>
+                    <div style={{ minWidth: 0 }}>
+                      <Text size="sm" fw={500} style={{ lineHeight: 1.3 }}>
+                        {row.name}
+                      </Text>
+                      {row.email && (
+                        <Text size="xs" c="dimmed" style={{ lineHeight: 1.3 }} truncate>
+                          {row.email}
+                        </Text>
+                      )}
+                      {row.status === "pending" && (
+                        <Badge size="xs" color="orange" variant="light" mt={2}>
+                          Pending
+                        </Badge>
+                      )}
+                    </div>
+                  </Group>
+                ),
+              },
+              {
+                accessor: "role",
+                title: "Role",
+                sortable: true,
+                render: (row) => (
+                  <Badge
                     size="sm"
-                    radius="xl"
                     color={ROLE_COLORS[row.role]}
                     variant="light"
-                    style={{ flexShrink: 0 }}
+                    leftSection={ROLE_ICONS[row.role]}
+                    styles={BADGE_FULL_STYLES}
                   >
-                    {row.name.slice(0, 2).toUpperCase()}
-                  </Avatar>
-                  <div style={{ minWidth: 0 }}>
-                    <Text size="sm" fw={500} style={{ lineHeight: 1.3 }}>
-                      {row.name}
-                    </Text>
-                    {row.email && (
-                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.3 }} truncate>
-                        {row.email}
-                      </Text>
-                    )}
-                    {row.status === "pending" && (
-                      <Badge size="xs" color="orange" variant="light" mt={2}>
-                        Pending
-                      </Badge>
-                    )}
-                  </div>
-                </Group>
-              ),
-            },
-            {
-              accessor: "role",
-              title: "Role",
-              sortable: true,
-              render: (row) => (
-                <Badge
-                  size="sm"
-                  color={ROLE_COLORS[row.role]}
-                  variant="light"
-                  leftSection={ROLE_ICONS[row.role]}
-                  styles={BADGE_FULL_STYLES}
-                >
-                  {ROLE_LABELS[row.role]}
-                </Badge>
-              ),
-            },
-            {
-              accessor: "scopes" as const,
-              title: "Scopes",
-              render: (row: MemberRow) => {
-                const totalChamp = row.championshipScopes.length;
-                const totalEvent = row.eventScopes.length;
-                if (totalChamp === 0 && totalEvent === 0) return <Text size="xs" c="dimmed">—</Text>;
-                if (isMobile) {
+                    {ROLE_LABELS[row.role]}
+                  </Badge>
+                ),
+              },
+              {
+                accessor: "scopes" as const,
+                title: "Scopes",
+                render: (row: MemberRow) => {
+                  const totalChamp = row.championshipScopes.length;
+                  const totalEvent = row.eventScopes.length;
+                  if (totalChamp === 0 && totalEvent === 0)
+                    return <Text size="xs" c="dimmed">—</Text>;
                   return (
-                    <Group gap={4}>
-                      {totalChamp > 0 && (
-                        <Badge size="xs" color="blue" variant="light" leftSection={<IconTrophy size={10} />} styles={BADGE_FULL_STYLES}>
-                          {totalChamp}
+                    <Group gap={4} wrap="wrap">
+                      {row.championshipScopes.map((s) => (
+                        <Badge
+                          key={String(s.id)}
+                          size="xs"
+                          color="blue"
+                          variant="light"
+                          leftSection={<IconTrophy size={10} />}
+                          styles={BADGE_FULL_STYLES}
+                        >
+                          {s.championshipName} ({s.role})
                         </Badge>
-                      )}
-                      {totalEvent > 0 && (
-                        <Badge size="xs" color="violet" variant="light" leftSection={<IconCalendarEvent size={10} />} styles={BADGE_FULL_STYLES}>
-                          {totalEvent}
+                      ))}
+                      {row.eventScopes.map((s) => (
+                        <Badge
+                          key={String(s.id)}
+                          size="xs"
+                          color="violet"
+                          variant="light"
+                          leftSection={<IconCalendarEvent size={10} />}
+                          styles={BADGE_FULL_STYLES}
+                        >
+                          {s.eventName} ({s.role})
                         </Badge>
-                      )}
+                      ))}
                     </Group>
                   );
-                }
-                return (
-                  <Group gap={4} wrap="wrap">
-                    {row.championshipScopes.map((s) => (
-                      <Badge
-                        key={String(s.id)}
-                        size="xs"
-                        color="blue"
-                        variant="light"
-                        leftSection={<IconTrophy size={10} />}
-                        styles={BADGE_FULL_STYLES}
-                      >
-                        {s.championshipName} ({s.role})
-                      </Badge>
-                    ))}
-                    {row.eventScopes.map((s) => (
-                      <Badge
-                        key={String(s.id)}
-                        size="xs"
-                        color="violet"
-                        variant="light"
-                        leftSection={<IconCalendarEvent size={10} />}
-                        styles={BADGE_FULL_STYLES}
-                      >
-                        {s.eventName} ({s.role})
-                      </Badge>
-                    ))}
-                  </Group>
-                );
+                },
               },
-            },
-            {
-              accessor: "actions",
-              title: "",
-              width: 40,
-              render: (row) => {
-                if (row.role === "owner") return null;
-                const canImpersonate =
-                  userCanImpersonate &&
-                  row.role !== "admin" &&
-                  row.status === "active" &&
-                  !!row.userId;
-                const isPending = row.status === "pending";
-                return (
-                  <Menu shadow="md" width={200} position="bottom-end">
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" size="sm" color="gray">
-                        <IconDotsVertical size={14} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item
-                        leftSection={<IconPencil size={14} />}
-                        onClick={() => setEditMemberModal(row)}
-                      >
-                        Edit role & scopes
-                      </Menu.Item>
-                      {canImpersonate && (
+              {
+                accessor: "actions",
+                title: "",
+                width: 40,
+                render: (row) => {
+                  if (row.role === "owner") return null;
+                  const canImpersonate =
+                    userCanImpersonate &&
+                    row.role !== "admin" &&
+                    row.status === "active" &&
+                    !!row.userId;
+                  const isPending = row.status === "pending";
+                  return (
+                    <Menu shadow="md" width={200} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" size="sm" color="gray">
+                          <IconDotsVertical size={14} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
                         <Menu.Item
-                          leftSection={<IconUser size={14} />}
-                          onClick={() => handleImpersonate(row)}
+                          leftSection={<IconPencil size={14} />}
+                          onClick={() => setEditMemberModal(row)}
                         >
-                          Impersonate
+                          Edit role & scopes
                         </Menu.Item>
-                      )}
-                      {isPending && (
+                        {canImpersonate && (
+                          <Menu.Item
+                            leftSection={<IconUser size={14} />}
+                            onClick={() => handleImpersonate(row)}
+                          >
+                            Impersonate
+                          </Menu.Item>
+                        )}
+                        {isPending && (
+                          <Menu.Item
+                            leftSection={<IconMail size={14} />}
+                            onClick={() => handleResendInvite(row)}
+                          >
+                            Resend invitation
+                          </Menu.Item>
+                        )}
                         <Menu.Item
-                          leftSection={<IconMail size={14} />}
-                          onClick={() => handleResendInvite(row)}
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={() => handleRemove(row)}
                         >
-                          Resend invitation
+                          Remove
                         </Menu.Item>
-                      )}
-                      <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        onClick={() => handleRemove(row)}
-                      >
-                        Remove
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                );
+                      </Menu.Dropdown>
+                    </Menu>
+                  );
+                },
               },
-            },
-          ]}
-        />
-      </Paper>
+            ]}
+          />
+        </Paper>
+      )}
 
       {/* Invite Modal */}
       <Modal

@@ -26,7 +26,7 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
     <header
       className={classes.header}
       style={{
-        left: collapsed ? (isMobile ? "0px" : "72px") : "260px",
+        left: isMobile ? "0px" : collapsed ? "72px" : "260px",
       }}
     >
       <div className={classes.headerLeft}>

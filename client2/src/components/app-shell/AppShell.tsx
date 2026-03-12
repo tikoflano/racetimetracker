@@ -38,7 +38,7 @@ export function AppShell() {
           </Button>
         </Box>
       )}
-      <AppSidebar collapsed={collapsed} />
+      <AppSidebar collapsed={collapsed} onClose={() => setCollapsed(true)} />
       <AppHeader
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}

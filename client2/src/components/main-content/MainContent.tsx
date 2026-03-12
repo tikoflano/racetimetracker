@@ -249,7 +249,7 @@ export function MainContent({ collapsed }: MainContentProps) {
   return (
     <main
       className={classes.main}
-      style={{ marginLeft: collapsed ? (isMobile ? "0px" : "72px") : "260px" }}
+      style={{ marginLeft: isMobile ? "0px" : collapsed ? "72px" : "260px" }}
     >
       <Routes>
         <Route path="/" element={<DashboardView />} />
