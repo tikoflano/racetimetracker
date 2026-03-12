@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconArrowUpRight,
   IconArrowDownRight,
@@ -244,10 +245,11 @@ function DashboardView() {
 
 
 export function MainContent({ collapsed }: MainContentProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   return (
     <main
       className={classes.main}
-      style={{ marginLeft: collapsed ? "72px" : "260px" }}
+      style={{ marginLeft: collapsed ? (isMobile ? "0px" : "72px") : "260px" }}
     >
       <Routes>
         <Route path="/" element={<DashboardView />} />

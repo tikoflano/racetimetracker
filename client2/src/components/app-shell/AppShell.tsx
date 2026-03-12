@@ -8,7 +8,7 @@ import { useAuth } from "@/auth";
 import { reducers } from "@/module_bindings";
 
 export function AppShell() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 768);
   const { user, realUser, isImpersonating } = useAuth();
   const stopImpersonation = useReducer(reducers.stopImpersonation);
 

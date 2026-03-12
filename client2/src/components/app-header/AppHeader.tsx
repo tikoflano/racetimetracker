@@ -4,7 +4,7 @@ import {
   IconBell,
   IconSearch,
 } from "@tabler/icons-react";
-import { TextInput } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { useLocation } from "react-router-dom";
 import classes from "./AppHeader.module.css";
 import { navigation } from "@/components/app-sidebar/navigation";
@@ -15,6 +15,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { pathname } = useLocation();
   const activeItem =
     navigation
@@ -25,7 +26,7 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
     <header
       className={classes.header}
       style={{
-        left: collapsed ? "72px" : "260px",
+        left: collapsed ? (isMobile ? "0px" : "72px") : "260px",
       }}
     >
       <div className={classes.headerLeft}>
@@ -49,27 +50,9 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
       </div>
 
       <div className={classes.headerRight}>
-        <TextInput
-          className={classes.searchInput}
-          placeholder="Search anything..."
-          leftSection={<IconSearch size={16} stroke={1.6} />}
-          size="sm"
-          radius="md"
-          styles={{
-            input: {
-              backgroundColor: "#13151b",
-              border: "1px solid #1e2028",
-              color: "#ffffff",
-              fontSize: "13px",
-              "&::placeholder": {
-                color: "#565b6b",
-              },
-              "&:focus": {
-                borderColor: "#3b82f6",
-              },
-            },
-          }}
-        />
+        <button className={classes.iconButton} aria-label="Search">
+          <IconSearch size={20} stroke={1.6} />
+        </button>
 
         <button className={classes.iconButton} aria-label="Notifications">
           <IconBell size={20} stroke={1.6} />

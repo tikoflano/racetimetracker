@@ -5,12 +5,15 @@ import {
   Badge,
   Box,
   Button,
+  Card,
+  Collapse,
   ColorInput,
   Group,
   Menu,
   Modal,
   Overlay,
   Paper,
+  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -130,6 +133,14 @@ interface TrackVariation {
   endLongitude: number;
 }
 
+interface TrackImage {
+  id: bigint;
+  trackId: bigint;
+  url: string;
+  caption: string;
+  isCover: boolean;
+}
+
 const MOCK_TRACKS: Track[] = [
   { id: 1n, venueId: 1n, name: 'Summit Run', color: '#ef4444' },
   { id: 2n, venueId: 1n, name: 'Ridge Line', color: '#22c55e' },
@@ -229,6 +240,33 @@ export function LocationDetailView() {
   }, [venues]);
   const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
   const [variations, setVariations] = useState<TrackVariation[]>(MOCK_VARIATIONS);
+  const [trackImagesByTrack, setTrackImagesByTrack] = useState<Map<bigint, TrackImage[]>>(() => {
+    try {
+      const raw = window.localStorage.getItem('racetimetracker-track-images');
+      if (!raw) return new Map();
+      const parsed = JSON.parse(raw) as Record<
+        string,
+        { id: string; trackId: string; url: string; caption: string; isCover: boolean }[]
+      >;
+      const m = new Map<bigint, TrackImage[]>();
+      for (const [trackIdStr, images] of Object.entries(parsed)) {
+        const key = BigInt(trackIdStr);
+        m.set(
+          key,
+          images.map((img) => ({
+            id: BigInt(img.id),
+            trackId: key,
+            url: img.url,
+            caption: img.caption,
+            isCover: img.isCover,
+          }))
+        );
+      }
+      return m;
+    } catch {
+      return new Map();
+    }
+  });
   const [editingVenue, setEditingVenue] = useState(false);
   const [venueForm, setVenueForm] = useState({
     name: '',
@@ -242,6 +280,8 @@ export function LocationDetailView() {
   const [editingTrackId, setEditingTrackId] = useState<bigint | null>(null);
 
   const [expandedTrack, setExpandedTrack] = useState<bigint | null>(null);
+  const [trackGalleryTrackId, setTrackGalleryTrackId] = useState<bigint | null>(null);
+  const [trackGalleryIndex, setTrackGalleryIndex] = useState(0);
 
   const [showVarForm, setShowVarForm] = useState<bigint | null>(null);
   const [varForm, setVarForm] = useState({
@@ -296,6 +336,40 @@ export function LocationDetailView() {
     }
     return m;
   }, [variationsByTrack]);
+
+  const trackCoverImages = useMemo(() => {
+    const m = new Map<bigint, TrackImage | undefined>();
+    for (const [trackId, images] of trackImagesByTrack) {
+      if (!images || images.length === 0) {
+        m.set(trackId, undefined);
+        continue;
+      }
+      const cover = images.find((img) => img.isCover) ?? images[0];
+      m.set(trackId, cover);
+    }
+    return m;
+  }, [trackImagesByTrack]);
+
+  useEffect(() => {
+    const out: Record<
+      string,
+      { id: string; trackId: string; url: string; caption: string; isCover: boolean }[]
+    > = {};
+    for (const [trackId, images] of trackImagesByTrack) {
+      out[String(trackId)] = images.map((img) => ({
+        id: String(img.id),
+        trackId: String(trackId),
+        url: img.url,
+        caption: img.caption,
+        isCover: img.isCover,
+      }));
+    }
+    try {
+      window.localStorage.setItem('racetimetracker-track-images', JSON.stringify(out));
+    } catch {
+      // ignore storage errors
+    }
+  }, [trackImagesByTrack]);
 
   // All map positions for bounds fitting
   const mapPositions = useMemo(() => {
@@ -370,6 +444,41 @@ export function LocationDetailView() {
           };
         })
       );
+    };
+    input.click();
+  };
+
+  const handleUploadTrackImage = (trackId: bigint) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const url = await resizeImage(file);
+      setTrackImagesByTrack((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(trackId) ?? [];
+        const nextId =
+          existing.length > 0
+            ? existing.reduce<bigint>(
+                (max, img) => (img.id > max ? img.id : max),
+                existing[0].id
+              ) + 1n
+            : BigInt(Date.now());
+        const newImage: TrackImage = {
+          id: nextId,
+          trackId,
+          url,
+          caption: '',
+          isCover: existing.length === 0,
+        };
+        const images = [...existing, newImage];
+        next.set(trackId, images);
+        return next;
+      });
+      setTrackGalleryTrackId(trackId);
+      setTrackGalleryIndex((prev) => prev);
     };
     input.click();
   };
@@ -1122,6 +1231,66 @@ export function LocationDetailView() {
         </Stack>
       </Modal>
 
+      {/* Track create/edit modal */}
+      <Modal
+        opened={showTrackForm}
+        onClose={resetTrackForm}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="blue" variant="light">
+              <IconRoute size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                Track
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                {editingTrackId ? 'Edit Track' : 'New Track'}
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)',
+            borderBottom: '1px solid #1e2028',
+          },
+          close: { color: 'white' },
+        }}
+      >
+        <Stack gap="md" pt="xs">
+          {error && (
+            <Text size="sm" c="red">
+              {error}
+            </Text>
+          )}
+          <TextInput
+            label="Name"
+            value={trackForm.name}
+            onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
+            autoFocus
+          />
+          <ColorInput
+            label="Color"
+            value={trackForm.color}
+            onChange={(c) => setTrackForm((f) => ({ ...f, color: c }))}
+          />
+          <Group gap="xs" justify="flex-end" mt="xs">
+            <Button variant="subtle" size="sm" onClick={resetTrackForm}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleTrackSubmit}>
+              {editingTrackId ? 'Save' : 'Create'}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       {/* Image gallery modal */}
       <Modal
         opened={galleryOpen}
@@ -1286,6 +1455,185 @@ export function LocationDetailView() {
             </>
           )}
         </Box>
+      </Modal>
+
+      {/* Track gallery modal */}
+      <Modal
+        opened={trackGalleryTrackId !== null}
+        onClose={() => {
+          setTrackGalleryTrackId(null);
+          setTrackGalleryIndex(0);
+        }}
+        size="xl"
+        padding={0}
+        withCloseButton={false}
+        centered
+        overlayProps={{
+          backgroundOpacity: 0.85,
+          color: '#000',
+        }}
+      >
+        {(() => {
+          if (trackGalleryTrackId === null) return null;
+          const track = venueTracks.find((t) => t.id === trackGalleryTrackId);
+          if (!track) return null;
+          const images = trackImagesByTrack.get(track.id) ?? [];
+
+          return (
+            <Box
+              style={{
+                position: 'relative',
+                background: 'var(--mantine-color-dark-7)',
+              }}
+            >
+              <ActionIcon
+                variant="filled"
+                color="dark"
+                size="lg"
+                style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}
+                onClick={() => {
+                  setTrackGalleryTrackId(null);
+                  setTrackGalleryIndex(0);
+                }}
+              >
+                <IconX size={18} />
+              </ActionIcon>
+
+              {images.length === 0 ? (
+                <Box p="lg">
+                  <Text size="sm" c="dimmed">
+                    No images available for this track yet.
+                  </Text>
+                  <Group justify="flex-end" mt="md">
+                    <Button
+                      size="sm"
+                      leftSection={<IconPlus size={14} />}
+                      onClick={() => handleUploadTrackImage(track.id)}
+                    >
+                      Add image
+                    </Button>
+                  </Group>
+                </Box>
+              ) : (
+                <>
+                  <Carousel
+                    initialSlide={trackGalleryIndex}
+                    withIndicators={images.length > 1}
+                    withControls={images.length > 1}
+                    onSlideChange={setTrackGalleryIndex}
+                    height="70vh"
+                    loop
+                    nextControlIcon={<IconChevronRight size={24} />}
+                    previousControlIcon={<IconChevronLeft size={24} />}
+                    styles={{
+                      control: {
+                        background: 'var(--mantine-color-dark-6)',
+                        border: 'none',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    {images.map((img) => (
+                      <Carousel.Slide key={String(img.id)}>
+                        <Box
+                          style={{
+                            height: '70vh',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <img
+                            src={img.url}
+                            alt={img.caption || track.name}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '100%',
+                              objectFit: 'contain',
+                            }}
+                          />
+                        </Box>
+                      </Carousel.Slide>
+                    ))}
+                  </Carousel>
+                  {images[trackGalleryIndex] && (
+                    <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-dark-5)' }}>
+                      <Group justify="space-between" align="center">
+                        <Stack gap={2} style={{ flex: 1 }}>
+                          <Text size="sm" c="dimmed">
+                            {images[trackGalleryIndex].caption || track.name}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {trackGalleryIndex + 1} / {images.length}
+                          </Text>
+                        </Stack>
+                        <Group gap="xs">
+                          <Button
+                            size="xs"
+                            variant="subtle"
+                            onClick={() => handleUploadTrackImage(track.id)}
+                          >
+                            Add image
+                          </Button>
+                          {!images[trackGalleryIndex].isCover && (
+                            <Button
+                              size="xs"
+                              variant="subtle"
+                              onClick={() =>
+                                setTrackImagesByTrack((prev) => {
+                                  const next = new Map(prev);
+                                  const current = next.get(track.id) ?? [];
+                                  const updated = current.map((img) => ({
+                                    ...img,
+                                    isCover: img.id === images[trackGalleryIndex].id,
+                                  }));
+                                  next.set(track.id, updated);
+                                  return next;
+                                })
+                              }
+                            >
+                              Set as cover
+                            </Button>
+                          )}
+                          {images.length > 1 && (
+                            <Button
+                              size="xs"
+                              variant="subtle"
+                              color="red"
+                              onClick={() => {
+                                const targetId = images[trackGalleryIndex].id;
+                                if (!confirm('Remove this image from the gallery?')) return;
+                                setTrackImagesByTrack((prev) => {
+                                  const next = new Map(prev);
+                                  const current = next.get(track.id) ?? [];
+                                  const remaining = current.filter((img) => img.id !== targetId);
+                                  const withCover =
+                                    remaining.length === 0
+                                      ? remaining
+                                      : remaining.map((img, idx) => ({
+                                          ...img,
+                                          isCover: idx === 0 ? true : img.isCover,
+                                        }));
+                                  next.set(track.id, withCover);
+                                  return next;
+                                });
+                                setTrackGalleryIndex((idx) =>
+                                  Math.max(0, Math.min(idx, images.length - 2))
+                                );
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </Group>
+                      </Group>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          );
+        })()}
       </Modal>
 
       {/* Variation modal (standard) */}
@@ -1540,37 +1888,7 @@ export function LocationDetailView() {
           </Text>
         )}
 
-        {/* Track form */}
-        {showTrackForm && (
-          <Paper withBorder p="md">
-            <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb="sm">
-              {editingTrackId ? 'Edit Track' : 'New Track'}
-            </Text>
-            <Group gap="sm" align="flex-end" wrap="wrap">
-              <TextInput
-                label="Name"
-                value={trackForm.name}
-                onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
-                autoFocus
-                style={{ flex: 1, minWidth: 150 }}
-              />
-              <ColorInput
-                label="Color"
-                value={trackForm.color}
-                onChange={(c) => setTrackForm((f) => ({ ...f, color: c }))}
-              />
-              <Button size="sm" onClick={handleTrackSubmit}>
-                {editingTrackId ? 'Save' : 'Create'}
-              </Button>
-              <Button variant="subtle" size="sm" onClick={resetTrackForm}>
-                Cancel
-              </Button>
-            </Group>
-          </Paper>
-        )}
-
-        {/* Track list */}
+        {/* Track cards */}
         {venueTracks.length === 0 && !showTrackForm ? (
           <Paper withBorder p="xl">
             <Stack align="center" gap="sm">
@@ -1581,171 +1899,267 @@ export function LocationDetailView() {
             </Stack>
           </Paper>
         ) : (
-          <Stack gap="xs">
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
             {venueTracks.map((track) => {
               const vars = variationsByTrack.get(track.id) ?? [];
               const isExpanded = expandedTrack === track.id;
+              const defaultVar = defaultVariations.get(track.id);
+              const cover = trackCoverImages.get(track.id);
+
               return (
-                <Paper
+                <Card
                   key={String(track.id)}
                   ref={(el) => {
                     if (el) trackRefs.current.set(track.id, el);
                     else trackRefs.current.delete(track.id);
                   }}
                   withBorder
-                  style={{ overflow: 'hidden' }}
+                  radius="md"
+                  padding={0}
+                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                 >
-                  {/* Track header */}
-                  <Group
-                    justify="space-between"
-                    align="center"
-                    p="sm"
-                    style={{ cursor: 'pointer' }}
+                  {/* Cover image */}
+                  <Card.Section
+                    style={{
+                      height: 220,
+                      backgroundColor: 'var(--mantine-color-dark-6)',
+                      position: 'relative',
+                    }}
                     onClick={() => toggleExpand(track.id)}
                   >
-                    <Group gap="sm">
-                      <Box w={12} h={12} style={{ borderRadius: '50%', background: track.color }} />
-                      <Text fw={600}>{track.name}</Text>
-                      <Badge size="sm" variant="light" color="gray">
-                        {vars.length} variation{vars.length !== 1 ? 's' : ''}
-                      </Badge>
-                    </Group>
-                    <Group gap="xs" align="center">
-                      <Menu shadow="md" width={180} position="bottom-end">
-                        <Menu.Target>
-                          <ActionIcon
-                            variant="subtle"
-                            size="sm"
-                            color="gray"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <IconDotsVertical size={14} />
-                          </ActionIcon>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          <Menu.Item
-                            leftSection={<IconPencil size={14} />}
-                            onClick={() => startEditTrack(track)}
-                          >
-                            Edit
-                          </Menu.Item>
-                          <Menu.Item
-                            leftSection={<IconTrash size={14} />}
-                            color="red"
-                            onClick={() => handleDeleteTrack(track)}
-                          >
-                            Delete
-                          </Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                      {isExpanded ? (
-                        <IconChevronUp size={16} color="var(--mantine-color-dimmed)" />
-                      ) : (
-                        <IconChevronDown size={16} color="var(--mantine-color-dimmed)" />
-                      )}
-                    </Group>
-                  </Group>
-
-                  {/* Expanded content: variations */}
-                  {isExpanded && (
+                    {cover?.url ? (
+                      <Box
+                        component="img"
+                        src={cover.url}
+                        alt={track.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background:
+                            'linear-gradient(135deg, var(--mantine-color-dark-6) 0%, var(--mantine-color-dark-8) 100%)',
+                        }}
+                      >
+                        <IconRoute
+                          size={40}
+                          style={{ opacity: 0.25, color: 'var(--mantine-color-gray-4)' }}
+                        />
+                      </Box>
+                    )}
                     <Box
-                      p="md"
-                      style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background:
+                          'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)',
+                      }}
+                    />
+                    <Group
+                      justify="space-between"
+                      align="flex-end"
+                      p="sm"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                      }}
                     >
-                      <Group justify="space-between" align="center" mb="sm">
-                        <Text size="xs" fw={600} c="dimmed" tt="uppercase">
-                          Variations
+                      <Stack gap={4} style={{ maxWidth: '70%' }}>
+                        <Group gap="xs" align="center">
+                          <Box
+                            w={10}
+                            h={10}
+                            style={{ borderRadius: '50%', background: track.color }}
+                          />
+                          <Text fw={600} size="sm" c="white" lineClamp={1}>
+                            {track.name}
+                          </Text>
+                        </Group>
+                        <Text size="xs" c="rgba(226,232,240,0.9)" lineClamp={2}>
+                          {defaultVar?.description || 'No description yet.'}
                         </Text>
-                        <Button
-                          size="xs"
-                          leftSection={<IconPlus size={12} />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startAddVar(track.id);
+                      </Stack>
+                      <Stack gap={4} align="flex-end">
+                        <Badge
+                          size="sm"
+                          variant="light"
+                          color="blue"
+                          styles={{
+                            root: {
+                              backgroundColor: 'rgba(15,23,42,0.85)',
+                              borderColor: 'rgba(148,163,184,0.7)',
+                              color: 'white',
+                            },
                           }}
                         >
-                          Add Variation
-                        </Button>
-                      </Group>
+                          {vars.length} variation{vars.length !== 1 ? 's' : ''}
+                        </Badge>
+                        <Group gap={4}>
+                          <Menu shadow="md" width={180} position="bottom-end">
+                            <Menu.Target>
+                              <ActionIcon
+                                variant="subtle"
+                                size="sm"
+                                color="gray"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <IconDotsVertical size={14} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<IconPhoto size={14} />}
+                                onClick={() => setTrackGalleryTrackId(track.id)}
+                              >
+                                View gallery
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<IconPencil size={14} />}
+                                onClick={() => startEditTrack(track)}
+                              >
+                                Edit
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<IconTrash size={14} />}
+                                color="red"
+                                onClick={() => handleDeleteTrack(track)}
+                              >
+                                Delete
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                          {isExpanded ? (
+                            <IconChevronUp size={16} color="var(--mantine-color-gray-3)" />
+                          ) : (
+                            <IconChevronDown size={16} color="var(--mantine-color-gray-3)" />
+                          )}
+                        </Group>
+                      </Stack>
+                    </Group>
+                  </Card.Section>
 
-                      {/* Variation list */}
-                      <Table>
-                        <Table.Thead>
-                          <Table.Tr>
-                            <Table.Th>Name</Table.Th>
-                            <Table.Th>Description</Table.Th>
-                            <Table.Th>Coordinates</Table.Th>
-                            <Table.Th style={{ width: 50 }}></Table.Th>
-                          </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                          {vars.map((tv) => (
-                            <Table.Tr key={String(tv.id)}>
-                              <Table.Td>
-                                <Group gap="xs">
-                                  {tv.name === 'Default' && (
-                                    <Badge size="xs" variant="light" color="blue">
-                                      Default
-                                    </Badge>
-                                  )}
-                                  <Text size="sm">{tv.name}</Text>
-                                </Group>
-                              </Table.Td>
-                              <Table.Td>
-                                <Text size="sm" c="dimmed">
-                                  {tv.description || '—'}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td>
-                                {tv.startLatitude !== 0 || tv.startLongitude !== 0 ? (
-                                  <Text size="xs" c="dimmed">
-                                    {tv.startLatitude.toFixed(4)}, {tv.startLongitude.toFixed(4)}
-                                    {' → '}
-                                    {tv.endLatitude.toFixed(4)}, {tv.endLongitude.toFixed(4)}
-                                  </Text>
-                                ) : (
-                                  <Text size="xs" c="dimmed">
-                                    Not set
-                                  </Text>
-                                )}
-                              </Table.Td>
-                              <Table.Td>
-                                <Menu shadow="md" width={150} position="bottom-end">
-                                  <Menu.Target>
-                                    <ActionIcon variant="subtle" size="sm" color="gray">
-                                      <IconDotsVertical size={14} />
-                                    </ActionIcon>
-                                  </Menu.Target>
-                                  <Menu.Dropdown>
-                                    <Menu.Item
-                                      leftSection={<IconPencil size={14} />}
-                                      onClick={() => startEditVar(tv)}
-                                    >
-                                      Edit
-                                    </Menu.Item>
-                                    {tv.name !== 'Default' && vars.length > 1 && (
-                                      <Menu.Item
-                                        leftSection={<IconTrash size={14} />}
-                                        color="red"
-                                        onClick={() => handleDeleteVar(tv)}
-                                      >
-                                        Delete
-                                      </Menu.Item>
-                                    )}
-                                  </Menu.Dropdown>
-                                </Menu>
-                              </Table.Td>
-                            </Table.Tr>
-                          ))}
-                        </Table.Tbody>
-                      </Table>
-                    </Box>
-                  )}
-                </Paper>
+                </Card>
               );
             })}
-          </Stack>
+          </SimpleGrid>
         )}
+        {/* Expanded variations panel for selected track */}
+        <Collapse in={expandedTrack !== null}>
+          {expandedTrack !== null && (() => {
+            const track = venueTracks.find((t) => t.id === expandedTrack);
+            if (!track) return null;
+            const vars = variationsByTrack.get(track.id) ?? [];
+            return (
+              <Paper
+                withBorder
+                radius="md"
+                p="md"
+                mt="md"
+              >
+                <Group justify="space-between" align="center" mb="sm">
+                  <Group gap="sm">
+                    <Box
+                      w={12}
+                      h={12}
+                      style={{ borderRadius: '50%', background: track.color }}
+                    />
+                    <Text fw={600}>{track.name}</Text>
+                    <Badge size="sm" variant="light" color="gray">
+                      {vars.length} variation{vars.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </Group>
+                  <Button
+                    size="xs"
+                    leftSection={<IconPlus size={12} />}
+                    onClick={() => startAddVar(track.id)}
+                  >
+                    Add Variation
+                  </Button>
+                </Group>
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Name</Table.Th>
+                      <Table.Th>Description</Table.Th>
+                      <Table.Th>Coordinates</Table.Th>
+                      <Table.Th style={{ width: 50 }}></Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {vars.map((tv) => (
+                      <Table.Tr key={String(tv.id)}>
+                        <Table.Td>
+                          <Group gap="xs">
+                            {tv.name === 'Default' && (
+                              <Badge size="xs" variant="light" color="blue">
+                                Default
+                              </Badge>
+                            )}
+                            <Text size="sm">{tv.name}</Text>
+                          </Group>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {tv.description || '—'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          {tv.startLatitude !== 0 || tv.startLongitude !== 0 ? (
+                            <Text size="xs" c="dimmed">
+                              {tv.startLatitude.toFixed(4)}, {tv.startLongitude.toFixed(4)}
+                              {' → '}
+                              {tv.endLatitude.toFixed(4)}, {tv.endLongitude.toFixed(4)}
+                            </Text>
+                          ) : (
+                            <Text size="xs" c="dimmed">
+                              Not set
+                            </Text>
+                          )}
+                        </Table.Td>
+                        <Table.Td>
+                          <Menu shadow="md" width={150} position="bottom-end">
+                            <Menu.Target>
+                              <ActionIcon variant="subtle" size="sm" color="gray">
+                                <IconDotsVertical size={14} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<IconPencil size={14} />}
+                                onClick={() => startEditVar(tv)}
+                              >
+                                Edit
+                              </Menu.Item>
+                              {tv.name !== 'Default' && vars.length > 1 && (
+                                <Menu.Item
+                                  leftSection={<IconTrash size={14} />}
+                                  color="red"
+                                  onClick={() => handleDeleteVar(tv)}
+                                >
+                                  Delete
+                                </Menu.Item>
+                              )}
+                            </Menu.Dropdown>
+                          </Menu>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Paper>
+            );
+          })()}
+        </Collapse>
       </Stack>
     </Stack>
   );

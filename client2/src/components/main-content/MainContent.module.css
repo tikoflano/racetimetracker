@@ -8,6 +8,18 @@
   background-color: #0a0b0f;
 }
 
+@media (max-width: 768px) {
+  .main {
+    padding: 12px;
+    margin-top: 48px;
+    height: calc(100vh - 48px);
+  }
+
+  .main > .mantine-Stack-root {
+    --stack-gap: var(--mantine-spacing-md) !important;
+  }
+}
+
 .greeting {
   margin-bottom: 32px;
 }

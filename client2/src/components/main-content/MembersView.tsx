@@ -7,9 +7,11 @@ import {
   Button,
   Collapse,
   Group,
+  Indicator,
   Menu,
   Modal,
   Paper,
+  Popover,
   Select,
   Stack,
   Table,
@@ -19,7 +21,7 @@ import {
   Title,
 } from "@mantine/core";
 import type { BadgeProps } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconDotsVertical,
@@ -31,6 +33,8 @@ import {
   IconMail,
   IconTrash,
   IconSearch,
+  IconFilter,
+  IconX,
   IconShieldStar,
   IconShield,
   IconUserCog,
@@ -692,6 +696,7 @@ function sortRecords(
 
 
 export function MembersView() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
   const [users] = useTable(tables.user);
@@ -717,7 +722,9 @@ export function MembersView() {
   const removeEventMember = useReducer(reducers.removeEventMember);
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [roleFilters, setRoleFilters] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<MemberRow>>({
     columnAccessor: "name",
     direction: "asc",
@@ -891,14 +898,14 @@ export function MembersView() {
       );
     };
     const matchesRole = (row: MemberRow) => {
-      if (roleFilter === "all") return true;
-      return row.role === roleFilter;
+      if (roleFilters.length === 0) return true;
+      return roleFilters.includes(row.role);
     };
     const filtered = memberRows.filter(
       (row) => matchesSearch(row) && matchesRole(row)
     );
     return sortRecords(filtered, sortStatus);
-  }, [memberRows, roleFilter, search, sortStatus]);
+  }, [memberRows, roleFilters, search, sortStatus]);
 
   const handleInvite = async () => {
     if (!orgId) return;
@@ -1026,39 +1033,46 @@ export function MembersView() {
     <Stack gap="lg">
       {/* Header Banner */}
       <Box
-        p="xl"
+        p={isMobile ? "md" : "xl"}
         style={{
           background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
           borderRadius: "var(--mantine-radius-md)",
           border: "1px solid #1a3a2a",
         }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="green" variant="light">
-              <IconBuilding size={28} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="green.3" tt="uppercase" fw={600} mb={2}>
-                Organization
-              </Text>
-              <Title order={2} c="white" fw={700}>
+        <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+          <Group gap="sm" align="center" style={{ minWidth: 0 }}>
+            {!isMobile && (
+              <ThemeIcon size={52} radius="md" color="green" variant="light">
+                <IconBuilding size={28} />
+              </ThemeIcon>
+            )}
+            <div style={{ minWidth: 0 }}>
+              {!isMobile && (
+                <Text size="xs" c="green.3" tt="uppercase" fw={600} mb={2}>
+                  Organization
+                </Text>
+              )}
+              <Title order={isMobile ? 4 : 2} c="white" fw={700} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {activeOrg?.name ?? "Organization"}
               </Title>
-              <Text size="sm" c="green.2" mt={2}>
-                {roleCounts.all} member{roleCounts.all !== 1 ? "s" : ""} · manage roles and permissions
+              <Text size={isMobile ? "xs" : "sm"} c="green.2" mt={2}>
+                {roleCounts.all} member{roleCounts.all !== 1 ? "s" : ""}
+                {!isMobile && " · manage roles and permissions"}
               </Text>
             </div>
           </Group>
-          <Group gap="sm">
-            <Button
-              leftSection={<IconUserPlus size={16} />}
-              variant="white"
-              color="dark"
-              onClick={() => setInviteModalOpen(true)}
-            >
-              Invite Member
-            </Button>
+          <Group gap="sm" style={{ flexShrink: 0 }}>
+            {!isMobile && (
+              <Button
+                leftSection={<IconUserPlus size={16} />}
+                variant="white"
+                color="dark"
+                onClick={() => setInviteModalOpen(true)}
+              >
+                Invite Member
+              </Button>
+            )}
             <Menu shadow="md" width={220} position="bottom-end">
               <Menu.Target>
                 <ActionIcon variant="subtle" size="lg" color="gray">
@@ -1066,6 +1080,17 @@ export function MembersView() {
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
+                {isMobile && (
+                  <>
+                    <Menu.Item
+                      leftSection={<IconUserPlus size={14} />}
+                      onClick={() => setInviteModalOpen(true)}
+                    >
+                      Invite Member
+                    </Menu.Item>
+                    <Menu.Divider />
+                  </>
+                )}
                 <Menu.Item
                   leftSection={<IconArrowLeftRight size={14} />}
                   onClick={() => setTransferModalOpen(true)}
@@ -1103,31 +1128,108 @@ export function MembersView() {
         p="sm"
         style={{ background: "#13151b", border: "1px solid #1e2028" }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="xs" wrap="wrap">
-            {ROLE_FILTER_OPTIONS.map((filter) => (
-              <Badge
-                key={filter}
-                size="lg"
-                variant={roleFilter === filter ? "filled" : "light"}
-                color={ROLE_COLORS[filter]}
-                leftSection={ROLE_ICONS[filter]}
-                styles={BADGE_FULL_STYLES}
-                style={{ cursor: "pointer" }}
-                onClick={() => setRoleFilter(filter)}
+        <Group justify="space-between" align="center" gap="sm">
+          <Group gap="sm" align="center">
+          <Popover
+            opened={filterOpen}
+            onChange={setFilterOpen}
+            position="bottom-start"
+            shadow="md"
+            withinPortal
+          >
+            <Popover.Target>
+              <Indicator
+                disabled={roleFilters.length === 0}
+                label={roleFilters.length}
+                size={16}
+                color="blue"
               >
-                {ROLE_LABELS[filter]} ({roleCounts[filter]})
-              </Badge>
-            ))}
+                <ActionIcon
+                  variant={roleFilters.length > 0 ? "filled" : "subtle"}
+                  color={roleFilters.length > 0 ? "blue" : "gray"}
+                  size="md"
+                  onClick={() => setFilterOpen((o) => !o)}
+                  aria-label="Filter by role"
+                >
+                  <IconFilter size={16} />
+                </ActionIcon>
+              </Indicator>
+            </Popover.Target>
+            <Popover.Dropdown p="sm">
+              <Stack gap="xs">
+                {(["owner", "admin", "manager", "timekeeper"] as MemberRole[]).map((r) => {
+                  const selected = roleFilters.includes(r);
+                  return (
+                    <Badge
+                      key={r}
+                      size="lg"
+                      color={ROLE_COLORS[r]}
+                      variant={selected ? "filled" : "light"}
+                      leftSection={ROLE_ICONS[r]}
+                      styles={BADGE_FULL_STYLES}
+                      style={{ cursor: "pointer" }}
+                      onClick={() =>
+                        setRoleFilters((prev) =>
+                          selected ? prev.filter((v) => v !== r) : [...prev, r]
+                        )
+                      }
+                    >
+                      {ROLE_LABELS[r]} ({roleCounts[r]})
+                    </Badge>
+                  );
+                })}
+              </Stack>
+              {roleFilters.length > 0 && (
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  mt="xs"
+                  fullWidth
+                  onClick={() => setRoleFilters([])}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </Popover.Dropdown>
+          </Popover>
+          <Text size="xs" c="dimmed">
+            {filteredAndSortedRecords.length === memberRows.length
+              ? `${memberRows.length} member${memberRows.length !== 1 ? "s" : ""}`
+              : `${filteredAndSortedRecords.length} of ${memberRows.length}`}
+          </Text>
           </Group>
-          <TextInput
-            placeholder="Search by name or email..."
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            size="sm"
-            leftSection={<IconSearch size={16} />}
-            style={{ minWidth: 240 }}
-          />
+
+          {searchOpen ? (
+            <TextInput
+              placeholder="Search by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              size="sm"
+              leftSection={<IconSearch size={16} />}
+              rightSection={
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  color="gray"
+                  onClick={() => { setSearchOpen(false); setSearch(""); }}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              }
+              autoFocus
+              style={{ flex: 1, minWidth: 0 }}
+            />
+          ) : (
+            <ActionIcon
+              variant={search ? "filled" : "subtle"}
+              color={search ? "blue" : "gray"}
+              size="md"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search members"
+            >
+              <IconSearch size={16} />
+            </ActionIcon>
+          )}
         </Group>
       </Paper>
 
@@ -1149,42 +1251,36 @@ export function MembersView() {
           columns={[
             {
               accessor: "name",
-              title: "Name",
+              title: "Member",
               sortable: true,
               render: (row) => (
-                <Group gap="sm">
+                <Group gap="sm" wrap="nowrap">
                   <Avatar
                     size="sm"
                     radius="xl"
                     color={ROLE_COLORS[row.role]}
                     variant="light"
+                    style={{ flexShrink: 0 }}
                   >
                     {row.name.slice(0, 2).toUpperCase()}
                   </Avatar>
-                  <Text size="sm">{row.name}</Text>
+                  <div style={{ minWidth: 0 }}>
+                    <Text size="sm" fw={500} style={{ lineHeight: 1.3 }}>
+                      {row.name}
+                    </Text>
+                    {row.email && (
+                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.3 }} truncate>
+                        {row.email}
+                      </Text>
+                    )}
+                    {row.status === "pending" && (
+                      <Badge size="xs" color="orange" variant="light" mt={2}>
+                        Pending
+                      </Badge>
+                    )}
+                  </div>
                 </Group>
               ),
-            },
-            {
-              accessor: "email",
-              title: "Email",
-              sortable: true,
-              render: (row) => (
-                <Text size="sm" c="dimmed">
-                  {row.email}
-                </Text>
-              ),
-            },
-            {
-              accessor: "status",
-              title: "Status",
-              sortable: true,
-              render: (row) =>
-                row.status === "pending" ? (
-                  <Badge size="sm" color="orange" variant="light">
-                    Pending
-                  </Badge>
-                ) : null,
             },
             {
               accessor: "role",
@@ -1203,13 +1299,28 @@ export function MembersView() {
               ),
             },
             {
-              accessor: "scopes",
+              accessor: "scopes" as const,
               title: "Scopes",
-              render: (row) => {
-                const hasScopes =
-                  row.championshipScopes.length > 0 ||
-                  row.eventScopes.length > 0;
-                if (!hasScopes) return <Text size="xs" c="dimmed">—</Text>;
+              render: (row: MemberRow) => {
+                const totalChamp = row.championshipScopes.length;
+                const totalEvent = row.eventScopes.length;
+                if (totalChamp === 0 && totalEvent === 0) return <Text size="xs" c="dimmed">—</Text>;
+                if (isMobile) {
+                  return (
+                    <Group gap={4}>
+                      {totalChamp > 0 && (
+                        <Badge size="xs" color="blue" variant="light" leftSection={<IconTrophy size={10} />} styles={BADGE_FULL_STYLES}>
+                          {totalChamp}
+                        </Badge>
+                      )}
+                      {totalEvent > 0 && (
+                        <Badge size="xs" color="violet" variant="light" leftSection={<IconCalendarEvent size={10} />} styles={BADGE_FULL_STYLES}>
+                          {totalEvent}
+                        </Badge>
+                      )}
+                    </Group>
+                  );
+                }
                 return (
                   <Group gap={4} wrap="wrap">
                     {row.championshipScopes.map((s) => (
