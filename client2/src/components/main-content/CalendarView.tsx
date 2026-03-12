@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Group,
   Button,
@@ -20,89 +21,9 @@ import {
   IconFilter,
 } from "@tabler/icons-react";
 
-// Mock data types
-interface Championship {
-  id: bigint;
-  name: string;
-  color: string;
-}
-
-interface Event {
-  id: bigint;
-  name: string;
-  slug: string;
-  startDate: string;
-  endDate: string;
-  championshipId: bigint;
-}
-
-// Mock championships
-const MOCK_CHAMPIONSHIPS: Championship[] = [
-  { id: BigInt(1), name: "Enduro Series 2026", color: "#3b82f6" },
-  { id: BigInt(2), name: "Mountain Cup", color: "#22c55e" },
-  { id: BigInt(3), name: "Downtown Race", color: "#f59e0b" },
-  { id: BigInt(4), name: "Regional Finals", color: "#8b5cf6" },
-];
-
-// Mock events spanning different dates
-const MOCK_EVENTS: Event[] = [
-  {
-    id: BigInt(1),
-    name: "Spring Opener",
-    slug: "spring-opener",
-    startDate: "2026-03-07",
-    endDate: "2026-03-08",
-    championshipId: BigInt(1),
-  },
-  {
-    id: BigInt(2),
-    name: "Mountain Challenge",
-    slug: "mountain-challenge",
-    startDate: "2026-03-14",
-    endDate: "2026-03-15",
-    championshipId: BigInt(2),
-  },
-  {
-    id: BigInt(3),
-    name: "Downtown Sprint",
-    slug: "downtown-sprint",
-    startDate: "2026-03-21",
-    endDate: "2026-03-21",
-    championshipId: BigInt(3),
-  },
-  {
-    id: BigInt(4),
-    name: "Enduro Round 2",
-    slug: "enduro-round-2",
-    startDate: "2026-03-28",
-    endDate: "2026-03-29",
-    championshipId: BigInt(1),
-  },
-  {
-    id: BigInt(5),
-    name: "Regional Qualifier",
-    slug: "regional-qualifier",
-    startDate: "2026-04-05",
-    endDate: "2026-04-06",
-    championshipId: BigInt(4),
-  },
-  {
-    id: BigInt(6),
-    name: "Mountain Classic",
-    slug: "mountain-classic",
-    startDate: "2026-04-12",
-    endDate: "2026-04-13",
-    championshipId: BigInt(2),
-  },
-  {
-    id: BigInt(7),
-    name: "Multi-day Event",
-    slug: "multi-day-event",
-    startDate: "2026-03-06",
-    endDate: "2026-03-08",
-    championshipId: BigInt(4),
-  },
-];
+import { useTable } from "spacetimedb/react";
+import { tables } from "@/module_bindings";
+import type { Championship, Event, Organization } from "@/module_bindings/types";
 
 const MONTH_NAMES = [
   "January",
@@ -142,22 +63,23 @@ interface CalendarGridProps {
   month: number;
   dateEvents: Map<string, Event[]>;
   champMap: Map<bigint, Championship>;
+  onEventClick: (event: Event) => void;
 }
 
-function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) {
+function CalendarGrid({ year, month, dateEvents, champMap, onEventClick }: CalendarGridProps) {
   const weeks = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDayOfWeek = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
-    
+
     // Get days from previous month to fill first week
     const prevMonth = month === 0 ? 11 : month - 1;
     const prevYear = month === 0 ? year - 1 : year;
     const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-    
+
     const cells: { date: Date; isCurrentMonth: boolean }[] = [];
-    
+
     // Previous month days
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       cells.push({
@@ -165,7 +87,7 @@ function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) 
         isCurrentMonth: false,
       });
     }
-    
+
     // Current month days
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push({
@@ -173,7 +95,7 @@ function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) 
         isCurrentMonth: true,
       });
     }
-    
+
     // Next month days to fill remaining cells (complete 6 weeks)
     const nextMonth = month === 11 ? 0 : month + 1;
     const nextYear = month === 11 ? year + 1 : year;
@@ -184,7 +106,7 @@ function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) 
         isCurrentMonth: false,
       });
     }
-    
+
     // Split into weeks
     const result: { date: Date; isCurrentMonth: boolean }[][] = [];
     for (let i = 0; i < cells.length; i += 7) {
@@ -260,6 +182,7 @@ function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) 
                     <Text
                       key={String(evt.id)}
                       size="xs"
+                      onClick={() => onEventClick(evt)}
                       style={{
                         display: "block",
                         padding: "2px 6px",
@@ -292,14 +215,41 @@ function CalendarGrid({ year, month, dateEvents, champMap }: CalendarGridProps) 
 }
 
 export function CalendarView() {
+  const navigate = useNavigate();
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [selectedChampIds, setSelectedChampIds] = useState<Set<bigint> | null>(
     null
   );
 
-  const championships = MOCK_CHAMPIONSHIPS;
-  const events = MOCK_EVENTS;
+  const [orgs] = useTable(tables.organization);
+  const [allChampionships] = useTable(tables.championship);
+  const [allEvents] = useTable(tables.event);
+
+  const activeOrg = useMemo<Organization | null>(() => {
+    if (orgs.length === 0) return null;
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("active_org_id");
+      if (stored) {
+        const id = BigInt(stored);
+        const found = orgs.find((o: Organization) => o.id === id);
+        if (found) return found;
+      }
+    }
+    return orgs[0] as Organization;
+  }, [orgs]);
+
+  const activeOrgId = activeOrg?.id ?? null;
+
+  const championships = useMemo(() => {
+    if (!activeOrgId) return [] as Championship[];
+    return allChampionships.filter((c: Championship) => c.orgId === activeOrgId);
+  }, [allChampionships, activeOrgId]);
+
+  const events = useMemo(() => {
+    if (!activeOrgId) return [] as Event[];
+    return allEvents.filter((e: Event) => e.orgId === activeOrgId);
+  }, [allEvents, activeOrgId]);
 
   const activeChampIds = useMemo(() => {
     if (selectedChampIds !== null) return selectedChampIds;
@@ -414,6 +364,10 @@ export function CalendarView() {
       setYear(d.getFullYear());
       setMonth(d.getMonth());
     }
+  };
+
+  const handleEventClick = (evt: Event) => {
+    navigate(`/events/${evt.id}`);
   };
 
   const dropdownLabel = allSelected
@@ -564,6 +518,7 @@ export function CalendarView() {
           month={month}
           dateEvents={dateEvents}
           champMap={champMap}
+          onEventClick={handleEventClick}
         />
       </Paper>
 
