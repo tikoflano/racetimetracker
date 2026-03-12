@@ -52,6 +52,7 @@ const BADGE_FULL_STYLES: BadgeProps["styles"] = {
 
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
+import { useAuth } from "@/auth";
 import type {
   Organization,
   OrgMember,
@@ -675,6 +676,7 @@ export function MembersView() {
   const [events] = useTable(tables.event);
   const [eventMembers] = useTable(tables.event_member);
 
+  const { canImpersonate: userCanImpersonate } = useAuth();
   const inviteOrgMember = useReducer(reducers.inviteOrgMember);
   const resendOrgInvitation = useReducer(reducers.resendOrgInvitation);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
@@ -1220,7 +1222,11 @@ export function MembersView() {
               width: 40,
               render: (row) => {
                 if (row.role === "owner") return null;
-                const canImpersonate = row.role !== "admin" && row.status === "active";
+                const canImpersonate =
+                  userCanImpersonate &&
+                  row.role !== "admin" &&
+                  row.status === "active" &&
+                  !!row.userId;
                 const isPending = row.status === "pending";
                 return (
                   <Menu shadow="md" width={200} position="bottom-end">

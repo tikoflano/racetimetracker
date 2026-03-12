@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
 import { SpacetimeDBProvider } from 'spacetimedb/react';
 import { DbConnection } from './module_bindings';
+import { AuthProvider } from './auth';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { theme } from './theme';
@@ -28,6 +29,26 @@ const wsUri =
 console.log(`[STDB] env=${stdbEnv} uri=${wsUri} db=${stdbDatabase}`);
 // Module bindings loaded
 
+// Validate stored token
+const storedToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+let validToken: string | null = null;
+if (storedToken) {
+  try {
+    const parts = storedToken.split('.');
+    if (parts.length !== 3) throw new Error('not JWT');
+    const payload = JSON.parse(atob(parts[1]));
+    if ((payload.exp ?? 0) * 1000 < Date.now()) {
+      console.log('[STDB] Token expired, clearing');
+      localStorage.removeItem('auth_token');
+    } else {
+      validToken = storedToken;
+    }
+  } catch {
+    console.log('[STDB] Invalid token, clearing');
+    localStorage.removeItem('auth_token');
+  }
+}
+
 const builder = DbConnection.builder()
   .withUri(wsUri)
   .withDatabaseName(stdbDatabase)
@@ -41,14 +62,20 @@ const builder = DbConnection.builder()
     console.log('[STDB] Disconnected');
   });
 
+if (validToken) {
+  builder.withToken(validToken);
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <SpacetimeDBProvider connectionBuilder={builder}>
-    <MantineProvider theme={theme} defaultColorScheme="dark">
-      <ErrorBoundary>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ErrorBoundary>
-    </MantineProvider>
+    <AuthProvider>
+      <MantineProvider theme={theme} defaultColorScheme="dark">
+        <ErrorBoundary>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ErrorBoundary>
+      </MantineProvider>
+    </AuthProvider>
   </SpacetimeDBProvider>
 );
