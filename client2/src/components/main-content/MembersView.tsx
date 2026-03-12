@@ -654,7 +654,12 @@ function sortRecords(
   records: MemberRow[],
   sortStatus: DataTableSortStatus<MemberRow>
 ): MemberRow[] {
-  const key = sortStatus.columnAccessor as keyof MemberRow;
+  const accessor = sortStatus.columnAccessor;
+  // Only sort if accessor is a valid MemberRow key
+  if (accessor !== "name" && accessor !== "email" && accessor !== "status" && accessor !== "role") {
+    return records;
+  }
+  const key = accessor as keyof MemberRow;
   const dir = sortStatus.direction === "asc" ? 1 : -1;
   return [...records].sort((a, b) => {
     const aVal = a[key];
@@ -871,6 +876,7 @@ export function MembersView() {
     const filtered = memberRows.filter(
       (row) => matchesSearch(row) && matchesRole(row)
     );
+    if (!sortStatus) return filtered;
     return sortRecords(filtered, sortStatus);
   }, [memberRows, roleFilter, search, sortStatus]);
 
@@ -1002,24 +1008,24 @@ export function MembersView() {
       <Box
         p="xl"
         style={{
-          background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
+          background: "linear-gradient(135deg, #3a1a1a 0%, #5c1e1e 60%, #7a2323 100%)",
           borderRadius: "var(--mantine-radius-md)",
-          border: "1px solid #1a3a2a",
+          border: "1px solid #3a1a1a",
         }}
       >
         <Group justify="space-between" align="center" wrap="wrap" gap="md">
           <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="green" variant="light">
+            <ThemeIcon size={52} radius="md" color="red" variant="light">
               <IconBuilding size={28} />
             </ThemeIcon>
             <div>
-              <Text size="xs" c="green.3" tt="uppercase" fw={600} mb={2}>
+              <Text size="xs" c="red.3" tt="uppercase" fw={600} mb={2}>
                 Organization
               </Text>
               <Title order={2} c="white" fw={700}>
                 {activeOrg?.name ?? "Organization"}
               </Title>
-              <Text size="sm" c="green.2" mt={2}>
+              <Text size="sm" c="red.2" mt={2}>
                 {roleCounts.all} member{roleCounts.all !== 1 ? "s" : ""} · manage roles and permissions
               </Text>
             </div>
