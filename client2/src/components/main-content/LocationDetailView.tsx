@@ -24,6 +24,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { Carousel } from '@mantine/carousel';
+import { useMediaQuery } from '@mantine/hooks';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -233,6 +234,7 @@ export function LocationDetailView() {
       return 0n;
     }
   }, [venueIdParam]);
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const onBack = () => navigate('/locations');
   const [venues, setVenues] = useState<Venue[]>(loadVenues);
   useEffect(() => {
@@ -763,15 +765,80 @@ export function LocationDetailView() {
                 padding: 'var(--mantine-spacing-lg)',
                 zIndex: 1,
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: isMobile ? 'flex-end' : 'center',
               }}
             >
-              <Group justify="space-between" align="center" w="100%">
-                <Stack gap={4}>
+              {/* Mobile: dots menu pinned to top-right corner of banner */}
+              {isMobile && (
+                <Box style={{ position: 'absolute', top: 12, right: 12 }}>
+                  <Menu shadow="md" width={200} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="filled"
+                        size="lg"
+                        color="dark"
+                        style={{
+                          backgroundColor:
+                            bannerContrast !== 'dark'
+                              ? 'rgba(255,255,255,0.96)'
+                              : 'rgba(15,23,42,0.92)',
+                          color:
+                            bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                        }}
+                      >
+                        <IconDotsVertical size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconPlus size={14} />}
+                        onClick={() => {
+                          setEditingTrackId(null);
+                          setTrackForm({ name: '', color: '#3b82f6' });
+                          setShowTrackForm(true);
+                          setError('');
+                        }}
+                      >
+                        Add Track
+                      </Menu.Item>
+                      <Menu.Divider />
+                      {coverImage && (
+                        <>
+                          <Menu.Item
+                            leftSection={<IconPhoto size={14} />}
+                            onClick={() => setGalleryOpen(true)}
+                          >
+                            View gallery
+                          </Menu.Item>
+                          <Menu.Divider />
+                        </>
+                      )}
+                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                        Edit
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        onClick={deleteVenue}
+                      >
+                        Delete
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Box>
+              )}
+
+              <Group justify="space-between" align="center" w="100%" wrap="nowrap" gap="sm">
+                <Stack gap={4} style={{ minWidth: 0 }}>
                   <Title
-                    order={2}
+                    order={isMobile ? 4 : 2}
                     style={{
                       color: bannerContrast === 'dark' ? 'var(--mantine-color-dark-8)' : 'white',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      paddingRight: isMobile ? 48 : 0,
                     }}
                   >
                     {venue.name}
@@ -809,74 +876,76 @@ export function LocationDetailView() {
                     </Text>
                   )}
                 </Stack>
-                <Group gap="xs">
-                  <Button
-                    size="xs"
-                    variant={bannerContrast === 'dark' ? 'white' : 'filled'}
-                    color="dark"
-                    leftSection={<IconPlus size={14} />}
-                    onClick={() => {
-                      setEditingTrackId(null);
-                      setTrackForm({ name: '', color: '#3b82f6' });
-                      setShowTrackForm(true);
-                      setError('');
-                    }}
-                    style={{
-                      backgroundColor:
-                        bannerContrast !== 'dark'
-                          ? 'rgba(255,255,255,0.96)'
-                          : 'rgba(15,23,42,0.92)',
-                      color: bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
-                      borderColor:
-                        bannerContrast !== 'dark' ? 'rgba(148,163,184,0.8)' : 'rgba(15,23,42,0.9)',
-                    }}
-                  >
-                    Add Track
-                  </Button>
-                  <Menu shadow="md" width={200} position="bottom-end">
-                    <Menu.Target>
-                      <ActionIcon
-                        variant="filled"
-                        size="lg"
-                        color="dark"
-                        style={{
-                          backgroundColor:
-                            bannerContrast !== 'dark'
-                              ? 'rgba(255,255,255,0.96)'
-                              : 'rgba(15,23,42,0.92)',
-                          color:
-                            bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
-                        }}
-                      >
-                        <IconDotsVertical size={18} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      {coverImage && (
-                        <>
-                          <Menu.Item
-                            leftSection={<IconPhoto size={14} />}
-                            onClick={() => setGalleryOpen(true)}
-                          >
-                            View gallery
-                          </Menu.Item>
-                          <Menu.Divider />
-                        </>
-                      )}
-                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
-                        Edit
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        onClick={deleteVenue}
-                      >
-                        Delete
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                </Group>
+                {!isMobile && (
+                  <Group gap="xs" style={{ flexShrink: 0 }}>
+                    <Button
+                      size="xs"
+                      variant={bannerContrast === 'dark' ? 'white' : 'filled'}
+                      color="dark"
+                      leftSection={<IconPlus size={14} />}
+                      onClick={() => {
+                        setEditingTrackId(null);
+                        setTrackForm({ name: '', color: '#3b82f6' });
+                        setShowTrackForm(true);
+                        setError('');
+                      }}
+                      style={{
+                        backgroundColor:
+                          bannerContrast !== 'dark'
+                            ? 'rgba(255,255,255,0.96)'
+                            : 'rgba(15,23,42,0.92)',
+                        color: bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
+                        borderColor:
+                          bannerContrast !== 'dark' ? 'rgba(148,163,184,0.8)' : 'rgba(15,23,42,0.9)',
+                      }}
+                    >
+                      Add Track
+                    </Button>
+                    <Menu shadow="md" width={200} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon
+                          variant="filled"
+                          size="lg"
+                          color="dark"
+                          style={{
+                            backgroundColor:
+                              bannerContrast !== 'dark'
+                                ? 'rgba(255,255,255,0.96)'
+                                : 'rgba(15,23,42,0.92)',
+                            color:
+                              bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                          }}
+                        >
+                          <IconDotsVertical size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {coverImage && (
+                          <>
+                            <Menu.Item
+                              leftSection={<IconPhoto size={14} />}
+                              onClick={() => setGalleryOpen(true)}
+                            >
+                              View gallery
+                            </Menu.Item>
+                            <Menu.Divider />
+                          </>
+                        )}
+                        <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                          Edit
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconTrash size={14} />}
+                          color="red"
+                          onClick={deleteVenue}
+                        >
+                          Delete
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Group>
+                )}
               </Group>
             </Box>
           </Box>
