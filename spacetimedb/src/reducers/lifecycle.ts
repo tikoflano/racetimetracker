@@ -73,12 +73,19 @@ export const on_connect = spacetimedb.clientConnected((ctx) => {
   }
   if (!hasOrg) {
     const orgName = generateUniqueOrgName(ctx, `${displayName}'s Organization`);
-    ctx.db.organization.insert({
+    const org = ctx.db.organization.insert({
       id: 0n,
       name: orgName,
       slug: uniqueOrgSlug(ctx, slugify(orgName)),
       owner_user_id: userId,
       registration_enabled: true,
+    });
+    // Owner gets admin role (matches create_organization behavior)
+    ctx.db.org_member.insert({
+      id: 0n,
+      org_id: org.id,
+      user_id: userId,
+      role: 'admin',
     });
   }
 });
