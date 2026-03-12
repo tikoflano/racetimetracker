@@ -21,6 +21,18 @@ export const add_event_member = spacetimedb.reducer(
   }
 );
 
+export const update_event_member = spacetimedb.reducer(
+  { event_member_id: t.u64(), role: t.string() },
+  (ctx, args) => {
+    const member = ctx.db.event_member.id.find(args.event_member_id);
+    if (!member) throw new SenderError('Member not found');
+    requireEventManager(ctx, member.event_id);
+    if (args.role !== 'manager' && args.role !== 'timekeeper')
+      throw new SenderError('Invalid role');
+    ctx.db.event_member.id.update({ ...member, role: args.role });
+  }
+);
+
 export const remove_event_member = spacetimedb.reducer(
   { event_member_id: t.u64() },
   (ctx, args) => {

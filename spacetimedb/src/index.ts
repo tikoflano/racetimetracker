@@ -6,6 +6,7 @@ import './reducers/lifecycle';
 import './reducers/org';
 import './reducers/event_member';
 import './reducers/championship';
+import './reducers/championship_member';
 import './reducers/location';
 import './reducers/event';
 import './reducers/track';
@@ -27,18 +28,28 @@ export {
   create_organization,
   rename_organization,
   add_org_member,
+  update_org_member,
   invite_org_member,
   resend_org_invitation,
   remove_org_member,
   leave_organization,
   transfer_org_ownership,
 } from './reducers/org';
-export { add_event_member, remove_event_member } from './reducers/event_member';
+export {
+  add_event_member,
+  update_event_member,
+  remove_event_member,
+} from './reducers/event_member';
 export {
   create_championship,
   update_championship,
   delete_championship,
 } from './reducers/championship';
+export {
+  add_championship_member,
+  update_championship_member,
+  remove_championship_member,
+} from './reducers/championship_member';
 export { create_venue, update_venue, delete_venue } from './reducers/location';
 export { create_event, update_event, toggle_pin_event } from './reducers/event';
 export {

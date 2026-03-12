@@ -42,6 +42,22 @@ export const rename_organization = spacetimedb.reducer(
   }
 );
 
+export const update_org_member = spacetimedb.reducer(
+  { org_member_id: t.u64(), role: t.string() },
+  (ctx, args) => {
+    const member = ctx.db.org_member.id.find(args.org_member_id);
+    if (!member) throw new SenderError('Member not found');
+    requireOrgAdmin(ctx, member.org_id);
+    if (args.role !== 'admin' && args.role !== 'manager' && args.role !== 'timekeeper')
+      throw new SenderError('Invalid role');
+    const org = ctx.db.organization.id.find(member.org_id);
+    if (!org) throw new SenderError('Organization not found');
+    if (org.owner_user_id === member.user_id)
+      throw new SenderError('Cannot change owner role');
+    ctx.db.org_member.id.update({ ...member, role: args.role });
+  }
+);
+
 export const add_org_member = spacetimedb.reducer(
   { org_id: t.u64(), user_id: t.u64(), role: t.string() },
   (ctx, args) => {
