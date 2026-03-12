@@ -10,6 +10,8 @@ export const create_rider = spacetimedb.reducer(
     email: t.string(),
     phone: t.string(),
     date_of_birth: t.string(),
+    sex: t.string(),
+    profile_picture: t.string(),
   },
   (ctx, args) => {
     requireOrgEventManager(ctx, args.org_id);
@@ -21,6 +23,8 @@ export const create_rider = spacetimedb.reducer(
       email: args.email,
       phone: args.phone,
       date_of_birth: args.date_of_birth,
+      sex: args.sex,
+      profile_picture: args.profile_picture,
     });
   }
 );
@@ -33,6 +37,8 @@ export const update_rider = spacetimedb.reducer(
     email: t.string(),
     phone: t.string(),
     date_of_birth: t.string(),
+    sex: t.string(),
+    profile_picture: t.string(),
   },
   (ctx, args) => {
     const rider = ctx.db.rider.id.find(args.rider_id);
@@ -45,6 +51,8 @@ export const update_rider = spacetimedb.reducer(
       email: args.email,
       phone: args.phone,
       date_of_birth: args.date_of_birth,
+      sex: args.sex,
+      profile_picture: args.profile_picture,
     });
   }
 );
@@ -81,6 +89,8 @@ export const register_rider_with_org_slug = spacetimedb.reducer(
     email: t.string(),
     phone: t.string(),
     date_of_birth: t.string(),
+    sex: t.string(),
+    profile_picture: t.string(),
   },
   (ctx, args) => {
     let org = null;
@@ -101,6 +111,8 @@ export const register_rider_with_org_slug = spacetimedb.reducer(
       email: args.email,
       phone: args.phone,
       date_of_birth: args.date_of_birth,
+      sex: args.sex,
+      profile_picture: args.profile_picture,
     });
   }
 );

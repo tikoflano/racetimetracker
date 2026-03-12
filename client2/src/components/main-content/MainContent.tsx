@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import {
   IconArrowUpRight,
   IconArrowDownRight,
@@ -243,22 +242,6 @@ function DashboardView() {
   );
 }
 
-function LocationsRouter() {
-  const navigate = useNavigate();
-  const [selectedLocationId, setSelectedLocationId] = useState<bigint | null>(null);
-
-  if (selectedLocationId !== null) {
-    return (
-      <LocationDetailView
-        venueId={selectedLocationId}
-        onBack={() => setSelectedLocationId(null)}
-      />
-    );
-  }
-  return (
-    <LocationsView onSelectLocation={(id) => { setSelectedLocationId(id); navigate("/locations"); }} />
-  );
-}
 
 export function MainContent({ collapsed }: MainContentProps) {
   return (
@@ -270,7 +253,8 @@ export function MainContent({ collapsed }: MainContentProps) {
         <Route path="/" element={<DashboardView />} />
         <Route path="/event-preview" element={<EventPreviewView />} />
         <Route path="/calendar" element={<CalendarView />} />
-        <Route path="/locations/*" element={<LocationsRouter />} />
+        <Route path="/locations" element={<LocationsView />} />
+        <Route path="/locations/:venueId" element={<LocationDetailView />} />
         <Route path="/timekeep" element={<TimekeepView />} />
         <Route path="/riders" element={<RidersView />} />
         <Route path="/championships" element={<ChampionshipsView />} />

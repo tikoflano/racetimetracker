@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ActionIcon,
   Anchor,
@@ -8,7 +9,6 @@ import {
   Card,
   Group,
   Loader,
-  Menu,
   Modal,
   Paper,
   Select,
@@ -24,20 +24,15 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-lea
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  IconDotsVertical,
   IconExternalLink,
   IconMapPin,
-  IconPhoto,
   IconPlus,
   IconRoute,
   IconSearch,
   IconSortAscending,
-  IconStar,
-  IconStarFilled,
-  IconTrash,
-  IconUpload,
-  IconX,
 } from "@tabler/icons-react";
+import { ImageUploader, resizeImage } from "./ImageUploader";
+import { type Venue, loadVenues, saveVenues } from "./venueStorage";
 
 // Leaflet marker icon for the location picker
 const pickerIcon = L.divIcon({
@@ -113,8 +108,8 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
         scrollWheelZoom
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
         <InnerMap markerPos={markerPos} onPick={onPick} flyTarget={flyTarget} />
       </MapContainer>
@@ -176,151 +171,7 @@ function formatAddress(data: {
   return parts.length > 0 ? parts.join(", ") : data.display_name;
 }
 
-// Resize an image file to max 900px, returns a base64 JPEG data URL
-function resizeImage(file: File, maxPx = 900): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * ratio);
-      canvas.height = Math.round(img.height * ratio);
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", 0.85));
-    };
-    img.src = url;
-  });
-}
-
-interface ImageUploaderProps {
-  images: string[];
-  coverIndex: number | null;
-  onAdd: (dataUrls: string[]) => void;
-  onRemove: (index: number) => void;
-  onSetCover: (index: number) => void;
-}
-
-function ImageUploader({ images, coverIndex, onAdd, onRemove, onSetCover }: ImageUploaderProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const handleFiles = useCallback(
-    async (files: FileList | null) => {
-      if (!files) return;
-      const dataUrls = await Promise.all(
-        Array.from(files)
-          .filter((f) => f.type.startsWith("image/"))
-          .map((f) => resizeImage(f))
-      );
-      if (dataUrls.length > 0) onAdd(dataUrls);
-    },
-    [onAdd]
-  );
-
-  return (
-    <Stack gap="xs">
-      <Text size="sm" fw={500}>
-        Images
-      </Text>
-
-      {images.length > 0 && (
-        <SimpleGrid cols={4} spacing="xs">
-          {images.map((src, i) => (
-            <Box
-              key={i}
-              style={{ position: "relative", aspectRatio: "4/3", cursor: "pointer" }}
-              onClick={() => onSetCover(i)}
-            >
-              <Box
-                component="img"
-                src={src}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "var(--mantine-radius-sm)",
-                  border:
-                    i === coverIndex
-                      ? "2px solid var(--mantine-color-blue-5)"
-                      : "2px solid var(--mantine-color-dark-4)",
-                  display: "block",
-                }}
-              />
-              {/* Cover indicator */}
-              <Box style={{ position: "absolute", top: 4, left: 4 }}>
-                {i === coverIndex ? (
-                  <IconStarFilled size={14} style={{ color: "var(--mantine-color-yellow-4)", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }} />
-                ) : (
-                  <IconStar size={14} style={{ color: "white", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }} />
-                )}
-              </Box>
-              {/* Remove button */}
-              <ActionIcon
-                size="xs"
-                color="red"
-                variant="filled"
-                style={{ position: "absolute", top: 4, right: 4 }}
-                onClick={(e) => { e.stopPropagation(); onRemove(i); }}
-              >
-                <IconX size={10} />
-              </ActionIcon>
-            </Box>
-          ))}
-        </SimpleGrid>
-      )}
-
-      <Box
-        onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
-        style={{
-          border: `2px dashed ${dragging ? "var(--mantine-color-blue-5)" : "var(--mantine-color-dark-4)"}`,
-          borderRadius: "var(--mantine-radius-sm)",
-          padding: "16px",
-          textAlign: "center",
-          cursor: "pointer",
-          background: dragging ? "rgba(66,99,235,0.08)" : "transparent",
-          transition: "all 0.15s",
-        }}
-      >
-        <Group justify="center" gap="xs">
-          {images.length === 0 ? <IconPhoto size={16} style={{ opacity: 0.4 }} /> : <IconUpload size={16} style={{ opacity: 0.4 }} />}
-          <Text size="sm" c="dimmed">
-            {images.length === 0
-              ? "Drag images here or click to upload"
-              : "Add more images"}
-          </Text>
-        </Group>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          style={{ display: "none" }}
-          onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
-        />
-      </Box>
-      {images.length > 0 && (
-        <Text size="xs" c="dimmed">
-          Click a photo to set it as the cover. Star = current cover.
-        </Text>
-      )}
-    </Stack>
-  );
-}
-
 // Types
-interface Venue {
-  id: bigint;
-  name: string;
-  description: string;
-  address: string;
-  imageUrl?: string;
-}
-
 interface Track {
   id: bigint;
   venueId: bigint;
@@ -328,39 +179,6 @@ interface Track {
   color: string;
 }
 
-// Mock data
-const MOCK_VENUES: Venue[] = [
-  {
-    id: 1n,
-    name: "Mountain Ridge Park",
-    description: "Premier enduro venue with varied terrain",
-    address: "1234 Mountain Rd, Denver, CO 80210",
-  },
-  {
-    id: 2n,
-    name: "Desert Dunes Complex",
-    description: "Sandy trails and technical sections",
-    address: "5678 Desert Ave, Phoenix, AZ 85001",
-  },
-  {
-    id: 3n,
-    name: "Forest Trail Center",
-    description: "Wooded single track paradise",
-    address: "9012 Forest Lane, Portland, OR 97201",
-  },
-  {
-    id: 4n,
-    name: "Coastal Cliffs",
-    description: "Ocean view trails with elevation changes",
-    address: "3456 Coastal Hwy, San Diego, CA 92101",
-  },
-  {
-    id: 5n,
-    name: "Valley Motorsports Park",
-    description: "",
-    address: "",
-  },
-];
 
 const MOCK_TRACKS: Track[] = [
   { id: 1n, venueId: 1n, name: "Summit Run", color: "#ef4444" },
@@ -378,10 +196,6 @@ const MOCK_TRACKS: Track[] = [
 type SortOption = "name-asc" | "name-desc" | "tracks-desc" | "tracks-asc";
 type FilterOption = "all" | "has-tracks" | "no-tracks";
 
-interface LocationsViewProps {
-  onSelectLocation?: (venueId: bigint) => void;
-}
-
 function mapsUrl(address: string) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 }
@@ -390,10 +204,9 @@ interface VenueCardProps {
   venue: Venue;
   trackCount: number;
   onClick: () => void;
-  onDelete: () => void;
 }
 
-function VenueCard({ venue, trackCount, onClick, onDelete }: VenueCardProps) {
+function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
   return (
     <Card
       shadow="sm"
@@ -433,35 +246,9 @@ function VenueCard({ venue, trackCount, onClick, onDelete }: VenueCardProps) {
 
       {/* Content */}
       <Stack p="md" gap="xs">
-        <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Text fw={600} lineClamp={1} style={{ flex: 1 }}>
-            {venue.name}
-          </Text>
-          <Menu shadow="md" width={160} position="bottom-end">
-            <Menu.Target>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                color="gray"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <IconDotsVertical size={14} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                leftSection={<IconTrash size={14} />}
-                color="red"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-              >
-                Delete
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
+        <Text fw={600} lineClamp={1}>
+          {venue.name}
+        </Text>
 
         <Text size="sm" c="dimmed" lineClamp={2} style={{ minHeight: "2.5em" }}>
           {venue.description || "No description provided."}
@@ -487,28 +274,22 @@ function VenueCard({ venue, trackCount, onClick, onDelete }: VenueCardProps) {
               style={{ display: "flex", alignItems: "center", gap: 4 }}
             >
               <IconMapPin size={12} />
-              Open in Maps
+              {venue.address}
               <IconExternalLink size={10} />
             </Anchor>
-          ) : null}
+          ) : (
+            <Text size="xs" c="dimmed">No address</Text>
+          )}
         </Group>
-
-        {venue.address ? (
-          <Text size="xs" c="dimmed" lineClamp={1}>
-            {venue.address}
-          </Text>
-        ) : (
-          <Text size="xs" c="dimmed">
-            No address
-          </Text>
-        )}
       </Stack>
     </Card>
   );
 }
 
-export function LocationsView({ onSelectLocation }: LocationsViewProps) {
-  const [venues, setVenues] = useState<Venue[]>(MOCK_VENUES);
+export function LocationsView() {
+  const navigate = useNavigate();
+  const [venues, setVenues] = useState<Venue[]>(loadVenues);
+  useEffect(() => { saveVenues(venues); }, [venues]);
   const [tracks] = useState<Track[]>(MOCK_TRACKS);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("name-asc");
@@ -659,11 +440,6 @@ export function LocationsView({ onSelectLocation }: LocationsViewProps) {
     };
     setVenues((prev) => [...prev, newVenue]);
     resetForm();
-  };
-
-  const handleDelete = (v: Venue) => {
-    if (!confirm(`Delete "${v.name}" and all its tracks?`)) return;
-    setVenues((prev) => prev.filter((venue) => venue.id !== v.id));
   };
 
   return (
@@ -874,8 +650,7 @@ export function LocationsView({ onSelectLocation }: LocationsViewProps) {
               key={venue.id.toString()}
               venue={venue}
               trackCount={trackCounts.get(venue.id) ?? 0}
-              onClick={() => onSelectLocation?.(venue.id)}
-              onDelete={() => handleDelete(venue)}
+              onClick={() => navigate(`/locations/${venue.id}`)}
             />
           ))}
         </SimpleGrid>

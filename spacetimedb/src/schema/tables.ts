@@ -129,6 +129,8 @@ export const rider = table(
     email: t.string(),
     phone: t.string(),
     date_of_birth: t.string(),
+    sex: t.string(),
+    profile_picture: t.string(),
   }
 );
 

@@ -9,15 +9,17 @@ import {
   Paper,
   Button,
   TextInput,
-  NumberInput,
   Modal,
   Checkbox,
   ActionIcon,
   Menu,
   Badge,
+  Select,
+  RangeSlider,
+  Avatar,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { DataTable } from "mantine-datatable";
+import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconUsers,
   IconPlus,
@@ -25,6 +27,8 @@ import {
   IconPencil,
   IconTrash,
   IconShare,
+  IconSearch,
+  IconX,
 } from "@tabler/icons-react";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
@@ -47,6 +51,34 @@ function calcAge(dateOfBirth: string): number | null {
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+type SexFilter = "all" | "male" | "female";
+
+const AVATAR_COLORS = [
+  "#3b82f6", "#ef4444", "#22c55e", "#eab308", "#8b5cf6",
+  "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#a855f7",
+];
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function RiderAvatar({ rider, size = 28 }: { rider: Rider; size?: number }) {
+  const initials = `${rider.firstName[0] ?? ""}${rider.lastName[0] ?? ""}`.toUpperCase();
+  if (rider.profilePicture) {
+    return (
+      <Avatar src={rider.profilePicture} size={size} radius="xl" />
+    );
+  }
+  return (
+    <Avatar size={size} radius="xl" style={{ background: avatarColor(`${rider.firstName}${rider.lastName}`) }}>
+      <Text size="xs" fw={600} c="white" style={{ lineHeight: 1 }}>
+        {initials}
+      </Text>
+    </Avatar>
+  );
+}
 
 export function RidersView() {
   const [orgs] = useTable(tables.organization);
@@ -71,16 +103,28 @@ export function RidersView() {
 
   const orgRiders = useMemo<Rider[]>(() => {
     if (!activeOrgId) return [];
-    return [...allRiders.filter((r: Rider) => r.orgId === activeOrgId)].sort(
-      (a: Rider, b: Rider) =>
-        `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`)
-    );
+    return allRiders.filter((r: Rider) => r.orgId === activeOrgId);
   }, [allRiders, activeOrgId]);
+
+  // Compute age range from riders with known DOB
+  const [ageRangeMin, ageRangeMax] = useMemo<[number, number]>(() => {
+    const ages = orgRiders
+      .map((r: Rider) => calcAge(r.dateOfBirth))
+      .filter((a): a is number => a !== null);
+    if (ages.length === 0) return [0, 100];
+    return [Math.min(...ages), Math.max(...ages)];
+  }, [orgRiders]);
+
+  // Sort
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Rider>>({
+    columnAccessor: "name",
+    direction: "asc",
+  });
 
   // Filters
   const [search, setSearch] = useState("");
-  const [ageMin, setAgeMin] = useState<number | "">("");
-  const [ageMax, setAgeMax] = useState<number | ("")>("");
+  const [sexFilter, setSexFilter] = useState<SexFilter>("all");
+  const [ageRange, setAgeRange] = useState<[number, number] | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     try {
@@ -93,6 +137,16 @@ export function RidersView() {
     return 10;
   });
 
+  // Reset slider when data-driven bounds change
+  useEffect(() => {
+    setAgeRange(null);
+  }, [ageRangeMin, ageRangeMax]);
+
+  const sliderValue: [number, number] = ageRange ?? [ageRangeMin, ageRangeMax];
+  const ageFiltered =
+    ageRange !== null &&
+    (ageRange[0] !== ageRangeMin || ageRange[1] !== ageRangeMax);
+
   const filteredRiders = useMemo<Rider[]>(() => {
     let list = orgRiders;
     if (search.trim()) {
@@ -103,24 +157,47 @@ export function RidersView() {
           r.email.toLowerCase().includes(q)
       );
     }
-    if (ageMin !== "" || ageMax !== "") {
+    if (sexFilter !== "all") {
+      list = list.filter((r: Rider) => r.sex === sexFilter);
+    }
+    if (ageFiltered && ageRange) {
       list = list.filter((r: Rider) => {
         const age = calcAge(r.dateOfBirth);
         if (age === null) return false;
-        if (ageMin !== "" && age < ageMin) return false;
-        if (ageMax !== "" && age > ageMax) return false;
-        return true;
+        return age >= ageRange[0] && age <= ageRange[1];
       });
     }
+    const dir = sortStatus.direction === "asc" ? 1 : -1;
+    list = [...list].sort((a, b) => {
+      switch (sortStatus.columnAccessor) {
+        case "name":
+          return dir * `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`);
+        case "email":
+          return dir * a.email.localeCompare(b.email);
+        case "phone":
+          return dir * a.phone.localeCompare(b.phone);
+        case "sex":
+          return dir * (a.sex || "").localeCompare(b.sex || "");
+        case "age": {
+          const aa = calcAge(a.dateOfBirth) ?? -1;
+          const ba = calcAge(b.dateOfBirth) ?? -1;
+          return dir * (aa - ba);
+        }
+        default:
+          return 0;
+      }
+    });
     return list;
-  }, [orgRiders, search, ageMin, ageMax]);
+  }, [orgRiders, search, sexFilter, ageFiltered, ageRange, sortStatus]);
+
+  const hasActiveFilter = search || sexFilter !== "all" || ageFiltered;
 
   useEffect(() => {
     setPage(1);
-  }, [search, ageMin, ageMax, pageSize]);
+  }, [search, sexFilter, ageFiltered, ageRange, pageSize]);
 
   // Create / edit modal
-  const emptyForm = { firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "" };
+  const emptyForm = { firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "", sex: "male", profilePicture: "" };
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<bigint | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -140,6 +217,8 @@ export function RidersView() {
       email: r.email,
       phone: r.phone,
       dateOfBirth: r.dateOfBirth,
+      sex: r.sex || "male",
+      profilePicture: r.profilePicture || "",
     });
     setEditingId(r.id);
     setFormError("");
@@ -161,6 +240,8 @@ export function RidersView() {
           email: form.email.trim(),
           phone: form.phone.trim(),
           dateOfBirth: form.dateOfBirth,
+          sex: form.sex,
+          profilePicture: form.profilePicture,
         });
       } else {
         await createRider({
@@ -170,6 +251,8 @@ export function RidersView() {
           email: form.email.trim(),
           phone: form.phone.trim(),
           dateOfBirth: form.dateOfBirth,
+          sex: form.sex,
+          profilePicture: form.profilePicture,
         });
       }
       resetForm();
@@ -246,46 +329,72 @@ export function RidersView() {
 
       {/* Filter / search toolbar */}
       <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
-        <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
           <Group gap="xs" align="center">
             <Badge
               size="lg"
-              variant={search || ageMin !== "" || ageMax !== "" ? "light" : "filled"}
+              variant={!hasActiveFilter ? "filled" : "light"}
               color="blue"
               style={{ cursor: "pointer" }}
-              onClick={() => { setSearch(""); setAgeMin(""); setAgeMax(""); }}
+              onClick={() => { setSearch(""); setSexFilter("all"); setAgeRange(null); }}
             >
               All ({orgRiders.length})
             </Badge>
+            <Badge
+              size="lg"
+              variant={sexFilter === "male" ? "filled" : "light"}
+              color="blue"
+              style={{ cursor: "pointer" }}
+              onClick={() => setSexFilter(sexFilter === "male" ? "all" : "male")}
+            >
+              Male ({orgRiders.filter((r) => r.sex === "male").length})
+            </Badge>
+            <Badge
+              size="lg"
+              variant={sexFilter === "female" ? "filled" : "light"}
+              color="pink"
+              style={{ cursor: "pointer" }}
+              onClick={() => setSexFilter(sexFilter === "female" ? "all" : "female")}
+            >
+              Female ({orgRiders.filter((r) => r.sex === "female").length})
+            </Badge>
           </Group>
-          <Group gap="sm" align="flex-end" wrap="wrap">
-            <Group gap="xs" align="flex-end">
-              <NumberInput
-                label="Min age"
-                placeholder="—"
-                value={ageMin}
-                onChange={(v) => setAgeMin(v === "" ? "" : Number(v))}
-                min={0}
-                w={72}
-                size="sm"
-              />
-              <Text c="dimmed" size="sm" pb={6}>–</Text>
-              <NumberInput
-                label="Max age"
-                placeholder="—"
-                value={ageMax}
-                onChange={(v) => setAgeMax(v === "" ? "" : Number(v))}
-                min={0}
-                w={72}
-                size="sm"
-              />
-            </Group>
+          <Group gap="sm" align="center" wrap="wrap">
+            {ageRangeMin < ageRangeMax && (
+              <Group align="center" gap="xs">
+                <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>Age</Text>
+                <Text size="xs" c="dimmed" w={20} ta="right">{sliderValue[0]}</Text>
+                <RangeSlider
+                  w={160}
+                  min={ageRangeMin}
+                  max={ageRangeMax}
+                  minRange={0}
+                  value={sliderValue}
+                  onChange={(v) =>
+                    setAgeRange(
+                      v[0] === ageRangeMin && v[1] === ageRangeMax ? null : v
+                    )
+                  }
+                  label={null}
+                  size="sm"
+                />
+                <Text size="xs" c="dimmed" w={20}>{sliderValue[1]}</Text>
+              </Group>
+            )}
             <TextInput
               placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ minWidth: 240 }}
               size="sm"
+              leftSection={<IconSearch size={14} />}
+              rightSection={
+                search ? (
+                  <ActionIcon variant="subtle" size="xs" color="gray" onClick={() => setSearch("")}>
+                    <IconX size={12} />
+                  </ActionIcon>
+                ) : null
+              }
             />
           </Group>
         </Group>
@@ -297,7 +406,7 @@ export function RidersView() {
           <Stack align="center" gap="sm">
             <IconUsers size={48} color="var(--mantine-color-dimmed)" />
             <Text c="dimmed" ta="center">
-              {search || ageMin !== "" || ageMax !== ""
+              {hasActiveFilter
                 ? "No riders match your filters."
                 : "No riders yet. Add one or share the registration link."}
             </Text>
@@ -319,15 +428,25 @@ export function RidersView() {
               setPageSize(n);
               try { localStorage.setItem("rtt-riders-page-size", String(n)); } catch {}
             }}
+            sortStatus={sortStatus}
+            onSortStatusChange={(s) => { setSortStatus(s); setPage(1); }}
             columns={[
+              {
+                accessor: "avatar",
+                title: "",
+                width: 44,
+                render: (r: Rider) => <RiderAvatar rider={r} size={28} />,
+              },
               {
                 accessor: "name",
                 title: "Name",
+                sortable: true,
                 render: (r: Rider) => `${r.firstName} ${r.lastName}`,
               },
               {
                 accessor: "email",
                 title: "Email",
+                sortable: true,
                 render: (r: Rider) => (
                   <Text size="sm" c={r.email ? undefined : "dimmed"}>
                     {r.email || "—"}
@@ -337,6 +456,7 @@ export function RidersView() {
               {
                 accessor: "phone",
                 title: "Phone",
+                sortable: true,
                 render: (r: Rider) => (
                   <Text size="sm" c={r.phone ? undefined : "dimmed"}>
                     {r.phone || "—"}
@@ -344,13 +464,19 @@ export function RidersView() {
                 ),
               },
               {
-                accessor: "dateOfBirth",
-                title: "DOB",
-                render: (r: Rider) => r.dateOfBirth || "—",
+                accessor: "sex",
+                title: "Sex",
+                sortable: true,
+                render: (r: Rider) => (
+                  <Text size="sm" c={r.sex ? undefined : "dimmed"}>
+                    {r.sex === "male" ? "Male" : r.sex === "female" ? "Female" : "—"}
+                  </Text>
+                ),
               },
               {
                 accessor: "age",
                 title: "Age",
+                sortable: true,
                 render: (r: Rider) => {
                   const age = calcAge(r.dateOfBirth);
                   return (
@@ -411,6 +537,55 @@ export function RidersView() {
               {formError}
             </Text>
           )}
+          <Group justify="center">
+            <input
+              id="rider-photo-input"
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) =>
+                  setForm((f) => ({ ...f, profilePicture: ev.target?.result as string ?? "" }));
+                reader.readAsDataURL(file);
+                e.target.value = "";
+              }}
+            />
+            <Box style={{ position: "relative", display: "inline-block" }}>
+              <Avatar
+                src={form.profilePicture || undefined}
+                size={64}
+                radius="xl"
+                style={{
+                  cursor: "pointer",
+                  background: form.profilePicture
+                    ? undefined
+                    : avatarColor(`${form.firstName}${form.lastName}`),
+                }}
+                onClick={() => document.getElementById("rider-photo-input")?.click()}
+              >
+                {!form.profilePicture && (
+                  <Text size="lg" fw={600} c="white">
+                    {`${form.firstName[0] ?? ""}${form.lastName[0] ?? ""}`.toUpperCase() || "?"}
+                  </Text>
+                )}
+              </Avatar>
+              {form.profilePicture && (
+                <ActionIcon
+                  size="sm"
+                  radius="xl"
+                  color="red"
+                  variant="filled"
+                  style={{ position: "absolute", top: 0, right: 0 }}
+                  onClick={() => setForm((f) => ({ ...f, profilePicture: "" }))}
+                >
+                  ×
+                </ActionIcon>
+              )}
+            </Box>
+          </Group>
           <Group grow>
             <TextInput
               label="First Name *"
@@ -446,16 +621,27 @@ export function RidersView() {
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
           </Group>
-          <DatePickerInput
-            label="Date of Birth"
-            value={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
-            onChange={(d) =>
-              setForm((f) => ({
-                ...f,
-                dateOfBirth: d ? d.toISOString().slice(0, 10) : "",
-              }))
-            }
-          />
+          <Group grow>
+            <DatePickerInput
+              label="Date of Birth"
+              value={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
+              onChange={(d) =>
+                setForm((f) => ({
+                  ...f,
+                  dateOfBirth: d ? d.toISOString().slice(0, 10) : "",
+                }))
+              }
+            />
+            <Select
+              label="Sex"
+              value={form.sex}
+              onChange={(v) => setForm((f) => ({ ...f, sex: v ?? "male" }))}
+              data={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+              ]}
+            />
+          </Group>
           <Group gap="xs" mt="xs">
             <Button onClick={handleSubmit}>
               {editingId !== null ? "Save" : "Add Rider"}

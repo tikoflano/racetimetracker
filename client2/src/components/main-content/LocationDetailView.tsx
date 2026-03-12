@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   ActionIcon,
   Badge,
@@ -10,7 +11,6 @@ import {
   Modal,
   Overlay,
   Paper,
-  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -18,38 +18,33 @@ import {
   TextInput,
   Title,
   UnstyledButton,
-} from "@mantine/core";
-import { Carousel } from "@mantine/carousel";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Polyline,
-  Popup,
-  useMap,
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+} from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   IconArrowLeft,
   IconDotsVertical,
   IconMapPin,
   IconPencil,
+  IconPhoto,
   IconPlus,
   IconRoute,
   IconTrash,
   IconChevronDown,
   IconChevronUp,
-  IconPhoto,
   IconX,
   IconChevronLeft,
   IconChevronRight,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
+import { resizeImage } from './ImageUploader';
+import { type Venue, type VenueImage, loadVenues, saveVenues } from './venueStorage';
 
 // Leaflet pin icons
 function pinIcon(color: string, label: string) {
   return L.divIcon({
-    className: "",
+    className: '',
     html: `<div style="display:flex;flex-direction:column;align-items:center">
       <div style="background:${color};color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.4)">${label}</div>
       <div style="width:2px;height:8px;background:${color}"></div>
@@ -60,37 +55,62 @@ function pinIcon(color: string, label: string) {
   });
 }
 
-const START_ICON = pinIcon("#22c55e", "START");
-const END_ICON = pinIcon("#ef4444", "END");
+const START_ICON = pinIcon('#22c55e', 'START');
+const END_ICON = pinIcon('#ef4444', 'END');
 
-// Auto-fit map bounds
-function FitBounds({ positions }: { positions: [number, number][] }) {
-  const map = useMap();
+/**
+ * Samples the bottom 40% of a base64 image URL and returns whether the text
+ * on top should be "white" (dark background) or "dark" (light background).
+ */
+function useImageContrast(imageUrl: string | undefined): 'white' | 'dark' {
+  const [contrast, setContrast] = useState<'white' | 'dark'>('white');
   useEffect(() => {
-    if (positions.length > 0) {
-      const bounds = L.latLngBounds(positions.map((p) => L.latLng(p[0], p[1])));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    if (!imageUrl) {
+      setContrast('white');
+      return;
     }
-  }, [positions, map]);
+    const img = new Image();
+    img.onload = () => {
+      const sampleH = Math.max(1, Math.round(img.naturalHeight * 0.4));
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = sampleH;
+      canvas
+        .getContext('2d')!
+        .drawImage(
+          img,
+          0,
+          img.naturalHeight - sampleH,
+          img.naturalWidth,
+          sampleH,
+          0,
+          0,
+          img.naturalWidth,
+          sampleH
+        );
+      const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, sampleH);
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      }
+      setContrast(sum / (data.length / 4) > 128 ? 'dark' : 'white');
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+  return contrast;
+}
+
+/** Registers map click events and forwards lat/lng to caller (for placing start/end pins). */
+function MapClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onPlace(e.latlng.lat, e.latlng.lng);
+    },
+  });
   return null;
 }
 
 // Types
-interface VenueImage {
-  id: bigint;
-  venueId: bigint;
-  url: string;
-  caption: string;
-  isBanner: boolean;
-}
-
-interface Venue {
-  id: bigint;
-  name: string;
-  description: string;
-  address: string;
-}
-
 interface Track {
   id: bigint;
   venueId: bigint;
@@ -109,109 +129,21 @@ interface TrackVariation {
   endLongitude: number;
 }
 
-// Mock data
-const MOCK_VENUES: Venue[] = [
-  {
-    id: 1n,
-    name: "Mountain Ridge Park",
-    description: "Premier enduro venue with varied terrain",
-    address: "1234 Mountain Rd, Denver, CO 80210",
-  },
-  {
-    id: 2n,
-    name: "Desert Dunes Complex",
-    description: "Sandy trails and technical sections",
-    address: "5678 Desert Ave, Phoenix, AZ 85001",
-  },
-  {
-    id: 3n,
-    name: "Forest Trail Center",
-    description: "Wooded single track paradise",
-    address: "9012 Forest Lane, Portland, OR 97201",
-  },
-];
-
 const MOCK_TRACKS: Track[] = [
-  { id: 1n, venueId: 1n, name: "Summit Run", color: "#ef4444" },
-  { id: 2n, venueId: 1n, name: "Ridge Line", color: "#22c55e" },
-  { id: 3n, venueId: 1n, name: "Valley Drop", color: "#3b82f6" },
-  { id: 4n, venueId: 2n, name: "Sand Storm", color: "#f59e0b" },
-  { id: 5n, venueId: 2n, name: "Cactus Trail", color: "#8b5cf6" },
-  { id: 6n, venueId: 3n, name: "Pine Loop", color: "#22c55e" },
-];
-
-const MOCK_VENUE_IMAGES: VenueImage[] = [
-  {
-    id: 1n,
-    venueId: 1n,
-    url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=400&fit=crop",
-    caption: "Mountain Ridge Park - Main Entrance",
-    isBanner: true,
-  },
-  {
-    id: 2n,
-    venueId: 1n,
-    url: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&h=600&fit=crop",
-    caption: "Summit Run - Starting Area",
-    isBanner: false,
-  },
-  {
-    id: 3n,
-    venueId: 1n,
-    url: "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&h=600&fit=crop",
-    caption: "Ridge Line - Technical Section",
-    isBanner: false,
-  },
-  {
-    id: 4n,
-    venueId: 1n,
-    url: "https://images.unsplash.com/photo-1533240332313-0db49b459ad6?w=800&h=600&fit=crop",
-    caption: "Valley Drop - Finish Line",
-    isBanner: false,
-  },
-  {
-    id: 5n,
-    venueId: 1n,
-    url: "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=800&h=600&fit=crop",
-    caption: "Spectator Area",
-    isBanner: false,
-  },
-  {
-    id: 6n,
-    venueId: 2n,
-    url: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&h=400&fit=crop",
-    caption: "Desert Dunes Complex - Overview",
-    isBanner: true,
-  },
-  {
-    id: 7n,
-    venueId: 2n,
-    url: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?w=800&h=600&fit=crop",
-    caption: "Sand Storm Trail",
-    isBanner: false,
-  },
-  {
-    id: 8n,
-    venueId: 3n,
-    url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=400&fit=crop",
-    caption: "Forest Trail Center - Entrance",
-    isBanner: true,
-  },
-  {
-    id: 9n,
-    venueId: 3n,
-    url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop",
-    caption: "Pine Loop Trail",
-    isBanner: false,
-  },
+  { id: 1n, venueId: 1n, name: 'Summit Run', color: '#ef4444' },
+  { id: 2n, venueId: 1n, name: 'Ridge Line', color: '#22c55e' },
+  { id: 3n, venueId: 1n, name: 'Valley Drop', color: '#3b82f6' },
+  { id: 4n, venueId: 2n, name: 'Sand Storm', color: '#f59e0b' },
+  { id: 5n, venueId: 2n, name: 'Cactus Trail', color: '#8b5cf6' },
+  { id: 6n, venueId: 3n, name: 'Pine Loop', color: '#22c55e' },
 ];
 
 const MOCK_VARIATIONS: TrackVariation[] = [
   {
     id: 1n,
     trackId: 1n,
-    name: "Default",
-    description: "Standard route",
+    name: 'Default',
+    description: 'Standard route',
     startLatitude: 39.7392,
     startLongitude: -104.9903,
     endLatitude: 39.7489,
@@ -220,104 +152,121 @@ const MOCK_VARIATIONS: TrackVariation[] = [
   {
     id: 2n,
     trackId: 1n,
-    name: "Short Cut",
-    description: "Bypass the rock garden",
+    name: 'Short Cut',
+    description: 'Bypass the rock garden',
     startLatitude: 39.7392,
     startLongitude: -104.9903,
-    endLatitude: 39.7450,
-    endLongitude: -104.9850,
+    endLatitude: 39.745,
+    endLongitude: -104.985,
   },
   {
     id: 3n,
     trackId: 2n,
-    name: "Default",
-    description: "Ridge traverse",
-    startLatitude: 39.7500,
-    startLongitude: -104.9800,
-    endLatitude: 39.7580,
-    endLongitude: -104.9720,
+    name: 'Default',
+    description: 'Ridge traverse',
+    startLatitude: 39.75,
+    startLongitude: -104.98,
+    endLatitude: 39.758,
+    endLongitude: -104.972,
   },
   {
     id: 4n,
     trackId: 3n,
-    name: "Default",
-    description: "Valley descent",
-    startLatitude: 39.7600,
-    startLongitude: -104.9700,
-    endLatitude: 39.7350,
-    endLongitude: -104.9900,
+    name: 'Default',
+    description: 'Valley descent',
+    startLatitude: 39.76,
+    startLongitude: -104.97,
+    endLatitude: 39.735,
+    endLongitude: -104.99,
   },
   {
     id: 5n,
     trackId: 4n,
-    name: "Default",
-    description: "Sandy trail",
+    name: 'Default',
+    description: 'Sandy trail',
     startLatitude: 33.4484,
-    startLongitude: -112.0740,
-    endLatitude: 33.4550,
-    endLongitude: -112.0650,
+    startLongitude: -112.074,
+    endLatitude: 33.455,
+    endLongitude: -112.065,
   },
   {
     id: 6n,
     trackId: 5n,
-    name: "Default",
-    description: "Cactus route",
-    startLatitude: 33.4600,
-    startLongitude: -112.0600,
-    endLatitude: 33.4680,
-    endLongitude: -112.0500,
+    name: 'Default',
+    description: 'Cactus route',
+    startLatitude: 33.46,
+    startLongitude: -112.06,
+    endLatitude: 33.468,
+    endLongitude: -112.05,
   },
   {
     id: 7n,
     trackId: 6n,
-    name: "Default",
-    description: "Forest loop",
+    name: 'Default',
+    description: 'Forest loop',
     startLatitude: 45.5152,
     startLongitude: -122.6784,
-    endLatitude: 45.5230,
-    endLongitude: -122.6700,
+    endLatitude: 45.523,
+    endLongitude: -122.67,
   },
 ];
 
-interface LocationDetailViewProps {
-  venueId: bigint;
-  onBack: () => void;
-}
-
-export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps) {
-  const [venues, setVenues] = useState<Venue[]>(MOCK_VENUES);
+export function LocationDetailView() {
+  const { venueId: venueIdParam } = useParams<{ venueId: string }>();
+  const navigate = useNavigate();
+  const venueId = useMemo(() => {
+    try {
+      return BigInt(venueIdParam ?? '0');
+    } catch {
+      return 0n;
+    }
+  }, [venueIdParam]);
+  const onBack = () => navigate('/locations');
+  const [venues, setVenues] = useState<Venue[]>(loadVenues);
+  useEffect(() => {
+    saveVenues(venues);
+  }, [venues]);
   const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
   const [variations, setVariations] = useState<TrackVariation[]>(MOCK_VARIATIONS);
-  const [venueImages] = useState<VenueImage[]>(MOCK_VENUE_IMAGES);
-
   const [editingVenue, setEditingVenue] = useState(false);
-  const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "" });
+  const [venueForm, setVenueForm] = useState({
+    name: '',
+    description: '',
+    address: '',
+    imageUrl: undefined as string | undefined,
+  });
 
   const [showTrackForm, setShowTrackForm] = useState(false);
-  const [trackForm, setTrackForm] = useState({ name: "", color: "#3b82f6" });
+  const [trackForm, setTrackForm] = useState({ name: '', color: '#3b82f6' });
   const [editingTrackId, setEditingTrackId] = useState<bigint | null>(null);
 
   const [expandedTrack, setExpandedTrack] = useState<bigint | null>(null);
 
   const [showVarForm, setShowVarForm] = useState<bigint | null>(null);
   const [varForm, setVarForm] = useState({
-    name: "",
-    description: "",
-    startLat: "",
-    startLng: "",
-    endLat: "",
-    endLng: "",
+    name: '',
+    description: '',
+    startLat: '',
+    startLng: '',
+    endLat: '',
+    endLng: '',
   });
+  const [placingPin, setPlacingPin] = useState<'start' | 'end' | null>(null);
   const [editingVarId, setEditingVarId] = useState<bigint | null>(null);
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const trackRefs = useRef(new Map<bigint, HTMLDivElement>());
-
-  // Image gallery state
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isMapCollapsed, setIsMapCollapsed] = useState(false);
 
   const venue = venues.find((v) => v.id === venueId);
+
+  const venueImages: VenueImage[] = useMemo(() => venue?.images ?? [], [venue?.images]);
+  const coverImage: VenueImage | undefined =
+    venueImages.find((img) => img.isCover) ?? venueImages[0];
+
+  const bannerContrast = useImageContrast(coverImage?.url ?? venue?.imageUrl);
   const venueTracks = useMemo(
     () => tracks.filter((t) => t.venueId === venueId).sort((a, b) => a.name.localeCompare(b.name)),
     [tracks, venueId]
@@ -337,19 +286,11 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
     return m;
   }, [variations, venueTracks]);
 
-  // Get images for this venue
-  const currentVenueImages = useMemo(
-    () => venueImages.filter((img) => img.venueId === venueId),
-    [venueImages, venueId]
-  );
-  const bannerImage = currentVenueImages.find((img) => img.isBanner);
-  const galleryImages = currentVenueImages.filter((img) => !img.isBanner);
-
   // Get default variation for each track for the map
   const defaultVariations = useMemo(() => {
     const m = new Map<bigint, TrackVariation>();
     for (const [trackId, vars] of variationsByTrack) {
-      const def = vars.find((v) => v.name === "Default") ?? vars[0];
+      const def = vars.find((v) => v.name === 'Default') ?? vars[0];
       if (def) m.set(trackId, def);
     }
     return m;
@@ -367,9 +308,14 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
     return pts;
   }, [defaultVariations]);
 
+  const variationModalTrack = useMemo(() => {
+    if (showVarForm === null) return null;
+    return venueTracks.find((t) => t.id === showVarForm) ?? null;
+  }, [showVarForm, venueTracks]);
+
   const scrollToTrack = useCallback((trackId: bigint) => {
     const el = trackRefs.current.get(trackId);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, []);
 
   const toggleExpand = useCallback(
@@ -383,6 +329,50 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
     [scrollToTrack]
   );
 
+  const handleUploadGalleryImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const url = await resizeImage(file);
+      setVenues((prev) =>
+        prev.map((v) => {
+          if (v.id !== venueId) return v;
+          const existingImages = v.images ?? [];
+          const nextId =
+            existingImages.length > 0
+              ? existingImages.reduce<bigint>(
+                  (max, img) => (img.id > max ? img.id : max),
+                  existingImages[0].id
+                ) + 1n
+              : BigInt(Date.now());
+          const newImage: VenueImage = {
+            id: nextId,
+            url,
+            caption: '',
+            isCover: false,
+          };
+
+          const images = [...existingImages, newImage];
+          const cover = images.find((img) => img.isCover) ?? images[0];
+
+          // Jump carousel to the newly added image
+          setGalleryIndex(existingImages.length);
+          setGalleryOpen(true);
+
+          return {
+            ...v,
+            images,
+            imageUrl: cover?.url,
+          };
+        })
+      );
+    };
+    input.click();
+  };
+
   if (!venue) {
     return (
       <Stack gap="lg">
@@ -390,7 +380,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
           variant="subtle"
           leftSection={<IconArrowLeft size={16} />}
           onClick={onBack}
-          style={{ alignSelf: "flex-start" }}
+          style={{ alignSelf: 'flex-start' }}
         >
           Back to Locations
         </Button>
@@ -409,34 +399,72 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
       name: venue.name,
       description: venue.description,
       address: venue.address,
+      imageUrl: coverImage?.url ?? venue.imageUrl,
     });
     setEditingVenue(true);
-    setError("");
+    setError('');
   };
 
   const saveVenue = () => {
-    setError("");
+    setError('');
     if (!venueForm.name.trim()) {
-      setError("Name is required");
+      setError('Name is required');
       return;
     }
     setVenues((prev) =>
-      prev.map((v) =>
-        v.id === venueId
-          ? {
-              ...v,
-              name: venueForm.name.trim(),
-              description: venueForm.description.trim(),
-              address: venueForm.address.trim(),
-            }
-          : v
-      )
+      prev.map((v) => {
+        if (v.id !== venueId) return v;
+
+        const existingImages = v.images ?? [];
+        let images = existingImages;
+
+        // If a new banner image was provided, add/update it as the cover image
+        // and ensure only one image per venue has isCover === true.
+        if (venueForm.imageUrl) {
+          const existing = existingImages.find((img) => img.url === venueForm.imageUrl);
+          if (existing) {
+            images = existingImages.map((img) => ({
+              ...img,
+              isCover: img.url === venueForm.imageUrl,
+            }));
+          } else {
+            const nextId =
+              existingImages.length > 0
+                ? existingImages.reduce<bigint>(
+                    (max, img) => (img.id > max ? img.id : max),
+                    existingImages[0].id
+                  ) + 1n
+                : BigInt(Date.now());
+            const newImage: VenueImage = {
+              id: nextId,
+              url: venueForm.imageUrl,
+              caption: '',
+              isCover: true,
+            };
+            images = existingImages.map((img) => ({ ...img, isCover: false })).concat(newImage);
+          }
+        } else if (existingImages.length > 0) {
+          // If banner cleared but gallery exists, keep existing cover as-is.
+          images = existingImages;
+        }
+
+        const cover = images.find((img) => img.isCover) ?? images[0];
+
+        return {
+          ...v,
+          name: venueForm.name.trim(),
+          description: venueForm.description.trim(),
+          address: venueForm.address.trim(),
+          imageUrl: cover?.url,
+          images: images.length > 0 ? images : undefined,
+        };
+      })
     );
     setEditingVenue(false);
   };
 
   const deleteVenue = () => {
-    if (!confirm("Delete this location and all its tracks? This cannot be undone.")) return;
+    if (!confirm('Delete this location and all its tracks? This cannot be undone.')) return;
     setVenues((prev) => prev.filter((v) => v.id !== venueId));
     onBack();
   };
@@ -446,20 +474,20 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
     setTrackForm({ name: t.name, color: t.color });
     setEditingTrackId(t.id);
     setShowTrackForm(true);
-    setError("");
+    setError('');
   };
 
   const resetTrackForm = () => {
-    setTrackForm({ name: "", color: "#3b82f6" });
+    setTrackForm({ name: '', color: '#3b82f6' });
     setEditingTrackId(null);
     setShowTrackForm(false);
-    setError("");
+    setError('');
   };
 
   const handleTrackSubmit = () => {
-    setError("");
+    setError('');
     if (!trackForm.name.trim()) {
-      setError("Track name is required");
+      setError('Track name is required');
       return;
     }
     if (editingTrackId !== null) {
@@ -482,8 +510,8 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
       const newVar: TrackVariation = {
         id: BigInt(Date.now() + 1),
         trackId: newTrack.id,
-        name: "Default",
-        description: "",
+        name: 'Default',
+        description: '',
         startLatitude: 0,
         startLongitude: 0,
         endLatitude: 0,
@@ -503,50 +531,53 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
   // Variation handlers
   const startAddVar = (trackId: bigint) => {
     setVarForm({
-      name: "",
-      description: "",
-      startLat: "",
-      startLng: "",
-      endLat: "",
-      endLng: "",
+      name: '',
+      description: '',
+      startLat: '',
+      startLng: '',
+      endLat: '',
+      endLng: '',
     });
     setEditingVarId(null);
     setShowVarForm(trackId);
-    setError("");
+    setPlacingPin(null);
+    setError('');
   };
 
   const startEditVar = (tv: TrackVariation) => {
     setVarForm({
       name: tv.name,
       description: tv.description,
-      startLat: String(tv.startLatitude || ""),
-      startLng: String(tv.startLongitude || ""),
-      endLat: String(tv.endLatitude || ""),
-      endLng: String(tv.endLongitude || ""),
+      startLat: String(tv.startLatitude || ''),
+      startLng: String(tv.startLongitude || ''),
+      endLat: String(tv.endLatitude || ''),
+      endLng: String(tv.endLongitude || ''),
     });
     setEditingVarId(tv.id);
     setShowVarForm(tv.trackId);
-    setError("");
+    setPlacingPin(null);
+    setError('');
   };
 
   const resetVarForm = () => {
     setVarForm({
-      name: "",
-      description: "",
-      startLat: "",
-      startLng: "",
-      endLat: "",
-      endLng: "",
+      name: '',
+      description: '',
+      startLat: '',
+      startLng: '',
+      endLat: '',
+      endLng: '',
     });
     setEditingVarId(null);
     setShowVarForm(null);
-    setError("");
+    setPlacingPin(null);
+    setError('');
   };
 
   const handleVarSubmit = () => {
-    setError("");
+    setError('');
     if (!varForm.name.trim()) {
-      setError("Variation name is required");
+      setError('Variation name is required');
       return;
     }
     const data = {
@@ -558,9 +589,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
       endLongitude: parseFloat(varForm.endLng) || 0,
     };
     if (editingVarId !== null) {
-      setVariations((prev) =>
-        prev.map((v) => (v.id === editingVarId ? { ...v, ...data } : v))
-      );
+      setVariations((prev) => prev.map((v) => (v.id === editingVarId ? { ...v, ...data } : v)));
     } else {
       const newVar: TrackVariation = {
         id: BigInt(Date.now()),
@@ -575,7 +604,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
   const handleDeleteVar = (tv: TrackVariation) => {
     const vars = variationsByTrack.get(tv.trackId) ?? [];
     if (vars.length <= 1) {
-      alert("Cannot delete the last variation. Delete the track instead.");
+      alert('Cannot delete the last variation. Delete the track instead.');
       return;
     }
     if (!confirm(`Delete variation "${tv.name}"?`)) return;
@@ -589,205 +618,472 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
         variant="subtle"
         leftSection={<IconArrowLeft size={16} />}
         onClick={onBack}
-        style={{ alignSelf: "flex-start" }}
+        style={{ alignSelf: 'flex-start' }}
       >
         Back to Locations
       </Button>
 
-      {/* Banner with venue header */}
-      <Paper
-        withBorder
-        radius="md"
-        style={{
-          overflow: "hidden",
-          position: "relative",
-        }}
-      >
+      {/* Header + map combined */}
+      <Paper withBorder radius="md" style={{ overflow: 'hidden' }}>
         {/* Banner image */}
-        {bannerImage ? (
+        {coverImage?.url ? (
           <Box
             style={{
               height: 200,
-              backgroundImage: `url(${bannerImage.url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              position: "relative",
+              backgroundImage: `url(${coverImage.url})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              position: 'relative',
             }}
           >
             <Overlay
-              gradient="linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%)"
+              gradient={
+                bannerContrast === 'dark'
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.82) 100%)'
+                  : 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.78) 100%)'
+              }
               opacity={1}
+              zIndex={0}
+              style={{ pointerEvents: 'none' }}
             />
             <Box
               style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: "var(--mantine-spacing-lg)",
+                position: 'absolute',
+                inset: 0,
+                padding: 'var(--mantine-spacing-lg)',
+                zIndex: 1,
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
-              <Group justify="space-between" align="flex-end">
-                <div>
-                  <Title order={2} c="white">
+              <Group justify="space-between" align="center" w="100%">
+                <Stack gap={4}>
+                  <Title
+                    order={2}
+                    style={{
+                      color: bannerContrast === 'dark' ? 'var(--mantine-color-dark-8)' : 'white',
+                    }}
+                  >
                     {venue.name}
                   </Title>
                   {venue.description && (
-                    <Text size="sm" c="white" style={{ opacity: 0.9 }}>
+                    <Text
+                      size="sm"
+                      style={{
+                        opacity: 0.85,
+                        color: bannerContrast === 'dark' ? 'var(--mantine-color-dark-6)' : 'white',
+                      }}
+                    >
                       {venue.description}
                     </Text>
                   )}
-                </div>
-                <Menu shadow="md" width={180} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon variant="light" size="lg" color="gray">
-                      <IconDotsVertical size={18} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
-                      Edit
-                    </Menu.Item>
-                    <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={deleteVenue}>
-                      Delete
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
+                  {venue.address && (
+                    <Text
+                      component="a"
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                        venue.address
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="xs"
+                      style={{
+                        color:
+                          bannerContrast === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.8)',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <Group gap={4} align="center">
+                        <IconMapPin size={12} />
+                        {venue.address}
+                      </Group>
+                    </Text>
+                  )}
+                </Stack>
+                <Group gap="xs">
+                  <Button
+                    size="xs"
+                    variant={bannerContrast === 'dark' ? 'white' : 'filled'}
+                    color="dark"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => {
+                      setEditingTrackId(null);
+                      setTrackForm({ name: '', color: '#3b82f6' });
+                      setShowTrackForm(true);
+                      setError('');
+                    }}
+                    style={{
+                      backgroundColor:
+                        bannerContrast !== 'dark'
+                          ? 'rgba(255,255,255,0.96)'
+                          : 'rgba(15,23,42,0.92)',
+                      color: bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
+                      borderColor:
+                        bannerContrast !== 'dark' ? 'rgba(148,163,184,0.8)' : 'rgba(15,23,42,0.9)',
+                    }}
+                  >
+                    Add Track
+                  </Button>
+                  <Menu shadow="md" width={200} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="filled"
+                        size="lg"
+                        color="dark"
+                        style={{
+                          backgroundColor:
+                            bannerContrast !== 'dark'
+                              ? 'rgba(255,255,255,0.96)'
+                              : 'rgba(15,23,42,0.92)',
+                          color:
+                            bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                        }}
+                      >
+                        <IconDotsVertical size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {coverImage && (
+                        <>
+                          <Menu.Item
+                            leftSection={<IconPhoto size={14} />}
+                            onClick={() => setGalleryOpen(true)}
+                          >
+                            View gallery
+                          </Menu.Item>
+                          <Menu.Divider />
+                        </>
+                      )}
+                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                        Edit
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        onClick={deleteVenue}
+                      >
+                        Delete
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
               </Group>
             </Box>
           </Box>
         ) : (
-          <Box p="lg" style={{ background: "var(--mantine-color-dark-6)" }}>
-            <Group justify="space-between" align="flex-start">
-              <Group gap="xs" align="center">
-                <IconMapPin size={24} color="var(--mantine-color-blue-6)" />
-                <Title order={2}>{venue.name}</Title>
-              </Group>
-              <Menu shadow="md" width={180} position="bottom-end">
-                <Menu.Target>
-                  <ActionIcon variant="subtle" size="lg" color="gray">
-                    <IconDotsVertical size={18} />
-                  </ActionIcon>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
-                    Edit
-                  </Menu.Item>
-                  <Menu.Item leftSection={<IconTrash size={14} />} color="red" onClick={deleteVenue}>
-                    Delete
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
-            {venue.description && (
-              <Text size="sm" c="dimmed" mt="xs">
-                {venue.description}
-              </Text>
-            )}
-          </Box>
-        )}
-
-        {/* Venue info below banner */}
-        <Box p="lg">
-          {editingVenue ? (
-            <Stack gap="sm">
-              {error && (
-                <Text size="sm" c="red">
-                  {error}
-                </Text>
-              )}
-              <TextInput
-                label="Name"
-                value={venueForm.name}
-                onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
-                autoFocus
-              />
-              <TextInput
-                label="Description"
-                placeholder="Description (optional)"
-                value={venueForm.description}
-                onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
-              />
-              <TextInput
-                label="Address"
-                placeholder="Address (optional)"
-                value={venueForm.address}
-                onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
-              />
-              <Group gap="xs">
-                <Button size="sm" onClick={saveVenue}>
-                  Save
-                </Button>
-                <Button variant="subtle" size="sm" onClick={() => setEditingVenue(false)}>
-                  Cancel
-                </Button>
-              </Group>
-            </Stack>
-          ) : (
-            <Stack gap="md">
-              {/* Address */}
-              {venue.address && (
+          <Box p="lg" style={{ background: 'var(--mantine-color-dark-6)' }}>
+            <Group justify="space-between" align="center">
+              <div>
+                <Group gap="xs" align="center">
+                  <IconMapPin size={24} color="var(--mantine-color-blue-6)" />
+                  <Title order={2}>{venue.name}</Title>
+                </Group>
+                {venue.description && (
+                  <Text size="sm" c="dimmed" mt="xs">
+                    {venue.description}
+                  </Text>
+                )}
+              </div>
+              <Stack gap={6} align="flex-end">
                 <Group gap="xs">
-                  <IconMapPin size={16} color="var(--mantine-color-dimmed)" />
+                  <Button
+                    size="xs"
+                    variant="white"
+                    color="dark"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => {
+                      setEditingTrackId(null);
+                      setTrackForm({ name: '', color: '#3b82f6' });
+                      setShowTrackForm(true);
+                      setError('');
+                    }}
+                  >
+                    Add Track
+                  </Button>
+                  <Menu shadow="md" width={200} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" size="lg" color="gray">
+                        <IconDotsVertical size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {coverImage && (
+                        <>
+                          <Menu.Item
+                            leftSection={<IconPhoto size={14} />}
+                            onClick={() => setGalleryOpen(true)}
+                          >
+                            View gallery
+                          </Menu.Item>
+                          <Menu.Divider />
+                        </>
+                      )}
+                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                        Edit
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconTrash size={14} />}
+                        color="red"
+                        onClick={deleteVenue}
+                      >
+                        Delete
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+                {venue.address && (
                   <Text
                     component="a"
                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    c="blue"
+                    c="dimmed"
                     size="sm"
+                    style={{ textDecoration: 'none' }}
                   >
-                    {venue.address}
+                    <Group gap={4} align="center">
+                      <IconMapPin size={14} />
+                      {venue.address}
+                    </Group>
+                  </Text>
+                )}
+              </Stack>
+            </Group>
+          </Box>
+        )}
+
+        {/* Track map */}
+        {mapPositions.length > 0 && (
+          <Box style={{ position: 'relative' }}>
+            <Box
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                zIndex: 2,
+              }}
+            >
+              <ActionIcon
+                variant="filled"
+                size="md"
+                color="dark"
+                aria-label={isMapCollapsed ? 'Expand map' : 'Collapse map'}
+                onClick={() => setIsMapCollapsed((v) => !v)}
+                style={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
+                  borderRadius: '999px',
+                }}
+              >
+                {isMapCollapsed ? <IconChevronDown size={16} /> : <IconChevronUp size={16} />}
+              </ActionIcon>
+            </Box>
+
+            <Box
+              style={{
+                maxHeight: isMapCollapsed ? 48 : 460,
+                opacity: isMapCollapsed ? 0 : 1,
+                overflow: 'hidden',
+                transition: 'max-height 200ms ease, opacity 200ms ease',
+              }}
+            >
+              <MapContainer
+                bounds={L.latLngBounds(mapPositions.map((p) => L.latLng(p[0], p[1])))}
+                boundsOptions={{ padding: [40, 40], maxZoom: 15 }}
+                style={{
+                  height: 400,
+                  width: '100%',
+                  position: 'relative',
+                  zIndex: 0,
+                }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png"
+                />
+                {venueTracks.map((track) => {
+                  const tv = defaultVariations.get(track.id);
+                  if (!tv) return null;
+                  const start: [number, number] = [tv.startLatitude, tv.startLongitude];
+                  const end: [number, number] = [tv.endLatitude, tv.endLongitude];
+                  const hasCoords = tv.startLatitude !== 0 || tv.startLongitude !== 0;
+                  if (!hasCoords) return null;
+                  return (
+                    <span key={String(track.id)}>
+                      <Marker position={start} icon={START_ICON}>
+                        <Popup>
+                          <Stack gap={4}>
+                            <Text size="xs" fw={700} c="green">
+                              Start
+                            </Text>
+                            <UnstyledButton
+                              onClick={() => toggleExpand(track.id)}
+                              style={{ fontWeight: 600, textAlign: 'left' }}
+                            >
+                              {track.name}
+                            </UnstyledButton>
+                          </Stack>
+                        </Popup>
+                      </Marker>
+                      <Marker position={end} icon={END_ICON}>
+                        <Popup>
+                          <Stack gap={4}>
+                            <Text size="xs" fw={700} c="red">
+                              End
+                            </Text>
+                            <UnstyledButton
+                              onClick={() => toggleExpand(track.id)}
+                              style={{ fontWeight: 600, textAlign: 'left' }}
+                            >
+                              {track.name}
+                            </UnstyledButton>
+                          </Stack>
+                        </Popup>
+                      </Marker>
+                      <Polyline
+                        positions={[start, end]}
+                        pathOptions={{
+                          color: track.color,
+                          weight: 3,
+                          dashArray: '6 4',
+                        }}
+                      />
+                    </span>
+                  );
+                })}
+              </MapContainer>
+              <Box
+                p="md"
+                style={{
+                  borderTop: '1px solid var(--mantine-color-dark-5)',
+                }}
+              >
+                <Group gap="md" wrap="wrap">
+                  {venueTracks.map((t) => (
+                    <Group key={String(t.id)} gap="xs">
+                      <Box
+                        w={12}
+                        h={12}
+                        style={{
+                          borderRadius: '50%',
+                          background: t.color,
+                        }}
+                      />
+                      <Text size="sm" c="dimmed">
+                        {t.name}
+                      </Text>
+                    </Group>
+                  ))}
+                </Group>
+              </Box>
+            </Box>
+          </Box>
+        )}
+      </Paper>
+
+      {/* Edit location modal */}
+      <Modal opened={editingVenue} onClose={() => setEditingVenue(false)} title="Edit Location">
+        <Stack gap="sm">
+          {error && (
+            <Text size="sm" c="red">
+              {error}
+            </Text>
+          )}
+          <TextInput
+            label="Name"
+            value={venueForm.name}
+            onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
+            autoFocus
+          />
+          <TextInput
+            label="Description"
+            placeholder="Description (optional)"
+            value={venueForm.description}
+            onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
+          />
+          <TextInput
+            label="Address"
+            placeholder="Address (optional)"
+            value={venueForm.address}
+            onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
+          />
+          {/* Banner image */}
+          <Stack gap="xs">
+            <Text size="sm" fw={500}>
+              Banner image
+            </Text>
+            {venueImages.length > 0 ? (
+              <Text size="xs" c="dimmed">
+                This location already has gallery images. Change the cover picture from the gallery
+                instead.
+              </Text>
+            ) : venueForm.imageUrl ? (
+              <Box
+                style={{
+                  position: 'relative',
+                  height: 120,
+                  borderRadius: 'var(--mantine-radius-sm)',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={venueForm.imageUrl}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+                <ActionIcon
+                  size="sm"
+                  color="red"
+                  variant="filled"
+                  style={{ position: 'absolute', top: 6, right: 6 }}
+                  onClick={() => setVenueForm((f) => ({ ...f, imageUrl: undefined }))}
+                >
+                  <IconX size={12} />
+                </ActionIcon>
+              </Box>
+            ) : (
+              <Box
+                style={{
+                  border: '2px dashed var(--mantine-color-dark-4)',
+                  borderRadius: 'var(--mantine-radius-sm)',
+                  padding: '16px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = async (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      const url = await resizeImage(file);
+                      setVenueForm((f) => ({ ...f, imageUrl: url }));
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <Group justify="center" gap="xs">
+                  <IconPhoto size={16} style={{ opacity: 0.4 }} />
+                  <Text size="sm" c="dimmed">
+                    Click to upload banner image
                   </Text>
                 </Group>
-              )}
-
-              {/* Image gallery */}
-              {galleryImages.length > 0 && (
-                <Stack gap="xs">
-                  <Group gap="xs" align="center">
-                    <IconPhoto size={16} color="var(--mantine-color-dimmed)" />
-                    <Text size="sm" fw={600} c="dimmed" tt="uppercase">
-                      Gallery
-                    </Text>
-                    <Badge size="sm" variant="light" color="gray">
-                      {galleryImages.length}
-                    </Badge>
-                  </Group>
-                  <SimpleGrid cols={{ base: 3, sm: 4, md: 5 }} spacing="xs">
-                    {galleryImages.map((img, idx) => (
-                      <UnstyledButton
-                        key={String(img.id)}
-                        onClick={() => {
-                          setGalleryIndex(idx);
-                          setGalleryOpen(true);
-                        }}
-                        style={{
-                          aspectRatio: "1",
-                          borderRadius: "var(--mantine-radius-sm)",
-                          overflow: "hidden",
-                          border: "1px solid var(--mantine-color-dark-4)",
-                        }}
-                      >
-                        <img
-                          src={img.url}
-                          alt={img.caption}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-                      </UnstyledButton>
-                    ))}
-                  </SimpleGrid>
-                </Stack>
-              )}
-            </Stack>
-          )}
-        </Box>
-      </Paper>
+              </Box>
+            )}
+          </Stack>
+          <Group gap="xs" justify="flex-end" mt="xs">
+            <Button variant="subtle" size="sm" onClick={() => setEditingVenue(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={saveVenue}>
+              Save
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       {/* Image gallery modal */}
       <Modal
@@ -797,152 +1093,384 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
         padding={0}
         withCloseButton={false}
         centered
+        overlayProps={{
+          backgroundOpacity: 0.85,
+          color: '#000',
+        }}
       >
-        <Box style={{ position: "relative", background: "var(--mantine-color-dark-7)" }}>
+        <Box
+          style={{
+            position: 'relative',
+            background: 'var(--mantine-color-dark-7)',
+          }}
+        >
           <ActionIcon
             variant="filled"
             color="dark"
             size="lg"
-            style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+            style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}
             onClick={() => setGalleryOpen(false)}
           >
             <IconX size={18} />
           </ActionIcon>
-          <Carousel
-            initialSlide={galleryIndex}
-            withIndicators={galleryImages.length > 1}
-            withControls={galleryImages.length > 1}
-            onSlideChange={setGalleryIndex}
-            height="70vh"
-            nextControlIcon={<IconChevronRight size={24} />}
-            previousControlIcon={<IconChevronLeft size={24} />}
-            styles={{
-              control: {
-                background: "var(--mantine-color-dark-6)",
-                border: "none",
-                color: "white",
-              },
-            }}
-          >
-            {galleryImages.map((img) => (
-              <Carousel.Slide key={String(img.id)}>
-                <Box
-                  style={{
-                    height: "70vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+
+          {venueImages.length === 0 ? (
+            <Box p="lg">
+              <Text size="sm" c="dimmed">
+                No images available for this location yet.
+              </Text>
+              <Group justify="flex-end" mt="md">
+                <Button
+                  size="sm"
+                  leftSection={<IconPlus size={14} />}
+                  onClick={handleUploadGalleryImage}
                 >
-                  <img
-                    src={img.url}
-                    alt={img.caption}
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: "100%",
-                      objectFit: "contain",
-                    }}
-                  />
-                </Box>
-              </Carousel.Slide>
-            ))}
-          </Carousel>
-          {galleryImages[galleryIndex] && (
-            <Box p="md" style={{ borderTop: "1px solid var(--mantine-color-dark-5)" }}>
-              <Text size="sm" c="dimmed" ta="center">
-                {galleryImages[galleryIndex].caption}
-              </Text>
-              <Text size="xs" c="dimmed" ta="center" mt={4}>
-                {galleryIndex + 1} / {galleryImages.length}
-              </Text>
+                  Add image
+                </Button>
+              </Group>
             </Box>
+          ) : (
+            <>
+              <Carousel
+                initialSlide={galleryIndex}
+                withIndicators={venueImages.length > 1}
+                withControls={venueImages.length > 1}
+                onSlideChange={setGalleryIndex}
+                height="70vh"
+                loop
+                nextControlIcon={<IconChevronRight size={24} />}
+                previousControlIcon={<IconChevronLeft size={24} />}
+                styles={{
+                  control: {
+                    background: 'var(--mantine-color-dark-6)',
+                    border: 'none',
+                    color: 'white',
+                  },
+                }}
+              >
+                {venueImages.map((img) => (
+                  <Carousel.Slide key={String(img.id)}>
+                    <Box
+                      style={{
+                        height: '70vh',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <img
+                        src={img.url}
+                        alt={img.caption || venue.name}
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                          objectFit: 'contain',
+                        }}
+                      />
+                    </Box>
+                  </Carousel.Slide>
+                ))}
+              </Carousel>
+              {venueImages[galleryIndex] && (
+                <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-dark-5)' }}>
+                  <Group justify="space-between" align="center">
+                    <Stack gap={2} style={{ flex: 1 }}>
+                      <Text size="sm" c="dimmed">
+                        {venueImages[galleryIndex].caption || venue.name}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {galleryIndex + 1} / {venueImages.length}
+                      </Text>
+                    </Stack>
+                    <Group gap="xs">
+                      <Button size="xs" variant="subtle" onClick={handleUploadGalleryImage}>
+                        Add image
+                      </Button>
+                      {!venueImages[galleryIndex].isCover && (
+                        <Button
+                          size="xs"
+                          variant="subtle"
+                          onClick={() => {
+                            const targetId = venueImages[galleryIndex].id;
+                            setVenues((prev) =>
+                              prev.map((v) => {
+                                if (v.id !== venueId) return v;
+                                const existing = v.images ?? [];
+                                const images = existing.map((img) => ({
+                                  ...img,
+                                  isCover: img.id === targetId,
+                                }));
+                                const cover = images.find((img) => img.isCover) ?? images[0];
+                                return {
+                                  ...v,
+                                  images,
+                                  imageUrl: cover?.url,
+                                };
+                              })
+                            );
+                          }}
+                        >
+                          Set as cover
+                        </Button>
+                      )}
+                      {venueImages.length > 1 && (
+                        <Button
+                          size="xs"
+                          variant="subtle"
+                          color="red"
+                          onClick={() => {
+                            const targetId = venueImages[galleryIndex].id;
+                            if (!confirm('Remove this image from the gallery?')) return;
+                            setVenues((prev) =>
+                              prev.map((v) => {
+                                if (v.id !== venueId) return v;
+                                const existing = v.images ?? [];
+                                const images = existing.filter((img) => img.id !== targetId);
+                                const cover = images.find((img) => img.isCover) ?? images[0];
+                                return {
+                                  ...v,
+                                  images: images.length > 0 ? images : undefined,
+                                  imageUrl: cover?.url,
+                                };
+                              })
+                            );
+                            setGalleryIndex((idx) =>
+                              Math.max(0, Math.min(idx, venueImages.length - 2))
+                            );
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </Group>
+                  </Group>
+                </Box>
+              )}
+            </>
           )}
         </Box>
       </Modal>
 
-      {/* Map section */}
-      {mapPositions.length > 0 && (
-        <Paper withBorder radius="md" style={{ overflow: "hidden" }}>
-          <Box p="md" style={{ borderBottom: "1px solid var(--mantine-color-dark-5)" }}>
-            <Group gap="xs" align="center">
-              <IconRoute size={20} color="var(--mantine-color-dimmed)" />
-              <Text size="sm" fw={600} c="dimmed" tt="uppercase">
-                Track Map
-              </Text>
-            </Group>
-          </Box>
-          <MapContainer
-            center={mapPositions[0]}
-            zoom={14}
-            style={{ height: 400, width: "100%" }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <FitBounds positions={mapPositions} />
-            {venueTracks.map((track) => {
-              const tv = defaultVariations.get(track.id);
-              if (!tv) return null;
-              const start: [number, number] = [tv.startLatitude, tv.startLongitude];
-              const end: [number, number] = [tv.endLatitude, tv.endLongitude];
-              const hasCoords = tv.startLatitude !== 0 || tv.startLongitude !== 0;
-              if (!hasCoords) return null;
-              return (
-                <span key={String(track.id)}>
-                  <Marker position={start} icon={START_ICON}>
-                    <Popup>
-                      <Stack gap={4}>
-                        <Text size="xs" fw={700} c="green">
-                          Start
-                        </Text>
-                        <UnstyledButton
-                          onClick={() => toggleExpand(track.id)}
-                          style={{ fontWeight: 600, textAlign: "left" }}
-                        >
-                          {track.name}
-                        </UnstyledButton>
-                      </Stack>
-                    </Popup>
-                  </Marker>
-                  <Marker position={end} icon={END_ICON}>
-                    <Popup>
-                      <Stack gap={4}>
-                        <Text size="xs" fw={700} c="red">
-                          End
-                        </Text>
-                        <UnstyledButton
-                          onClick={() => toggleExpand(track.id)}
-                          style={{ fontWeight: 600, textAlign: "left" }}
-                        >
-                          {track.name}
-                        </UnstyledButton>
-                      </Stack>
-                    </Popup>
-                  </Marker>
-                  <Polyline
-                    positions={[start, end]}
-                    pathOptions={{ color: track.color, weight: 3, dashArray: "6 4" }}
+      {/* Variation modal (standard) */}
+      <Modal
+        opened={showVarForm !== null}
+        onClose={resetVarForm}
+        title={
+          editingVarId
+            ? `Edit Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
+            : `New Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
+        }
+      >
+        {(() => {
+          const track = variationModalTrack;
+          if (!track) return null;
+
+          const hasStart = varForm.startLat !== '' && varForm.startLng !== '';
+          const hasEnd = varForm.endLat !== '' && varForm.endLng !== '';
+          const startPos: [number, number] | null = hasStart
+            ? [parseFloat(varForm.startLat), parseFloat(varForm.startLng)]
+            : null;
+          const endPos: [number, number] | null = hasEnd
+            ? [parseFloat(varForm.endLat), parseFloat(varForm.endLng)]
+            : null;
+
+          const handleMapPlace = (lat: number, lng: number) => {
+            if (placingPin === 'start') {
+              setVarForm((f) => ({
+                ...f,
+                startLat: lat.toFixed(6),
+                startLng: lng.toFixed(6),
+              }));
+              setPlacingPin(hasEnd ? null : 'end');
+            } else if (placingPin === 'end') {
+              setVarForm((f) => ({
+                ...f,
+                endLat: lat.toFixed(6),
+                endLng: lng.toFixed(6),
+              }));
+              setPlacingPin(null);
+            } else if (!hasStart) {
+              setVarForm((f) => ({
+                ...f,
+                startLat: lat.toFixed(6),
+                startLng: lng.toFixed(6),
+              }));
+              setPlacingPin('end');
+            } else if (!hasEnd) {
+              setVarForm((f) => ({
+                ...f,
+                endLat: lat.toFixed(6),
+                endLng: lng.toFixed(6),
+              }));
+              setPlacingPin(null);
+            }
+          };
+
+          const mapCenter: [number, number] = startPos ?? endPos ?? mapPositions[0] ?? [0, 0];
+
+          return (
+            <Stack gap="sm">
+              <TextInput
+                label="Name"
+                value={varForm.name}
+                onChange={(e) => setVarForm((f) => ({ ...f, name: e.target.value }))}
+                autoFocus
+              />
+              <Textarea
+                label="Description"
+                value={varForm.description}
+                onChange={(e) => setVarForm((f) => ({ ...f, description: e.target.value }))}
+                rows={2}
+              />
+
+              <Box>
+                <Group gap="xs" align="center" mb="xs" wrap="wrap">
+                  <Text size="sm" fw={500}>
+                    GPS Coordinates
+                  </Text>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setPlacingPin(placingPin === 'start' ? null : 'start')}
+                    style={
+                      placingPin === 'start'
+                        ? { background: 'rgba(34,197,94,0.15)', color: '#22c55e' }
+                        : {}
+                    }
+                  >
+                    {hasStart ? 'Move Start' : 'Place Start'}
+                  </Button>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setPlacingPin(placingPin === 'end' ? null : 'end')}
+                    style={
+                      placingPin === 'end'
+                        ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' }
+                        : {}
+                    }
+                  >
+                    {hasEnd ? 'Move End' : 'Place End'}
+                  </Button>
+                </Group>
+                {placingPin && (
+                  <Text size="sm" mb="xs" c={placingPin === 'start' ? 'green' : 'red'}>
+                    Click on the map to place the {placingPin} pin
+                  </Text>
+                )}
+                {!placingPin && !hasStart && (
+                  <Text size="sm" c="dimmed" mb="xs">
+                    Click on the map to place the start pin
+                  </Text>
+                )}
+                <MapContainer
+                  center={mapCenter}
+                  zoom={mapCenter[0] === 0 ? 2 : 14}
+                  style={{
+                    height: 280,
+                    width: '100%',
+                    borderRadius: 'var(--mantine-radius-sm)',
+                    border: '1px solid var(--mantine-color-default-border)',
+                    cursor: placingPin ? 'crosshair' : '',
+                    position: 'relative',
+                    zIndex: 0,
+                  }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png"
                   />
-                </span>
-              );
-            })}
-          </MapContainer>
-          {/* Map legend */}
-          <Box p="md" style={{ borderTop: "1px solid var(--mantine-color-dark-5)" }}>
-            <Group gap="md" wrap="wrap">
-              {venueTracks.map((t) => (
-                <Group key={String(t.id)} gap="xs">
-                  <Box w={12} h={12} style={{ borderRadius: "50%", background: t.color }} />
-                  <Text size="sm" c="dimmed">
-                    {t.name}
+                  <MapClickHandler onPlace={handleMapPlace} />
+                  {startPos && (
+                    <Marker
+                      position={startPos}
+                      icon={START_ICON}
+                      draggable
+                      eventHandlers={{
+                        dragend(e) {
+                          const latlng = (e.target as L.Marker).getLatLng();
+                          setVarForm((f) => ({
+                            ...f,
+                            startLat: latlng.lat.toFixed(6),
+                            startLng: latlng.lng.toFixed(6),
+                          }));
+                        },
+                      }}
+                    />
+                  )}
+                  {endPos && (
+                    <Marker
+                      position={endPos}
+                      icon={END_ICON}
+                      draggable
+                      eventHandlers={{
+                        dragend(e) {
+                          const latlng = (e.target as L.Marker).getLatLng();
+                          setVarForm((f) => ({
+                            ...f,
+                            endLat: latlng.lat.toFixed(6),
+                            endLng: latlng.lng.toFixed(6),
+                          }));
+                        },
+                      }}
+                    />
+                  )}
+                  {startPos && endPos && (
+                    <Polyline
+                      positions={[startPos, endPos]}
+                      pathOptions={{ color: track.color, weight: 3, dashArray: '6 4' }}
+                    />
+                  )}
+                </MapContainer>
+                <Group gap="md" mt="xs" wrap="wrap">
+                  <Text size="xs" c="dimmed">
+                    Start: {hasStart ? `${varForm.startLat}, ${varForm.startLng}` : 'not set'}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    End: {hasEnd ? `${varForm.endLat}, ${varForm.endLng}` : 'not set'}
                   </Text>
                 </Group>
-              ))}
-            </Group>
-          </Box>
-        </Paper>
-      )}
+              </Box>
+
+              <Group gap="sm" grow>
+                <TextInput
+                  label="Start Latitude"
+                  placeholder="e.g. 39.7392"
+                  value={varForm.startLat}
+                  onChange={(e) => setVarForm((f) => ({ ...f, startLat: e.target.value }))}
+                />
+                <TextInput
+                  label="Start Longitude"
+                  placeholder="e.g. -104.9903"
+                  value={varForm.startLng}
+                  onChange={(e) => setVarForm((f) => ({ ...f, startLng: e.target.value }))}
+                />
+              </Group>
+              <Group gap="sm" grow>
+                <TextInput
+                  label="End Latitude"
+                  placeholder="e.g. 39.7489"
+                  value={varForm.endLat}
+                  onChange={(e) => setVarForm((f) => ({ ...f, endLat: e.target.value }))}
+                />
+                <TextInput
+                  label="End Longitude"
+                  placeholder="e.g. -104.9815"
+                  value={varForm.endLng}
+                  onChange={(e) => setVarForm((f) => ({ ...f, endLng: e.target.value }))}
+                />
+              </Group>
+
+              <Group gap="xs" justify="flex-end">
+                <Button variant="subtle" onClick={resetVarForm}>
+                  Cancel
+                </Button>
+                <Button onClick={handleVarSubmit}>{editingVarId ? 'Save' : 'Add'}</Button>
+              </Group>
+            </Stack>
+          );
+        })()}
+      </Modal>
 
       {/* Tracks section */}
       <Stack gap="md">
@@ -956,20 +1484,6 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
               {venueTracks.length}
             </Badge>
           </Group>
-          {!showTrackForm && (
-            <Button
-              size="xs"
-              leftSection={<IconPlus size={14} />}
-              onClick={() => {
-                setEditingTrackId(null);
-                setTrackForm({ name: "", color: "#3b82f6" });
-                setShowTrackForm(true);
-                setError("");
-              }}
-            >
-              Add Track
-            </Button>
-          )}
         </Group>
 
         {error && !editingVenue && (
@@ -982,14 +1496,14 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
         {showTrackForm && (
           <Paper withBorder p="md">
             <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb="sm">
-              {editingTrackId ? "Edit Track" : "New Track"}
+              {editingTrackId ? 'Edit Track' : 'New Track'}
             </Text>
             <Group gap="sm" align="flex-end" wrap="wrap">
               <TextInput
                 label="Name"
                 value={trackForm.name}
                 onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && handleTrackSubmit()}
+                onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
                 autoFocus
                 style={{ flex: 1, minWidth: 150 }}
               />
@@ -999,7 +1513,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
                 onChange={(c) => setTrackForm((f) => ({ ...f, color: c }))}
               />
               <Button size="sm" onClick={handleTrackSubmit}>
-                {editingTrackId ? "Save" : "Create"}
+                {editingTrackId ? 'Save' : 'Create'}
               </Button>
               <Button variant="subtle" size="sm" onClick={resetTrackForm}>
                 Cancel
@@ -1031,25 +1545,21 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
                     else trackRefs.current.delete(track.id);
                   }}
                   withBorder
-                  style={{ overflow: "hidden" }}
+                  style={{ overflow: 'hidden' }}
                 >
                   {/* Track header */}
                   <Group
                     justify="space-between"
                     align="center"
                     p="sm"
-                    style={{ cursor: "pointer" }}
+                    style={{ cursor: 'pointer' }}
                     onClick={() => toggleExpand(track.id)}
                   >
                     <Group gap="sm">
-                      <Box
-                        w={12}
-                        h={12}
-                        style={{ borderRadius: "50%", background: track.color }}
-                      />
+                      <Box w={12} h={12} style={{ borderRadius: '50%', background: track.color }} />
                       <Text fw={600}>{track.name}</Text>
                       <Badge size="sm" variant="light" color="gray">
-                        {vars.length} variation{vars.length !== 1 ? "s" : ""}
+                        {vars.length} variation{vars.length !== 1 ? 's' : ''}
                       </Badge>
                     </Group>
                     <Group gap="xs" align="center">
@@ -1092,84 +1602,23 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
                   {isExpanded && (
                     <Box
                       p="md"
-                      style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+                      style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
                     >
                       <Group justify="space-between" align="center" mb="sm">
                         <Text size="xs" fw={600} c="dimmed" tt="uppercase">
                           Variations
                         </Text>
-                        <Button size="xs" leftSection={<IconPlus size={12} />} onClick={() => startAddVar(track.id)}>
+                        <Button
+                          size="xs"
+                          leftSection={<IconPlus size={12} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startAddVar(track.id);
+                          }}
+                        >
                           Add Variation
                         </Button>
                       </Group>
-
-                      {/* Variation form */}
-                      {showVarForm === track.id && (
-                        <Paper withBorder p="md" mb="sm">
-                          <Stack gap="sm">
-                            <TextInput
-                              label="Name"
-                              value={varForm.name}
-                              onChange={(e) =>
-                                setVarForm((f) => ({ ...f, name: e.target.value }))
-                              }
-                              autoFocus
-                            />
-                            <Textarea
-                              label="Description"
-                              value={varForm.description}
-                              onChange={(e) =>
-                                setVarForm((f) => ({ ...f, description: e.target.value }))
-                              }
-                              rows={2}
-                            />
-                            <Group gap="sm" grow>
-                              <TextInput
-                                label="Start Latitude"
-                                placeholder="e.g. 39.7392"
-                                value={varForm.startLat}
-                                onChange={(e) =>
-                                  setVarForm((f) => ({ ...f, startLat: e.target.value }))
-                                }
-                              />
-                              <TextInput
-                                label="Start Longitude"
-                                placeholder="e.g. -104.9903"
-                                value={varForm.startLng}
-                                onChange={(e) =>
-                                  setVarForm((f) => ({ ...f, startLng: e.target.value }))
-                                }
-                              />
-                            </Group>
-                            <Group gap="sm" grow>
-                              <TextInput
-                                label="End Latitude"
-                                placeholder="e.g. 39.7489"
-                                value={varForm.endLat}
-                                onChange={(e) =>
-                                  setVarForm((f) => ({ ...f, endLat: e.target.value }))
-                                }
-                              />
-                              <TextInput
-                                label="End Longitude"
-                                placeholder="e.g. -104.9815"
-                                value={varForm.endLng}
-                                onChange={(e) =>
-                                  setVarForm((f) => ({ ...f, endLng: e.target.value }))
-                                }
-                              />
-                            </Group>
-                            <Group gap="xs">
-                              <Button size="sm" onClick={handleVarSubmit}>
-                                {editingVarId ? "Save" : "Add"}
-                              </Button>
-                              <Button variant="subtle" size="sm" onClick={resetVarForm}>
-                                Cancel
-                              </Button>
-                            </Group>
-                          </Stack>
-                        </Paper>
-                      )}
 
                       {/* Variation list */}
                       <Table>
@@ -1186,7 +1635,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
                             <Table.Tr key={String(tv.id)}>
                               <Table.Td>
                                 <Group gap="xs">
-                                  {tv.name === "Default" && (
+                                  {tv.name === 'Default' && (
                                     <Badge size="xs" variant="light" color="blue">
                                       Default
                                     </Badge>
@@ -1196,14 +1645,14 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
                               </Table.Td>
                               <Table.Td>
                                 <Text size="sm" c="dimmed">
-                                  {tv.description || "—"}
+                                  {tv.description || '—'}
                                 </Text>
                               </Table.Td>
                               <Table.Td>
                                 {tv.startLatitude !== 0 || tv.startLongitude !== 0 ? (
                                   <Text size="xs" c="dimmed">
                                     {tv.startLatitude.toFixed(4)}, {tv.startLongitude.toFixed(4)}
-                                    {" → "}
+                                    {' → '}
                                     {tv.endLatitude.toFixed(4)}, {tv.endLongitude.toFixed(4)}
                                   </Text>
                                 ) : (
@@ -1226,7 +1675,7 @@ export function LocationDetailView({ venueId, onBack }: LocationDetailViewProps)
                                     >
                                       Edit
                                     </Menu.Item>
-                                    {tv.name !== "Default" && vars.length > 1 && (
+                                    {tv.name !== 'Default' && vars.length > 1 && (
                                       <Menu.Item
                                         leftSection={<IconTrash size={14} />}
                                         color="red"

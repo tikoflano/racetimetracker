@@ -376,6 +376,8 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
         email: `rider${i + 1}@example.com`,
         phone: `+1-555-${String(i + 1001).slice(-4)}`,
         date_of_birth: `${year}-${month}-${day}`,
+        sex: i % 2 === 0 ? 'male' : 'female',
+        profile_picture: '',
       })
     );
   }
