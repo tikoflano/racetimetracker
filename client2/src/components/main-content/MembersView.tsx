@@ -398,10 +398,34 @@ function MemberEditModal({
     <Modal
       opened
       onClose={onClose}
-      title={`Edit roles & scopes: ${member.name}`}
+      title={
+        <Group gap="sm">
+          <ThemeIcon size={36} radius="md" color="green" variant="light">
+            <IconUsers size={20} />
+          </ThemeIcon>
+          <div>
+            <Text size="xs" c="green.4" tt="uppercase" fw={600} lh={1}>
+              Permissions
+            </Text>
+            <Text fw={700} size="lg" lh={1.3}>
+              Edit roles &amp; scopes
+            </Text>
+          </div>
+        </Group>
+      }
       size="lg"
+      centered
+      radius="md"
+      overlayProps={{ blur: 3 }}
+      styles={{
+        header: {
+          background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
+          borderBottom: "1px solid #1a3a2a",
+        },
+        close: { color: "white" },
+      }}
     >
-      <Stack gap="lg">
+      <Stack gap="lg" pt="xs">
         {scopeError && (
           <Text size="sm" c="red">
             {scopeError}
@@ -640,8 +664,8 @@ function MemberEditModal({
           >
             More information
           </Button>
-          <Button variant="subtle" onClick={onClose}>
-            Done
+          <Button onClick={onClose}>
+            Save
           </Button>
         </Group>
       </Stack>
@@ -1278,9 +1302,34 @@ export function MembersView() {
       <Modal
         opened={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
-        title="Invite Member"
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="green" variant="light">
+              <IconUserPlus size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="green.4" tt="uppercase" fw={600} lh={1}>
+                Organization
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Invite Member
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
+            borderBottom: "1px solid #1a3a2a",
+          },
+          close: { color: "white" },
+        }}
       >
-        <Stack gap="md">
+        <Stack gap="md" pt="xs">
           {error && (
             <Text size="sm" c="red">
               {error}
@@ -1333,11 +1382,11 @@ export function MembersView() {
           >
             {inviteScopesOpen ? "Hide" : "About scopes"}
           </Button>
-          <Group gap="xs">
-            <Button onClick={handleInvite}>Invite</Button>
+          <Group gap="xs" justify="flex-end">
             <Button variant="subtle" onClick={() => setInviteModalOpen(false)}>
               Cancel
             </Button>
+            <Button onClick={handleInvite}>Invite</Button>
           </Group>
         </Stack>
       </Modal>
@@ -1349,9 +1398,34 @@ export function MembersView() {
           setTransferModalOpen(false);
           setTransferTargetId(null);
         }}
-        title="Transfer ownership"
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="green" variant="light">
+              <IconArrowLeftRight size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="green.4" tt="uppercase" fw={600} lh={1}>
+                Organization
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Transfer ownership
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
+            borderBottom: "1px solid #1a3a2a",
+          },
+          close: { color: "white" },
+        }}
       >
-        <Stack gap="md">
+        <Stack gap="md" pt="xs">
           <Text size="sm" c="dimmed">
             Transfer this organization to another admin. You will become a
             regular admin after the transfer.
@@ -1368,13 +1442,7 @@ export function MembersView() {
                   label: m.name || m.email,
                 }))}
               />
-              <Group gap="xs">
-                <Button
-                  onClick={handleTransfer}
-                  disabled={!transferTargetId}
-                >
-                  Transfer
-                </Button>
+              <Group gap="xs" justify="flex-end">
                 <Button
                   variant="subtle"
                   onClick={() => {
@@ -1383,6 +1451,12 @@ export function MembersView() {
                   }}
                 >
                   Cancel
+                </Button>
+                <Button
+                  onClick={handleTransfer}
+                  disabled={!transferTargetId}
+                >
+                  Transfer
                 </Button>
               </Group>
             </>
@@ -1397,9 +1471,34 @@ export function MembersView() {
           setRenameModalOpen(false);
           setRenameError(null);
         }}
-        title="Rename organization"
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="green" variant="light">
+              <IconBuilding size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="green.4" tt="uppercase" fw={600} lh={1}>
+                Organization
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Rename organization
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)",
+            borderBottom: "1px solid #1a3a2a",
+          },
+          close: { color: "white" },
+        }}
       >
-        <Stack gap="md">
+        <Stack gap="md" pt="xs">
           {renameError && (
             <Text size="sm" c="red">
               {renameError}
@@ -1414,8 +1513,7 @@ export function MembersView() {
             }}
             autoFocus
           />
-          <Group gap="xs">
-            <Button onClick={handleRename}>Save</Button>
+          <Group gap="xs" justify="flex-end">
             <Button
               variant="subtle"
               onClick={() => {
@@ -1425,6 +1523,7 @@ export function MembersView() {
             >
               Cancel
             </Button>
+            <Button onClick={handleRename}>Save</Button>
           </Group>
         </Stack>
       </Modal>

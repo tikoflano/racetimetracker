@@ -16,6 +16,7 @@ import {
   Text,
   Textarea,
   TextInput,
+  ThemeIcon,
   Title,
   UnstyledButton,
 } from '@mantine/core';
@@ -990,8 +991,37 @@ export function LocationDetailView() {
       </Paper>
 
       {/* Edit location modal */}
-      <Modal opened={editingVenue} onClose={() => setEditingVenue(false)} title="Edit Location">
-        <Stack gap="sm">
+      <Modal
+        opened={editingVenue}
+        onClose={() => setEditingVenue(false)}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="blue" variant="light">
+              <IconMapPin size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                Location
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Edit Location
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+            borderBottom: "1px solid #1e2028",
+          },
+          close: { color: "white" },
+        }}
+      >
+        <Stack gap="sm" pt="xs">
           {error && (
             <Text size="sm" c="red">
               {error}
@@ -1267,6 +1297,17 @@ export function LocationDetailView() {
             ? `Edit Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
             : `New Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
         }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)',
+            borderBottom: '1px solid #1e2028',
+          },
+          close: { color: 'white' },
+        }}
       >
         {(() => {
           const track = variationModalTrack;
@@ -1316,7 +1357,7 @@ export function LocationDetailView() {
           const mapCenter: [number, number] = startPos ?? endPos ?? mapPositions[0] ?? [0, 0];
 
           return (
-            <Stack gap="sm">
+            <Stack gap="sm" pt="xs">
               <TextInput
                 label="Name"
                 value={varForm.name}

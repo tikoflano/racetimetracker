@@ -103,7 +103,7 @@ export function RidersView() {
 
   const orgRiders = useMemo<Rider[]>(() => {
     if (!activeOrgId) return [];
-    return allRiders.filter((r: Rider) => r.orgId === activeOrgId);
+    return (allRiders as Rider[]).filter((r) => r.orgId === activeOrgId);
   }, [allRiders, activeOrgId]);
 
   // Compute age range from riders with known DOB
@@ -529,9 +529,34 @@ export function RidersView() {
       <Modal
         opened={showForm}
         onClose={resetForm}
-        title={editingId !== null ? "Edit Rider" : "New Rider"}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="blue" variant="light">
+              <IconUsers size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                {editingId !== null ? "Edit rider" : "Add rider"}
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                {editingId !== null ? "Edit Rider" : "New Rider"}
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+            borderBottom: "1px solid #1e2028",
+          },
+          close: { color: "white" },
+        }}
       >
-        <Stack gap="sm">
+        <Stack gap="sm" pt="xs">
           {formError && (
             <Text size="sm" c="red">
               {formError}
@@ -642,12 +667,12 @@ export function RidersView() {
               ]}
             />
           </Group>
-          <Group gap="xs" mt="xs">
-            <Button onClick={handleSubmit}>
-              {editingId !== null ? "Save" : "Add Rider"}
-            </Button>
+          <Group gap="xs" justify="flex-end" mt="xs">
             <Button variant="subtle" onClick={resetForm}>
               Cancel
+            </Button>
+            <Button onClick={handleSubmit}>
+              {editingId !== null ? "Save" : "Add Rider"}
             </Button>
           </Group>
         </Stack>
@@ -657,9 +682,34 @@ export function RidersView() {
       <Modal
         opened={showRegModal}
         onClose={() => setShowRegModal(false)}
-        title="Registration link"
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="blue" variant="light">
+              <IconShare size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                Share
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Registration link
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+            borderBottom: "1px solid #1e2028",
+          },
+          close: { color: "white" },
+        }}
       >
-        <Stack gap="md">
+        <Stack gap="md" pt="xs">
           <Checkbox
             label="Allow new riders to register"
             checked={activeOrg.registrationEnabled !== false}
@@ -683,9 +733,18 @@ export function RidersView() {
               {registrationUrl}
             </Text>
           </Text>
-          <Button size="xs" onClick={() => navigator.clipboard.writeText(registrationUrl)}>
-            Copy link
-          </Button>
+          <Group justify="flex-end" gap="xs">
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={() => setShowRegModal(false)}
+            >
+              Close
+            </Button>
+            <Button size="xs" onClick={() => navigator.clipboard.writeText(registrationUrl)}>
+              Copy link
+            </Button>
+          </Group>
         </Stack>
       </Modal>
     </Stack>

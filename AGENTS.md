@@ -22,7 +22,19 @@ RaceTimeTracker — real-time enduro bike race timing. SpacetimeDB handles all b
 - Layout: Use `AppShell` for app structure (Header, Navbar/sidebar, Main). Use `Stack`, `Group`, `Box`, `Flex` for content layout.
 - For forms: Prefer `@mantine/form` with `useForm` when doing multi-field forms with validation.
 - Action menus: Use `Menu` with `Menu.Target` (e.g. `ActionIcon` with ellipsis) and `Menu.Dropdown` / `Menu.Item`. Destructive actions use `color="red"`.
-- Modals: Use Mantine `Modal` with `opened`, `onClose`, `title`. Close on Escape and overlay click by default.
+- Modals: Use Mantine `Modal` with `opened`, `onClose`, `title`. Close on Escape and overlay click by default. In the main client (non-SpacetimeDB shell), use the shared `Modal` wrapper at `client/src/components/Modal.tsx`. In the experimental `client2` shell, follow the **New Location** modal as the visual reference for:
+  - **Header**: rich header aligned with the page banner.
+    - Use a gradient or themed background matching the page (e.g. `linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)` for blue pages, or a green variant for org/members).
+    - Compose `title` as a `Group` with a `ThemeIcon` on the left and a text block on the right:
+      - Top line: small, uppercase `Text` label (e.g. `"Add venue"`, `"Create championship"`) with subtle color.
+      - Second line: main title `Text` (`fw={700}`, `size="lg"`) such as `"New Location"`, `"New Championship"`, `"Add Event"`, `"Invite Member"`.
+    - Use the `styles` prop on `Modal` to style the header and close button, e.g.:
+      - `styles={{ header: { background: <gradient>, borderBottom: "<1px solid ...>" }, close: { color: "white" } }}` (tune colors per page).
+  - **Body**: Wrap modal content in a `Stack` (typically `gap="md"` with `pt="xs"`). Show validation or API errors as a red `Text size="sm"` at the top of the body.
+  - **Footer buttons**: Place actions in a `Group` with `justify="flex-end"` at the bottom of the body.
+    - Order: secondary `Button` with `variant="subtle"` (e.g. **Cancel**, **Close**) on the left, primary action button on the right (e.g. **Create Location**, **Create**, **Save**, **Invite**).
+    - Use concise, action-focused labels. For edit/update flows (e.g. “Edit roles & scopes”, “Rename organization”, “Edit Championship”), prefer **Save** as the primary button label (not “Done”) and give it a solid background (default button variant) to clearly indicate it commits changes.
+  - **Size & shape**: Prefer `radius="md"` and `size="lg"` (or larger when needed), with `centered` and a light blurred overlay (`overlayProps={{ blur: 3 }}`) for primary workflows.
 - Error display: Use `Alert` with `color="red"`, `withCloseButton`, `onClose`.
 - **Selects:** Favor searchable dropdowns (`Select` with `searchable` or Combobox) when the list is expected to have more than 10 items (riders, events, locations, championships, categories, etc.). Plain `Select` is fine for small fixed lists (e.g. status, role).
 

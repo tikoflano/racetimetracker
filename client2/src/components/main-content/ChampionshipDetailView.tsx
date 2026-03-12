@@ -513,8 +513,41 @@ export function ChampionshipDetailView() {
       </Stack>
 
       {/* Edit championship modal */}
-      <Modal opened={showEdit} onClose={() => setShowEdit(false)} title="Edit Championship">
-        <Stack gap="sm">
+      <Modal
+        opened={showEdit}
+        onClose={() => setShowEdit(false)}
+        title={
+          <Group gap="sm">
+            <ThemeIcon
+              size={36}
+              radius="md"
+              style={{ background: champ.color + "33", color: champ.color }}
+            >
+              <IconTrophy size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                Championship
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Edit Championship
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+            borderBottom: "1px solid #1e2028",
+          },
+          close: { color: "white" },
+        }}
+      >
+        <Stack gap="sm" pt="xs">
           {editError && <Text size="sm" c="red">{editError}</Text>}
           <TextInput
             label="Name *"
@@ -530,16 +563,45 @@ export function ChampionshipDetailView() {
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
           />
           <ColorInput label="Color" value={editColor} onChange={setEditColor} />
-          <Group gap="xs" mt="xs">
-            <Button onClick={handleSave}>Save</Button>
+          <Group gap="xs" mt="xs" justify="flex-end">
             <Button variant="subtle" onClick={() => setShowEdit(false)}>Cancel</Button>
+            <Button onClick={handleSave}>Save</Button>
           </Group>
         </Stack>
       </Modal>
 
       {/* Add event modal */}
-      <Modal opened={showAddEvent} onClose={resetEventForm} title="Add Event">
-        <Stack gap="sm">
+      <Modal
+        opened={showAddEvent}
+        onClose={resetEventForm}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="blue" variant="light">
+              <IconPlus size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                Championship
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                Add Event
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+            borderBottom: "1px solid #1e2028",
+          },
+          close: { color: "white" },
+        }}
+      >
+        <Stack gap="sm" pt="xs">
           {evtError && <Text size="sm" c="red">{evtError}</Text>}
           <TextInput
             label="Event Name *"
@@ -575,9 +637,9 @@ export function ChampionshipDetailView() {
             searchable
             allowDeselect={false}
           />
-          <Group gap="xs" mt="xs">
-            <Button onClick={handleAddEvent}>Create Event</Button>
+          <Group gap="xs" mt="xs" justify="flex-end">
             <Button variant="subtle" onClick={resetEventForm}>Cancel</Button>
+            <Button onClick={handleAddEvent}>Create Event</Button>
           </Group>
         </Stack>
       </Modal>

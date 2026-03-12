@@ -402,8 +402,37 @@ export function ChampionshipsView() {
       )}
 
       {/* Create championship modal */}
-      <Modal opened={showCreate} onClose={resetCreate} title="New Championship">
-        <Stack gap="sm">
+      <Modal
+        opened={showCreate}
+        onClose={resetCreate}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={36} radius="md" color="blue" variant="light">
+              <IconTrophy size={20} />
+            </ThemeIcon>
+            <div>
+              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
+                Championship
+              </Text>
+              <Text fw={700} size="lg" lh={1.3}>
+                New Championship
+              </Text>
+            </div>
+          </Group>
+        }
+        centered
+        radius="md"
+        size="lg"
+        overlayProps={{ blur: 3 }}
+        styles={{
+          header: {
+            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+            borderBottom: "1px solid #1e2028",
+          },
+          close: { color: "white" },
+        }}
+      >
+        <Stack gap="sm" pt="xs">
           {createError && (
             <Text size="sm" c="red">
               {createError}
@@ -425,11 +454,11 @@ export function ChampionshipsView() {
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
           />
           <ColorInput label="Color" value={newColor} onChange={setNewColor} />
-          <Group gap="xs" mt="xs">
-            <Button onClick={handleCreate}>Create</Button>
+          <Group gap="xs" mt="xs" justify="flex-end">
             <Button variant="subtle" onClick={resetCreate}>
               Cancel
             </Button>
+            <Button onClick={handleCreate}>Create</Button>
           </Group>
         </Stack>
       </Modal>
