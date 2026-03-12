@@ -8,9 +8,12 @@ import {
   Button,
   Card,
   Group,
+  Indicator,
   Loader,
+  Menu,
   Modal,
   Paper,
+  Popover,
   Select,
   SimpleGrid,
   Stack,
@@ -20,16 +23,20 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
+  IconDotsVertical,
   IconExternalLink,
+  IconFilter,
   IconMapPin,
   IconPlus,
   IconRoute,
   IconSearch,
   IconSortAscending,
+  IconX,
 } from "@tabler/icons-react";
 import { ImageUploader, resizeImage } from "./ImageUploader";
 import { type Venue, loadVenues, saveVenues } from "./venueStorage";
@@ -294,6 +301,12 @@ export function LocationsView() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("name-asc");
   const [filter, setFilter] = useState<FilterOption>("all");
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const activeFilterCount = filter !== "all" ? 1 : 0;
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", address: "" });
   const [images, setImages] = useState<string[]>([]);
@@ -446,38 +459,64 @@ export function LocationsView() {
     <Stack gap="lg">
       {/* Header Banner */}
       <Box
-        p="xl"
+        p={isMobile ? "md" : "xl"}
         style={{
           background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
           borderRadius: "var(--mantine-radius-md)",
           border: "1px solid #1e2028",
         }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="blue" variant="light">
-              <IconMapPin size={28} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
-                Manage
-              </Text>
-              <Title order={2} c="white" fw={700}>
+        <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+          <Group gap="sm" align="center" style={{ minWidth: 0 }}>
+            {!isMobile && (
+              <ThemeIcon size={52} radius="md" color="blue" variant="light">
+                <IconMapPin size={28} />
+              </ThemeIcon>
+            )}
+            <div style={{ minWidth: 0 }}>
+              {!isMobile && (
+                <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
+                  Manage
+                </Text>
+              )}
+              <Title order={isMobile ? 4 : 2} c="white" fw={700} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 Locations
               </Title>
-              <Text size="sm" c="blue.2" mt={2}>
-                {venues.length} venue{venues.length !== 1 ? "s" : ""} · manage venues and tracks for your events
+              <Text size={isMobile ? "xs" : "sm"} c="blue.2" mt={2}>
+                {venues.length} venue{venues.length !== 1 ? "s" : ""}
+                {!isMobile && " · manage venues and tracks for your events"}
               </Text>
             </div>
           </Group>
-          <Button
-            leftSection={<IconPlus size={16} />}
-            variant="white"
-            color="dark"
-            onClick={() => setShowForm(true)}
-          >
-            New Location
-          </Button>
+          <Group gap="sm" style={{ flexShrink: 0 }}>
+            {!isMobile && (
+              <Button
+                leftSection={<IconPlus size={16} />}
+                variant="white"
+                color="dark"
+                onClick={() => setShowForm(true)}
+              >
+                New Location
+              </Button>
+            )}
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" size="lg" color="gray">
+                  <IconDotsVertical size={18} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {isMobile && (
+                  <Menu.Item
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => setShowForm(true)}
+                  >
+                    New Location
+                  </Menu.Item>
+                )}
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </Box>
 
@@ -582,52 +621,105 @@ export function LocationsView() {
 
       {/* Toolbar */}
       <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="xs" wrap="wrap">
-            {(["all", "has-tracks", "no-tracks"] as FilterOption[]).map((f) => {
-              const labels: Record<FilterOption, string> = {
-                "all": `All (${venues.length})`,
-                "has-tracks": "Has Tracks",
-                "no-tracks": "No Tracks",
-              };
-              return (
-                <Badge
-                  key={f}
-                  size="lg"
-                  variant={filter === f ? "filled" : "light"}
+        <Group justify="space-between" align="center" gap="sm">
+          <Group gap="sm" align="center">
+            <Popover
+              opened={filterOpen}
+              onChange={setFilterOpen}
+              position="bottom-start"
+              shadow="md"
+              withinPortal
+            >
+              <Popover.Target>
+                <Indicator
+                  disabled={activeFilterCount === 0}
+                  label={activeFilterCount}
+                  size={16}
                   color="blue"
-                  leftSection={f === "all" ? <IconMapPin size={12} /> : <IconRoute size={12} />}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setFilter(f)}
                 >
-                  {labels[f]}
-                </Badge>
-              );
-            })}
+                  <ActionIcon
+                    variant={activeFilterCount > 0 ? "filled" : "subtle"}
+                    color={activeFilterCount > 0 ? "blue" : "gray"}
+                    size="md"
+                    onClick={() => setFilterOpen((o) => !o)}
+                    aria-label="Filter locations"
+                  >
+                    <IconFilter size={16} />
+                  </ActionIcon>
+                </Indicator>
+              </Popover.Target>
+              <Popover.Dropdown p="sm">
+                <Stack gap="xs">
+                  {(["all", "has-tracks", "no-tracks"] as FilterOption[]).map((f) => {
+                    const labels: Record<FilterOption, string> = {
+                      "all": `All (${venues.length})`,
+                      "has-tracks": "Has Tracks",
+                      "no-tracks": "No Tracks",
+                    };
+                    return (
+                      <Badge
+                        key={f}
+                        size="lg"
+                        variant={filter === f ? "filled" : "light"}
+                        color="blue"
+                        leftSection={f === "all" ? <IconMapPin size={12} /> : <IconRoute size={12} />}
+                        style={{ cursor: "pointer", minWidth: "max-content" }}
+                        onClick={() => setFilter(f)}
+                      >
+                        {labels[f]}
+                      </Badge>
+                    );
+                  })}
+                  <Select
+                    mt={4}
+                    placeholder="Sort by"
+                    value={sort}
+                    onChange={(v: string | null) => v && setSort(v as SortOption)}
+                    leftSection={<IconSortAscending size={16} />}
+                    data={[
+                      { label: "Name A–Z", value: "name-asc" },
+                      { label: "Name Z–A", value: "name-desc" },
+                      { label: "Most Tracks", value: "tracks-desc" },
+                      { label: "Fewest Tracks", value: "tracks-asc" },
+                    ]}
+                    size="sm"
+                    allowDeselect={false}
+                  />
+                </Stack>
+              </Popover.Dropdown>
+            </Popover>
+            <Text size="xs" c="dimmed">
+              {filteredAndSortedVenues.length === venues.length
+                ? `${venues.length} venue${venues.length !== 1 ? "s" : ""}`
+                : `${filteredAndSortedVenues.length} of ${venues.length}`}
+            </Text>
           </Group>
-          <Group gap="sm">
-            <Select
-              placeholder="Sort by"
-              value={sort}
-              onChange={(v: string | null) => v && setSort(v as SortOption)}
-              leftSection={<IconSortAscending size={16} />}
-              data={[
-                { label: "Name A–Z", value: "name-asc" },
-                { label: "Name Z–A", value: "name-desc" },
-                { label: "Most Tracks", value: "tracks-desc" },
-                { label: "Fewest Tracks", value: "tracks-asc" },
-              ]}
-              style={{ width: 160 }}
-              allowDeselect={false}
-            />
+          {searchOpen ? (
             <TextInput
               placeholder="Search locations..."
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
-              leftSection={<IconSearch size={16} />}
-              style={{ minWidth: 240 }}
+              size="sm"
+              leftSection={<IconSearch size={14} />}
+              rightSection={
+                <ActionIcon variant="subtle" size="sm" color="gray" onClick={() => { setSearchOpen(false); setSearch(""); }}>
+                  <IconX size={12} />
+                </ActionIcon>
+              }
+              autoFocus
+              style={{ flex: 1, minWidth: 0 }}
             />
-          </Group>
+          ) : (
+            <ActionIcon
+              variant={search ? "filled" : "subtle"}
+              color={search ? "blue" : "gray"}
+              size="md"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search locations"
+            >
+              <IconSearch size={16} />
+            </ActionIcon>
+          )}
         </Group>
       </Paper>
 
