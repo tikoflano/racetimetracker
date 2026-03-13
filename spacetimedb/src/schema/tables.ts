@@ -76,7 +76,7 @@ export const venue = table(
     name: t.string(),
     description: t.string(),
     address: t.string(),
-    cover_image: t.string(), // base64 data URL or empty string
+    cover_image: t.string().default(''), // base64 data URL or empty string
   }
 );
 
