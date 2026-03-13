@@ -952,64 +952,16 @@ export function LocationDetailView() {
         ) : (
           <Box p="lg" style={{ background: 'var(--mantine-color-dark-6)' }}>
             <Group justify="space-between" align="center">
-              <div>
+              <Stack gap={4} style={{ minWidth: 0 }}>
                 <Group gap="xs" align="center">
                   <IconMapPin size={24} color="var(--mantine-color-blue-6)" />
                   <Title order={2}>{venue.name}</Title>
                 </Group>
                 {venue.description && (
-                  <Text size="sm" c="dimmed" mt="xs">
+                  <Text size="sm" c="dimmed">
                     {venue.description}
                   </Text>
                 )}
-              </div>
-              <Stack gap={6} align="flex-end">
-                <Group gap="xs">
-                  <Button
-                    size="xs"
-                    variant="white"
-                    color="dark"
-                    leftSection={<IconPlus size={14} />}
-                    onClick={() => {
-                      setEditingTrackId(null);
-                      setTrackForm({ name: '', color: '#3b82f6' });
-                      setShowTrackForm(true);
-                      setError('');
-                    }}
-                  >
-                    Add Track
-                  </Button>
-                  <Menu shadow="md" width={200} position="bottom-end">
-                    <Menu.Target>
-                      <ActionIcon variant="subtle" size="lg" color="gray">
-                        <IconDotsVertical size={18} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      {coverImage && (
-                        <>
-                          <Menu.Item
-                            leftSection={<IconPhoto size={14} />}
-                            onClick={() => setGalleryOpen(true)}
-                          >
-                            View gallery
-                          </Menu.Item>
-                          <Menu.Divider />
-                        </>
-                      )}
-                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
-                        Edit
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconTrash size={14} />}
-                        color="red"
-                        onClick={deleteVenue}
-                      >
-                        Delete
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                </Group>
                 {venue.address && (
                   <Text
                     component="a"
@@ -1017,16 +969,62 @@ export function LocationDetailView() {
                     target="_blank"
                     rel="noopener noreferrer"
                     c="dimmed"
-                    size="sm"
+                    size="xs"
                     style={{ textDecoration: 'none' }}
                   >
                     <Group gap={4} align="center">
-                      <IconMapPin size={14} />
+                      <IconMapPin size={12} />
                       {venue.address}
                     </Group>
                   </Text>
                 )}
               </Stack>
+              <Group gap="xs" style={{ flexShrink: 0 }}>
+                <Button
+                  size="xs"
+                  variant="white"
+                  color="dark"
+                  leftSection={<IconPlus size={14} />}
+                  onClick={() => {
+                    setEditingTrackId(null);
+                    setTrackForm({ name: '', color: '#3b82f6' });
+                    setShowTrackForm(true);
+                    setError('');
+                  }}
+                >
+                  Add Track
+                </Button>
+                <Menu shadow="md" width={200} position="bottom-end">
+                  <Menu.Target>
+                    <ActionIcon variant="subtle" size="lg" color="gray">
+                      <IconDotsVertical size={18} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {coverImage && (
+                      <>
+                        <Menu.Item
+                          leftSection={<IconPhoto size={14} />}
+                          onClick={() => setGalleryOpen(true)}
+                        >
+                          View gallery
+                        </Menu.Item>
+                        <Menu.Divider />
+                      </>
+                    )}
+                    <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                      Edit
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconTrash size={14} />}
+                      color="red"
+                      onClick={deleteVenue}
+                    >
+                      Delete
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
             </Group>
           </Box>
         )}
@@ -2034,6 +2032,49 @@ export function LocationDetailView() {
                           'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)',
                       }}
                     />
+                    {/* Dots menu pinned to top-right */}
+                    <Box
+                      style={{ position: 'absolute', top: 8, right: 8 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Menu shadow="md" width={180} position="bottom-end">
+                        <Menu.Target>
+                          <ActionIcon
+                            variant="filled"
+                            size="sm"
+                            color="dark"
+                            style={{
+                              backgroundColor: 'rgba(15,23,42,0.75)',
+                              color: 'white',
+                            }}
+                          >
+                            <IconDotsVertical size={14} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            leftSection={<IconPhoto size={14} />}
+                            onClick={() => setTrackGalleryTrackId(track.id)}
+                          >
+                            View gallery
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconPencil size={14} />}
+                            onClick={() => startEditTrack(track)}
+                          >
+                            Edit
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconTrash size={14} />}
+                            color="red"
+                            onClick={() => handleDeleteTrack(track)}
+                          >
+                            Delete
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Box>
+
                     <Group
                       justify="space-between"
                       align="flex-end"
@@ -2074,39 +2115,6 @@ export function LocationDetailView() {
                           {vars.length} variation{vars.length !== 1 ? 's' : ''}
                         </Badge>
                         <Group gap={4}>
-                          <Menu shadow="md" width={180} position="bottom-end">
-                            <Menu.Target>
-                              <ActionIcon
-                                variant="subtle"
-                                size="sm"
-                                color="gray"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <IconDotsVertical size={14} />
-                              </ActionIcon>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                              <Menu.Item
-                                leftSection={<IconPhoto size={14} />}
-                                onClick={() => setTrackGalleryTrackId(track.id)}
-                              >
-                                View gallery
-                              </Menu.Item>
-                              <Menu.Item
-                                leftSection={<IconPencil size={14} />}
-                                onClick={() => startEditTrack(track)}
-                              >
-                                Edit
-                              </Menu.Item>
-                              <Menu.Item
-                                leftSection={<IconTrash size={14} />}
-                                color="red"
-                                onClick={() => handleDeleteTrack(track)}
-                              >
-                                Delete
-                              </Menu.Item>
-                            </Menu.Dropdown>
-                          </Menu>
                           {isExpanded ? (
                             <IconChevronUp size={16} color="var(--mantine-color-gray-3)" />
                           ) : (
