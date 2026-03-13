@@ -35,7 +35,8 @@ import {
   IconPlus,
   IconRoute,
   IconSearch,
-  IconSortAscending,
+  IconArrowUp,
+  IconArrowDown,
   IconX,
 } from "@tabler/icons-react";
 import { ImageUploader, resizeImage } from "./ImageUploader";
@@ -200,7 +201,8 @@ const MOCK_TRACKS: Track[] = [
   { id: 10n, venueId: 4n, name: "Cliff Hanger", color: "#3b82f6" },
 ];
 
-type SortOption = "name-asc" | "name-desc" | "tracks-desc" | "tracks-asc";
+type SortField = "name" | "tracks";
+type SortDir = "asc" | "desc";
 type FilterOption = "all" | "has-tracks" | "no-tracks";
 
 function mapsUrl(address: string) {
@@ -299,7 +301,8 @@ export function LocationsView() {
   useEffect(() => { saveVenues(venues); }, [venues]);
   const [tracks] = useState<Track[]>(MOCK_TRACKS);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortOption>("name-asc");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filter, setFilter] = useState<FilterOption>("all");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -365,23 +368,20 @@ export function LocationsView() {
       result = result.filter((v) => (trackCounts.get(v.id) ?? 0) === 0);
     }
 
+    const dir = sortDir === "asc" ? 1 : -1;
     result.sort((a, b) => {
-      switch (sort) {
-        case "name-asc":
-          return a.name.localeCompare(b.name);
-        case "name-desc":
-          return b.name.localeCompare(a.name);
-        case "tracks-desc":
-          return (trackCounts.get(b.id) ?? 0) - (trackCounts.get(a.id) ?? 0);
-        case "tracks-asc":
-          return (trackCounts.get(a.id) ?? 0) - (trackCounts.get(b.id) ?? 0);
+      switch (sortField) {
+        case "name":
+          return dir * a.name.localeCompare(b.name);
+        case "tracks":
+          return dir * ((trackCounts.get(a.id) ?? 0) - (trackCounts.get(b.id) ?? 0));
         default:
           return 0;
       }
     });
 
     return result;
-  }, [venues, search, sort, filter, trackCounts]);
+  }, [venues, search, sortField, sortDir, filter, trackCounts]);
 
   const resetForm = () => {
     setForm({ name: "", description: "", address: "" });
@@ -670,21 +670,27 @@ export function LocationsView() {
                       </Badge>
                     );
                   })}
-                  <Select
-                    mt={4}
-                    placeholder="Sort by"
-                    value={sort}
-                    onChange={(v: string | null) => v && setSort(v as SortOption)}
-                    leftSection={<IconSortAscending size={16} />}
-                    data={[
-                      { label: "Name A–Z", value: "name-asc" },
-                      { label: "Name Z–A", value: "name-desc" },
-                      { label: "Most Tracks", value: "tracks-desc" },
-                      { label: "Fewest Tracks", value: "tracks-asc" },
-                    ]}
-                    size="sm"
-                    allowDeselect={false}
-                  />
+                  <Group gap="xs" mt={4}>
+                    <Select
+                      size="xs"
+                      data={[
+                        { value: "name", label: "Name" },
+                        { value: "tracks", label: "Tracks" },
+                      ]}
+                      value={sortField}
+                      onChange={(v) => v && setSortField(v as SortField)}
+                      allowDeselect={false}
+                      style={{ flex: 1 }}
+                    />
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="sm"
+                      onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                    >
+                      {sortDir === "asc" ? <IconArrowUp size={14} /> : <IconArrowDown size={14} />}
+                    </ActionIcon>
+                  </Group>
                 </Stack>
               </Popover.Dropdown>
             </Popover>
