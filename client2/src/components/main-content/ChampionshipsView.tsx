@@ -10,18 +10,26 @@ import {
   Paper,
   Button,
   TextInput,
+  Select,
   Modal,
   Badge,
   ActionIcon,
   Menu,
+  Popover,
+  Indicator,
 } from "@mantine/core";
 import { ColorInput } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
   IconTrophy,
   IconPlus,
   IconDotsVertical,
   IconTrash,
+  IconSearch,
+  IconFilter,
+  IconArrowUp,
+  IconArrowDown,
 } from "@tabler/icons-react";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
@@ -70,6 +78,7 @@ interface ChampRow {
 
 export function ChampionshipsView() {
   const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const [orgs] = useTable(tables.organization);
   const [allChampionships] = useTable(tables.championship);
@@ -126,15 +135,21 @@ export function ChampionshipsView() {
   }, [allChampionships, allEvents, activeOrgId, today]);
 
   const [statusFilter, setStatusFilter] = useState<ChampStatus | "all">("all");
+  const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<ChampRow>>({
     columnAccessor: "name",
     direction: "asc",
   });
 
   const filteredRows = useMemo<ChampRow[]>(() => {
-    if (statusFilter === "all") return champRows;
-    return champRows.filter((r) => r.status === statusFilter);
-  }, [champRows, statusFilter]);
+    let rows = statusFilter === "all" ? champRows : champRows.filter((r) => r.status === statusFilter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter((r) => r.championship.name.toLowerCase().includes(q));
+    }
+    return rows;
+  }, [champRows, statusFilter, search]);
 
   const sortedRows = useMemo<ChampRow[]>(() => {
     const rows = [...filteredRows];
@@ -213,27 +228,86 @@ export function ChampionshipsView() {
     completed: champRows.filter((r) => r.status === "completed").length,
   };
 
+  const sortOptions = [
+    { value: "name", label: "Name" },
+    { value: "startDate", label: "Start Date" },
+    { value: "endDate", label: "End Date" },
+    { value: "status", label: "Status" },
+    { value: "eventCount", label: "Events" },
+    { value: "nextEvent", label: "Next Event" },
+  ];
+
+  const filterBadges = (["all", "in_progress", "not_started", "completed"] as const).map((f) => {
+    const labels: Record<string, string> = {
+      all: "All",
+      in_progress: "In Progress",
+      not_started: "Not Started",
+      completed: "Completed",
+    };
+    return (
+      <Badge
+        key={f}
+        size="lg"
+        variant={statusFilter === f ? "filled" : "light"}
+        color={f === "all" ? "blue" : STATUS_COLOR[f as ChampStatus]}
+        style={{ cursor: "pointer" }}
+        onClick={() => setStatusFilter(f)}
+      >
+        {labels[f]} ({statusCounts[f]})
+      </Badge>
+    );
+  });
+
   return (
     <Stack gap="lg">
       {/* Header banner */}
       <Box
-        p="xl"
+        p={isMobile ? "md" : "xl"}
         style={{
           background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
           borderRadius: "var(--mantine-radius-md)",
           border: "1px solid #1e2028",
+          position: "relative",
         }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+        {/* Mobile: dots menu pinned top-right */}
+        {isMobile && (
+          <Box style={{ position: "absolute", top: 12, right: 12 }}>
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon
+                  variant="filled"
+                  size="md"
+                  color="dark"
+                  style={{ backgroundColor: "rgba(15,23,42,0.75)", color: "white" }}
+                >
+                  <IconDotsVertical size={16} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconPlus size={14} />}
+                  onClick={() => setShowCreate(true)}
+                >
+                  New Championship
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Box>
+        )}
+
+        <Group justify="space-between" align="center" wrap="nowrap" gap="md">
           <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="blue" variant="light">
-              <IconTrophy size={28} />
-            </ThemeIcon>
+            {!isMobile && (
+              <ThemeIcon size={52} radius="md" color="blue" variant="light">
+                <IconTrophy size={28} />
+              </ThemeIcon>
+            )}
             <div>
               <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
                 {activeOrg.name}
               </Text>
-              <Title order={2} c="white" fw={700}>
+              <Title order={isMobile ? 3 : 2} c="white" fw={700} style={{ paddingRight: isMobile ? 40 : 0 }}>
                 Championships
               </Title>
               <Text size="sm" c="blue.2" mt={2}>
@@ -241,44 +315,125 @@ export function ChampionshipsView() {
               </Text>
             </div>
           </Group>
-          <Button
-            variant="white"
-            color="dark"
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setShowCreate(true)}
-          >
-            New Championship
-          </Button>
+
+          {/* Desktop: action button */}
+          {!isMobile && (
+            <Button
+              variant="white"
+              color="dark"
+              leftSection={<IconPlus size={16} />}
+              onClick={() => setShowCreate(true)}
+            >
+              New Championship
+            </Button>
+          )}
         </Group>
       </Box>
 
-      {/* Status filter toolbar */}
+      {/* Filter + search toolbar */}
       <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
-        <Group gap="xs" wrap="wrap">
-          {(["all", "in_progress", "not_started", "completed"] as const).map((f) => {
-            const labels: Record<string, string> = {
-              all: "All",
-              in_progress: "In Progress",
-              not_started: "Not Started",
-              completed: "Completed",
-            };
-            return (
-              <Badge
-                key={f}
+        {isMobile ? (
+          <Group justify="space-between" align="center" gap="xs">
+            <Group gap="xs">
+              <Popover shadow="md" withArrow position="bottom-start">
+                <Popover.Target>
+                  <Indicator
+                    disabled={statusFilter === "all"}
+                    size={8}
+                    color="blue"
+                    offset={4}
+                  >
+                    <ActionIcon variant="subtle" color="gray" size="lg">
+                      <IconFilter size={18} />
+                    </ActionIcon>
+                  </Indicator>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Stack gap="xs">
+                    <Text size="xs" c="dimmed" fw={600} tt="uppercase">Filter</Text>
+                    {filterBadges}
+                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" mt={4}>Sort</Text>
+                    <Group gap="xs">
+                      <Select
+                        size="xs"
+                        data={sortOptions}
+                        value={sortStatus.columnAccessor}
+                        onChange={(v) => v && setSortStatus((s) => ({ ...s, columnAccessor: v }))}
+                        allowDeselect={false}
+                        style={{ flex: 1 }}
+                      />
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        onClick={() =>
+                          setSortStatus((s) => ({ ...s, direction: s.direction === "asc" ? "desc" : "asc" }))
+                        }
+                      >
+                        {sortStatus.direction === "asc" ? <IconArrowUp size={14} /> : <IconArrowDown size={14} />}
+                      </ActionIcon>
+                    </Group>
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
+              <Text size="sm" c="dimmed">
+                {filteredRows.length} result{filteredRows.length !== 1 ? "s" : ""}
+              </Text>
+            </Group>
+            <Group gap="xs">
+              {showSearch && (
+                <TextInput
+                  placeholder="Search..."
+                  size="xs"
+                  style={{ width: 160 }}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                />
+              )}
+              <ActionIcon
+                variant="subtle"
+                color={showSearch ? "blue" : "gray"}
                 size="lg"
-                variant={statusFilter === f ? "filled" : "light"}
-                color={f === "all" ? "blue" : STATUS_COLOR[f as ChampStatus]}
-                style={{ cursor: "pointer" }}
-                onClick={() => setStatusFilter(f)}
+                onClick={() => {
+                  setShowSearch(!showSearch);
+                  if (showSearch) setSearch("");
+                }}
               >
-                {labels[f]} ({statusCounts[f]})
-              </Badge>
-            );
-          })}
-        </Group>
+                <IconSearch size={18} />
+              </ActionIcon>
+            </Group>
+          </Group>
+        ) : (
+          <Group justify="space-between" align="center" gap="md">
+            <Group gap="xs" wrap="wrap">
+              {filterBadges}
+            </Group>
+            <Group gap="xs">
+              <Select
+                size="xs"
+                data={sortOptions}
+                value={sortStatus.columnAccessor}
+                onChange={(v) => v && setSortStatus((s) => ({ ...s, columnAccessor: v }))}
+                allowDeselect={false}
+                style={{ width: 130 }}
+              />
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                onClick={() =>
+                  setSortStatus((s) => ({ ...s, direction: s.direction === "asc" ? "desc" : "asc" }))
+                }
+              >
+                {sortStatus.direction === "asc" ? <IconArrowUp size={14} /> : <IconArrowDown size={14} />}
+              </ActionIcon>
+            </Group>
+          </Group>
+        )}
       </Paper>
 
-      {/* Table */}
+      {/* Content */}
       {champRows.length === 0 ? (
         <Paper withBorder p="xl">
           <Stack align="center" gap="sm">
@@ -288,7 +443,75 @@ export function ChampionshipsView() {
             </Text>
           </Stack>
         </Paper>
+      ) : isMobile ? (
+        /* Mobile card list */
+        <Stack gap="sm">
+          {sortedRows.map((r) => (
+            <Paper
+              key={r.championship.id.toString()}
+              p="md"
+              withBorder
+              style={{ cursor: "pointer", position: "relative" }}
+              onClick={() => navigate(`/championships/${r.championship.id}`)}
+            >
+              <Group gap="xs" align="center" mb={6} style={{ paddingRight: 32 }}>
+                <Box
+                  w={10}
+                  h={10}
+                  style={{
+                    borderRadius: "50%",
+                    background: r.championship.color,
+                    flexShrink: 0,
+                  }}
+                />
+                <Text fw={600} style={{ flex: 1, minWidth: 0 }} lineClamp={1}>
+                  {r.championship.name}
+                </Text>
+                <Badge color={STATUS_COLOR[r.status]} variant="light" size="sm">
+                  {STATUS_LABEL[r.status]}
+                </Badge>
+              </Group>
+              <Group gap="xs">
+                <Text size="xs" c="dimmed">
+                  {r.eventCount} event{r.eventCount !== 1 ? "s" : ""}
+                </Text>
+                {r.startDate !== "—" && (
+                  <Text size="xs" c="dimmed">
+                    · {r.startDate} – {r.endDate}
+                  </Text>
+                )}
+              </Group>
+              {r.nextEvent && (
+                <Text size="xs" c="blue.3" mt={4}>
+                  Next: {r.nextEvent.name} ({r.nextEvent.startDate})
+                </Text>
+              )}
+              <Box
+                style={{ position: "absolute", top: 8, right: 8 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Menu shadow="md" width={180} position="bottom-end">
+                  <Menu.Target>
+                    <ActionIcon variant="subtle" size="sm" color="gray">
+                      <IconDotsVertical size={14} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconTrash size={14} />}
+                      color="red"
+                      onClick={() => handleDelete(r.championship)}
+                    >
+                      Delete
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Box>
+            </Paper>
+          ))}
+        </Stack>
       ) : (
+        /* Desktop DataTable */
         <Paper p="md" withBorder>
           <DataTable
             withTableBorder={false}

@@ -15,8 +15,11 @@ import {
   Menu,
   Select,
   ThemeIcon,
+  Popover,
+  Indicator,
 } from "@mantine/core";
 import { ColorInput } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { DatePickerInput } from "@mantine/dates";
 import { DataTable } from "mantine-datatable";
 import {
@@ -27,6 +30,7 @@ import {
   IconTrash,
   IconPin,
   IconArrowLeft,
+  IconFilter,
 } from "@tabler/icons-react";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
@@ -58,6 +62,12 @@ const STATUS_LABEL: Record<EventStatus, string> = {
   completed: "Completed",
 };
 
+const STATUS_COLOR: Record<EventStatus, string> = {
+  in_progress: "green",
+  not_started: "yellow",
+  completed: "gray",
+};
+
 function getEventStatus(e: Event, today: string): EventStatus {
   if (today < e.startDate) return "not_started";
   if (today > e.endDate) return "completed";
@@ -74,6 +84,7 @@ export function ChampionshipDetailView() {
   const { champId } = useParams<{ champId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const [orgs] = useTable(tables.organization);
   const [allChampionships] = useTable(tables.championship);
@@ -260,9 +271,36 @@ export function ChampionshipDetailView() {
     );
   }
 
+  const filterBadges = (["all", "in_progress", "not_started", "completed"] as const).map((f) => {
+    const labels: Record<string, string> = {
+      all: "All",
+      in_progress: "In Progress",
+      not_started: "Not Started",
+      completed: "Completed",
+    };
+    const colors: Record<string, string> = {
+      all: "blue",
+      in_progress: "green",
+      not_started: "yellow",
+      completed: "gray",
+    };
+    return (
+      <Badge
+        key={f}
+        size="lg"
+        variant={statusFilter === f ? "filled" : "light"}
+        color={colors[f]}
+        style={{ cursor: "pointer" }}
+        onClick={() => setStatusFilter(f)}
+      >
+        {labels[f]} ({statusCounts[f]})
+      </Badge>
+    );
+  });
+
   return (
     <Stack gap="lg">
-      {/* Back + header */}
+      {/* Back button */}
       <Button
         variant="subtle"
         size="xs"
@@ -273,54 +311,41 @@ export function ChampionshipDetailView() {
         Championships
       </Button>
 
+      {/* Header banner */}
       <Box
-        p="xl"
+        p={isMobile ? "md" : "xl"}
         style={{
-          background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+          background: `linear-gradient(135deg, ${champ.color}18 0%, ${champ.color}38 60%, ${champ.color}55 100%)`,
           borderRadius: "var(--mantine-radius-md)",
-          border: "1px solid #1e2028",
+          border: `1px solid ${champ.color}40`,
+          position: "relative",
         }}
       >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="md" align="center">
-            <ThemeIcon
-              size={52}
-              radius="md"
-              style={{ background: champ.color + "33", color: champ.color }}
-            >
-              <IconTrophy size={28} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
-                Championship
-              </Text>
-              <Title order={2} c="white" fw={700}>
-                {champ.name}
-              </Title>
-              {champ.description && (
-                <Text size="sm" c="blue.2" mt={2}>
-                  {champ.description}
-                </Text>
-              )}
-            </div>
-          </Group>
-          <Group gap="xs">
-            <Button
-              variant="white"
-              color="dark"
-              leftSection={<IconPlus size={16} />}
-              onClick={() => setShowAddEvent(true)}
-            >
-              Add Event
-            </Button>
+        {/* Mobile: dots menu pinned top-right */}
+        {isMobile && (
+          <Box style={{ position: "absolute", top: 12, right: 12 }}>
             <Menu shadow="md" width={200} position="bottom-end">
               <Menu.Target>
-                <ActionIcon variant="subtle" color="gray" size="lg">
+                <ActionIcon
+                  variant="filled"
+                  size="md"
+                  color="dark"
+                  style={{ backgroundColor: "rgba(15,23,42,0.75)", color: "white" }}
+                >
                   <IconDotsVertical size={16} />
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditing}>
+                <Menu.Item
+                  leftSection={<IconPlus size={14} />}
+                  onClick={() => setShowAddEvent(true)}
+                >
+                  Add Event
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconPencil size={14} />}
+                  onClick={startEditing}
+                >
                   Edit
                 </Menu.Item>
                 <Menu.Item
@@ -336,7 +361,76 @@ export function ChampionshipDetailView() {
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
+          </Box>
+        )}
+
+        <Group justify="space-between" align="center" wrap="nowrap" gap="md">
+          <Group gap="md" align="center">
+            {!isMobile && (
+              <ThemeIcon
+                size={52}
+                radius="md"
+                style={{ background: champ.color + "33", color: champ.color }}
+              >
+                <IconTrophy size={28} />
+              </ThemeIcon>
+            )}
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} mb={2} style={{ color: champ.color + "cc" }}>
+                Championship
+              </Text>
+              <Title
+                order={isMobile ? 3 : 2}
+                c="white"
+                fw={700}
+                style={{ paddingRight: isMobile ? 40 : 0 }}
+              >
+                {champ.name}
+              </Title>
+              {champ.description && (
+                <Text size="sm" mt={2} style={{ color: champ.color + "99" }}>
+                  {champ.description}
+                </Text>
+              )}
+            </div>
           </Group>
+
+          {/* Desktop: action buttons */}
+          {!isMobile && (
+            <Group gap="xs">
+              <Button
+                variant="white"
+                color="dark"
+                leftSection={<IconPlus size={16} />}
+                onClick={() => setShowAddEvent(true)}
+              >
+                Add Event
+              </Button>
+              <Menu shadow="md" width={200} position="bottom-end">
+                <Menu.Target>
+                  <ActionIcon variant="subtle" color="gray" size="lg">
+                    <IconDotsVertical size={16} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditing}>
+                    Edit
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconTrash size={14} />}
+                    color="red"
+                    onClick={async () => {
+                      if (!confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) return;
+                      await deleteChampionship({ championshipId: cid });
+                      navigate("/championships");
+                    }}
+                  >
+                    Delete
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
+          )}
         </Group>
       </Box>
 
@@ -346,37 +440,39 @@ export function ChampionshipDetailView() {
           Events ({champEvents.length})
         </Text>
 
-        {/* Status filter */}
+        {/* Filter toolbar */}
         {eventRows.length > 0 && (
           <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
-            <Group gap="xs" wrap="wrap">
-              {(["all", "in_progress", "not_started", "completed"] as const).map((f) => {
-                const labels: Record<string, string> = {
-                  all: "All",
-                  in_progress: "In Progress",
-                  not_started: "Not Started",
-                  completed: "Completed",
-                };
-                const colors: Record<string, string> = {
-                  all: "blue",
-                  in_progress: "green",
-                  not_started: "yellow",
-                  completed: "gray",
-                };
-                return (
-                  <Badge
-                    key={f}
-                    size="lg"
-                    variant={statusFilter === f ? "filled" : "light"}
-                    color={colors[f]}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setStatusFilter(f)}
-                  >
-                    {labels[f]} ({statusCounts[f]})
-                  </Badge>
-                );
-              })}
-            </Group>
+            {isMobile ? (
+              <Group gap="xs" align="center">
+                <Popover shadow="md" withArrow position="bottom-start">
+                  <Popover.Target>
+                    <Indicator
+                      disabled={statusFilter === "all"}
+                      size={8}
+                      color="blue"
+                      offset={4}
+                    >
+                      <ActionIcon variant="subtle" color="gray" size="lg">
+                        <IconFilter size={18} />
+                      </ActionIcon>
+                    </Indicator>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <Stack gap="xs">
+                      {filterBadges}
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
+                <Text size="sm" c="dimmed">
+                  {filteredEventRows.length} event{filteredEventRows.length !== 1 ? "s" : ""}
+                </Text>
+              </Group>
+            ) : (
+              <Group gap="xs" wrap="wrap">
+                {filterBadges}
+              </Group>
+            )}
           </Paper>
         )}
 
@@ -389,7 +485,98 @@ export function ChampionshipDetailView() {
               </Text>
             </Stack>
           </Paper>
+        ) : isMobile ? (
+          /* Mobile card list */
+          <Stack gap="sm">
+            {filteredEventRows.map((r) => (
+              <Paper
+                key={r.event.id.toString()}
+                p="md"
+                withBorder
+                style={{ position: "relative" }}
+              >
+                {editingEventId === r.event.id ? (
+                  /* Inline rename */
+                  <Stack gap="xs">
+                    <TextInput
+                      value={editEventName}
+                      onChange={(ev) => setEditEventName(ev.target.value)}
+                      onKeyDown={(ev) => {
+                        if (ev.key === "Enter") handleSaveEventName(r.event);
+                        if (ev.key === "Escape") setEditingEventId(null);
+                      }}
+                      autoFocus
+                      size="xs"
+                    />
+                    {editEventError && <Text size="xs" c="red">{editEventError}</Text>}
+                    <Group gap="xs">
+                      <Button size="xs" onClick={() => handleSaveEventName(r.event)}>Save</Button>
+                      <Button variant="subtle" size="xs" onClick={() => setEditingEventId(null)}>Cancel</Button>
+                    </Group>
+                  </Stack>
+                ) : (
+                  <>
+                    <Group gap="xs" align="center" mb={6} style={{ paddingRight: 32 }}>
+                      <Text fw={600} style={{ flex: 1, minWidth: 0 }} lineClamp={1}>
+                        {r.event.name}
+                      </Text>
+                      <Badge
+                        color={STATUS_COLOR[r.status]}
+                        variant="light"
+                        size="sm"
+                      >
+                        {STATUS_LABEL[r.status]}
+                      </Badge>
+                    </Group>
+                    <Group gap="xs">
+                      <Text size="xs" c="dimmed">
+                        {r.event.startDate} – {r.event.endDate}
+                      </Text>
+                      {r.venueName !== "—" && (
+                        <Text size="xs" c="dimmed">· {r.venueName}</Text>
+                      )}
+                    </Group>
+                    {/* Actions: pin + dots */}
+                    <Box
+                      style={{ position: "absolute", top: 8, right: 8 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Group gap={4}>
+                        {user && (
+                          <ActionIcon
+                            variant="subtle"
+                            size="sm"
+                            color={pinnedEventIds.has(r.event.id) ? "blue" : "gray"}
+                            onClick={() => togglePin({ eventId: r.event.id })}
+                            title={pinnedEventIds.has(r.event.id) ? "Unpin" : "Pin"}
+                          >
+                            <IconPin size={14} />
+                          </ActionIcon>
+                        )}
+                        <Menu shadow="md" width={180} position="bottom-end">
+                          <Menu.Target>
+                            <ActionIcon variant="subtle" size="sm" color="gray">
+                              <IconDotsVertical size={14} />
+                            </ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item
+                              leftSection={<IconPencil size={14} />}
+                              onClick={() => startEditEvent(r.event)}
+                            >
+                              Rename
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Group>
+                    </Box>
+                  </>
+                )}
+              </Paper>
+            ))}
+          </Stack>
         ) : (
+          /* Desktop DataTable */
           <Paper p="md" withBorder>
             <DataTable
               withTableBorder={false}
@@ -447,13 +634,7 @@ export function ChampionshipDetailView() {
                   title: "Status",
                   render: (r: EventRow) => (
                     <Badge
-                      color={
-                        r.status === "in_progress"
-                          ? "green"
-                          : r.status === "not_started"
-                            ? "yellow"
-                            : "gray"
-                      }
+                      color={STATUS_COLOR[r.status]}
                       variant="light"
                     >
                       {STATUS_LABEL[r.status]}
