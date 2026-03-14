@@ -8,20 +8,16 @@ import {
   Button,
   Card,
   Group,
-  Indicator,
   Loader,
   Menu,
   Modal,
   Paper,
-  Popover,
   Select,
   SimpleGrid,
   Stack,
   Text,
   Textarea,
   TextInput,
-  ThemeIcon,
-  Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
@@ -30,19 +26,25 @@ import "leaflet/dist/leaflet.css";
 import {
   IconDotsVertical,
   IconExternalLink,
-  IconFilter,
   IconMapPin,
   IconPlus,
   IconRoute,
   IconSearch,
   IconArrowUp,
   IconArrowDown,
-  IconX,
 } from "@tabler/icons-react";
-import { ImageUploader, resizeImage } from "./ImageUploader";
-import { type Venue, loadVenues, saveVenues } from "./venueStorage";
+import {
+  ViewHeader,
+  FilterToolbar,
+  ModalHeader,
+  modalHeaderStyles,
+  ModalFooter,
+  EmptyState,
+  FormError,
+} from "@/components/common";
+import { ImageUploader, resizeImage } from "../ImageUploader";
+import { type Location, loadLocations, saveLocations } from "../locationStorage";
 
-// Leaflet marker icon for the location picker
 const pickerIcon = L.divIcon({
   className: "",
   html: `<div style="width:18px;height:18px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>`,
@@ -50,7 +52,6 @@ const pickerIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-// Inner component: handles map clicks, size invalidation, and fly-to
 function InnerMap({
   markerPos,
   onPick,
@@ -122,7 +123,6 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
         <InnerMap markerPos={markerPos} onPick={onPick} flyTarget={flyTarget} />
       </MapContainer>
 
-      {/* Geocoding overlay */}
       {geocoding && (
         <Box
           style={{
@@ -139,7 +139,6 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
         </Box>
       )}
 
-      {/* Hint */}
       {!markerPos && !geocoding && (
         <Box
           style={{
@@ -162,7 +161,6 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
   );
 }
 
-// Format a Nominatim reverse-geocode response into a concise address string
 function formatAddress(data: {
   display_name: string;
   address?: Record<string, string>;
@@ -179,26 +177,24 @@ function formatAddress(data: {
   return parts.length > 0 ? parts.join(", ") : data.display_name;
 }
 
-// Types
 interface Track {
   id: bigint;
-  venueId: bigint;
+  locationId: bigint;
   name: string;
   color: string;
 }
 
-
 const MOCK_TRACKS: Track[] = [
-  { id: 1n, venueId: 1n, name: "Summit Run", color: "#ef4444" },
-  { id: 2n, venueId: 1n, name: "Ridge Line", color: "#22c55e" },
-  { id: 3n, venueId: 1n, name: "Valley Drop", color: "#3b82f6" },
-  { id: 4n, venueId: 2n, name: "Sand Storm", color: "#f59e0b" },
-  { id: 5n, venueId: 2n, name: "Cactus Trail", color: "#8b5cf6" },
-  { id: 6n, venueId: 3n, name: "Pine Loop", color: "#22c55e" },
-  { id: 7n, venueId: 3n, name: "Oak Descent", color: "#ef4444" },
-  { id: 8n, venueId: 3n, name: "Fern Gully", color: "#06b6d4" },
-  { id: 9n, venueId: 3n, name: "Maple Ridge", color: "#ec4899" },
-  { id: 10n, venueId: 4n, name: "Cliff Hanger", color: "#3b82f6" },
+  { id: 1n, locationId: 1n, name: "Summit Run", color: "#ef4444" },
+  { id: 2n, locationId: 1n, name: "Ridge Line", color: "#22c55e" },
+  { id: 3n, locationId: 1n, name: "Valley Drop", color: "#3b82f6" },
+  { id: 4n, locationId: 2n, name: "Sand Storm", color: "#f59e0b" },
+  { id: 5n, locationId: 2n, name: "Cactus Trail", color: "#8b5cf6" },
+  { id: 6n, locationId: 3n, name: "Pine Loop", color: "#22c55e" },
+  { id: 7n, locationId: 3n, name: "Oak Descent", color: "#ef4444" },
+  { id: 8n, locationId: 3n, name: "Fern Gully", color: "#06b6d4" },
+  { id: 9n, locationId: 3n, name: "Maple Ridge", color: "#ec4899" },
+  { id: 10n, locationId: 4n, name: "Cliff Hanger", color: "#3b82f6" },
 ];
 
 type SortField = "name" | "tracks";
@@ -209,13 +205,13 @@ function mapsUrl(address: string) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 }
 
-interface VenueCardProps {
-  venue: Venue;
+interface LocationCardProps {
+  location: Location;
   trackCount: number;
   onClick: () => void;
 }
 
-function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
+function LocationCard({ location, trackCount, onClick }: LocationCardProps) {
   return (
     <Card
       shadow="sm"
@@ -225,13 +221,12 @@ function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
       style={{ cursor: "pointer" }}
       onClick={onClick}
     >
-      {/* Image / placeholder */}
       <Card.Section>
-        {venue.imageUrl ? (
+        {location.imageUrl ? (
           <Box
             component="img"
-            src={venue.imageUrl}
-            alt={venue.name}
+            src={location.imageUrl}
+            alt={location.name}
             style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }}
           />
         ) : (
@@ -253,14 +248,13 @@ function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
         )}
       </Card.Section>
 
-      {/* Content */}
       <Stack p="md" gap="xs">
         <Text fw={600} lineClamp={1}>
-          {venue.name}
+          {location.name}
         </Text>
 
         <Text size="sm" c="dimmed" lineClamp={2} style={{ minHeight: "2.5em" }}>
-          {venue.description || "No description provided."}
+          {location.description || "No description provided."}
         </Text>
 
         <Group justify="space-between" align="center" mt={4}>
@@ -273,9 +267,9 @@ function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
             {trackCount} {trackCount === 1 ? "track" : "tracks"}
           </Badge>
 
-          {venue.address ? (
+          {location.address ? (
             <Anchor
-              href={mapsUrl(venue.address)}
+              href={mapsUrl(location.address)}
               target="_blank"
               rel="noopener noreferrer"
               size="xs"
@@ -283,11 +277,13 @@ function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
               style={{ display: "flex", alignItems: "center", gap: 4 }}
             >
               <IconMapPin size={12} />
-              {venue.address}
+              {location.address}
               <IconExternalLink size={10} />
             </Anchor>
           ) : (
-            <Text size="xs" c="dimmed">No address</Text>
+            <Text size="xs" c="dimmed">
+              No address
+            </Text>
           )}
         </Group>
       </Stack>
@@ -297,8 +293,10 @@ function VenueCard({ venue, trackCount, onClick }: VenueCardProps) {
 
 export function LocationsView() {
   const navigate = useNavigate();
-  const [venues, setVenues] = useState<Venue[]>(loadVenues);
-  useEffect(() => { saveVenues(venues); }, [venues]);
+  const [locations, setLocations] = useState<Location[]>(loadLocations);
+  useEffect(() => {
+    saveLocations(locations);
+  }, [locations]);
   const [tracks] = useState<Track[]>(MOCK_TRACKS);
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
@@ -306,7 +304,6 @@ export function LocationsView() {
   const [filter, setFilter] = useState<FilterOption>("all");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const activeFilterCount = filter !== "all" ? 1 : 0;
 
@@ -318,14 +315,17 @@ export function LocationsView() {
   const [markerPos, setMarkerPos] = useState<[number, number] | null>(null);
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+
   const handleForwardGeocode = useCallback(async () => {
     const address = form.address.trim();
     if (!address) return;
     setGeocoding(true);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-        { headers: { "User-Agent": "RaceTimeTracker/1.0" } }
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          address,
+        )}&limit=1`,
+        { headers: { "User-Agent": "RaceTimeTracker/1.0" } },
       );
       const data = await res.json();
       if (data.length > 0) {
@@ -335,7 +335,6 @@ export function LocationsView() {
         setFlyTarget([lat, lng]);
       }
     } catch {
-      // ignore — user can adjust manually
     } finally {
       setGeocoding(false);
     }
@@ -344,13 +343,13 @@ export function LocationsView() {
   const trackCounts = useMemo(() => {
     const m = new Map<bigint, number>();
     for (const t of tracks) {
-      m.set(t.venueId, (m.get(t.venueId) ?? 0) + 1);
+      m.set(t.locationId, (m.get(t.locationId) ?? 0) + 1);
     }
     return m;
   }, [tracks]);
 
-  const filteredAndSortedVenues = useMemo(() => {
-    let result = [...venues];
+  const filteredAndSortedLocations = useMemo(() => {
+    let result = [...locations];
 
     if (search) {
       const s = search.toLowerCase();
@@ -358,7 +357,7 @@ export function LocationsView() {
         (v) =>
           v.name.toLowerCase().includes(s) ||
           v.description.toLowerCase().includes(s) ||
-          v.address.toLowerCase().includes(s)
+          v.address.toLowerCase().includes(s),
       );
     }
 
@@ -381,7 +380,7 @@ export function LocationsView() {
     });
 
     return result;
-  }, [venues, search, sortField, sortDir, filter, trackCounts]);
+  }, [locations, search, sortField, sortDir, filter, trackCounts]);
 
   const resetForm = () => {
     setForm({ name: "", description: "", address: "" });
@@ -423,12 +422,11 @@ export function LocationsView() {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-        { headers: { "User-Agent": "RaceTimeTracker/1.0" } }
+        { headers: { "User-Agent": "RaceTimeTracker/1.0" } },
       );
       const data = await res.json();
       setForm((f) => ({ ...f, address: formatAddress(data) }));
     } catch {
-      // user can type address manually
     } finally {
       setGeocoding(false);
     }
@@ -444,51 +442,28 @@ export function LocationsView() {
       setError("Address is required");
       return;
     }
-    const newVenue: Venue = {
+    const newLocation: Location = {
       id: BigInt(Date.now()),
       name: form.name.trim(),
       description: form.description.trim(),
       address: form.address.trim(),
       imageUrl: coverIndex !== null ? images[coverIndex] : undefined,
     };
-    setVenues((prev) => [...prev, newVenue]);
+    setLocations((prev) => [...prev, newLocation]);
     resetForm();
   };
 
   return (
     <Stack gap="lg">
-      {/* Header Banner */}
-      <Box
-        p={isMobile ? "md" : "xl"}
-        style={{
-          background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
-          borderRadius: "var(--mantine-radius-md)",
-          border: "1px solid #1e2028",
-        }}
-      >
-        <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-          <Group gap="sm" align="center" style={{ minWidth: 0 }}>
-            {!isMobile && (
-              <ThemeIcon size={52} radius="md" color="blue" variant="light">
-                <IconMapPin size={28} />
-              </ThemeIcon>
-            )}
-            <div style={{ minWidth: 0 }}>
-              {!isMobile && (
-                <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
-                  Manage
-                </Text>
-              )}
-              <Title order={isMobile ? 4 : 2} c="white" fw={700} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                Locations
-              </Title>
-              <Text size={isMobile ? "xs" : "sm"} c="blue.2" mt={2}>
-                {venues.length} venue{venues.length !== 1 ? "s" : ""}
-                {!isMobile && " · manage venues and tracks for your events"}
-              </Text>
-            </div>
-          </Group>
-          <Group gap="sm" style={{ flexShrink: 0 }}>
+      <ViewHeader
+        icon={<IconMapPin size={28} />}
+        iconColor="blue"
+        eyebrow="Manage"
+        title="Locations"
+        subtitle={`${locations.length} location${locations.length !== 1 ? "s" : ""}${!isMobile ? " · manage locations and tracks for your events" : ""}`}
+        isMobile={isMobile}
+        actions={
+          <>
             {!isMobile && (
               <Button
                 leftSection={<IconPlus size={16} />}
@@ -516,47 +491,29 @@ export function LocationsView() {
                 )}
               </Menu.Dropdown>
             </Menu>
-          </Group>
-        </Group>
-      </Box>
+          </>
+        }
+      />
 
-      {/* Create modal */}
       <Modal
         opened={showForm}
         onClose={resetForm}
         title={
-          <Group gap="sm">
-            <ThemeIcon size={36} radius="md" color="blue" variant="light">
-              <IconMapPin size={20} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
-                Add venue
-              </Text>
-              <Text fw={700} size="lg" lh={1.3}>
-                New Location
-              </Text>
-            </div>
-          </Group>
+          <ModalHeader
+            icon={<IconMapPin size={20} />}
+            iconColor="blue"
+            label="Add location"
+            title="New Location"
+          />
         }
         centered
         overlayProps={{ blur: 3 }}
         radius="md"
         size="lg"
-        styles={{
-          header: {
-            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
-            borderBottom: "1px solid #1e2028",
-          },
-          close: { color: "white" },
-        }}
+        styles={modalHeaderStyles()}
       >
         <Stack gap="md" pt="xs">
-          {error && (
-            <Text size="sm" c="red">
-              {error}
-            </Text>
-          )}
+          <FormError error={error} />
           <TextInput
             label="Name"
             placeholder="e.g. Mountain Ridge Park"
@@ -581,7 +538,9 @@ export function LocationsView() {
             leftSection={<IconMapPin size={14} />}
             value={form.address}
             onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-            onKeyDown={(e) => { if (e.key === "Enter") handleForwardGeocode(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleForwardGeocode();
+            }}
             rightSection={
               geocoding ? (
                 <Loader size={14} />
@@ -606,149 +565,100 @@ export function LocationsView() {
           />
           <Textarea
             label="Description"
-            placeholder="Brief description of the venue (optional)"
+            placeholder="Brief description of the location (optional)"
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             minRows={4}
             resize="vertical"
           />
-          <Group justify="flex-end" gap="xs">
-            <Button variant="subtle" onClick={resetForm}>Cancel</Button>
-            <Button onClick={handleCreate}>Create Location</Button>
-          </Group>
+          <ModalFooter
+            onCancel={resetForm}
+            submitLabel="Create Location"
+            onSubmit={handleCreate}
+          />
         </Stack>
       </Modal>
 
-      {/* Toolbar */}
-      <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
-        <Group justify="space-between" align="center" gap="sm">
-          <Group gap="sm" align="center">
-            <Popover
-              opened={filterOpen}
-              onChange={setFilterOpen}
-              position="bottom-start"
-              shadow="md"
-              withinPortal
-            >
-              <Popover.Target>
-                <Indicator
-                  disabled={activeFilterCount === 0}
-                  label={activeFilterCount}
-                  size={16}
+      <FilterToolbar
+        filterContent={
+          <Stack gap="xs">
+            {(["all", "has-tracks", "no-tracks"] as FilterOption[]).map((f) => {
+              const labels: Record<FilterOption, string> = {
+                all: `All (${locations.length})`,
+                "has-tracks": "Has Tracks",
+                "no-tracks": "No Tracks",
+              };
+              return (
+                <Badge
+                  key={f}
+                  size="lg"
+                  variant={filter === f ? "filled" : "light"}
                   color="blue"
+                  leftSection={<IconRoute size={12} />}
+                  style={{ cursor: "pointer", minWidth: "max-content" }}
+                  onClick={() => setFilter(f)}
                 >
-                  <ActionIcon
-                    variant={activeFilterCount > 0 ? "filled" : "subtle"}
-                    color={activeFilterCount > 0 ? "blue" : "gray"}
-                    size="md"
-                    onClick={() => setFilterOpen((o) => !o)}
-                    aria-label="Filter locations"
-                  >
-                    <IconFilter size={16} />
-                  </ActionIcon>
-                </Indicator>
-              </Popover.Target>
-              <Popover.Dropdown p="sm">
-                <Stack gap="xs">
-                  {(["all", "has-tracks", "no-tracks"] as FilterOption[]).map((f) => {
-                    const labels: Record<FilterOption, string> = {
-                      "all": `All (${venues.length})`,
-                      "has-tracks": "Has Tracks",
-                      "no-tracks": "No Tracks",
-                    };
-                    return (
-                      <Badge
-                        key={f}
-                        size="lg"
-                        variant={filter === f ? "filled" : "light"}
-                        color="blue"
-                        leftSection={f === "all" ? <IconMapPin size={12} /> : <IconRoute size={12} />}
-                        style={{ cursor: "pointer", minWidth: "max-content" }}
-                        onClick={() => setFilter(f)}
-                      >
-                        {labels[f]}
-                      </Badge>
-                    );
-                  })}
-                  <Group gap="xs" mt={4}>
-                    <Select
-                      size="xs"
-                      data={[
-                        { value: "name", label: "Name" },
-                        { value: "tracks", label: "Tracks" },
-                      ]}
-                      value={sortField}
-                      onChange={(v) => v && setSortField(v as SortField)}
-                      allowDeselect={false}
-                      style={{ flex: 1 }}
-                    />
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="sm"
-                      onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-                    >
-                      {sortDir === "asc" ? <IconArrowUp size={14} /> : <IconArrowDown size={14} />}
-                    </ActionIcon>
-                  </Group>
-                </Stack>
-              </Popover.Dropdown>
-            </Popover>
-            <Text size="xs" c="dimmed">
-              {filteredAndSortedVenues.length === venues.length
-                ? `${venues.length} venue${venues.length !== 1 ? "s" : ""}`
-                : `${filteredAndSortedVenues.length} of ${venues.length}`}
-            </Text>
-          </Group>
-          {searchOpen ? (
-            <TextInput
-              placeholder="Search locations..."
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
-              size="sm"
-              leftSection={<IconSearch size={14} />}
-              rightSection={
-                <ActionIcon variant="subtle" size="sm" color="gray" onClick={() => { setSearchOpen(false); setSearch(""); }}>
-                  <IconX size={12} />
-                </ActionIcon>
-              }
-              autoFocus
-              style={{ flex: 1, minWidth: 0 }}
-            />
-          ) : (
-            <ActionIcon
-              variant={search ? "filled" : "subtle"}
-              color={search ? "blue" : "gray"}
-              size="md"
-              onClick={() => setSearchOpen(true)}
-              aria-label="Search locations"
-            >
-              <IconSearch size={16} />
-            </ActionIcon>
-          )}
-        </Group>
-      </Paper>
-
-      {/* Grid */}
-      {filteredAndSortedVenues.length === 0 ? (
-        <Paper withBorder p="xl">
-          <Stack align="center" gap="sm">
-            <IconMapPin size={48} color="var(--mantine-color-dimmed)" />
-            <Text c="dimmed" ta="center">
-              {search || filter !== "all"
-                ? "No locations match your filters."
-                : "No locations yet. Create one to get started."}
-            </Text>
+                  {labels[f]}
+                </Badge>
+              );
+            })}
+            <Group gap="xs" mt={4}>
+              <Select
+                size="xs"
+                data={[
+                  { value: "name", label: "Name" },
+                  { value: "tracks", label: "Tracks" },
+                ]}
+                value={sortField}
+                onChange={(v) => v && setSortField(v as SortField)}
+                allowDeselect={false}
+                style={{ flex: 1 }}
+              />
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              >
+                {sortDir === "asc" ? (
+                  <IconArrowUp size={14} />
+                ) : (
+                  <IconArrowDown size={14} />
+                )}
+              </ActionIcon>
+            </Group>
           </Stack>
-        </Paper>
+        }
+        activeFilterCount={activeFilterCount}
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search locations..."
+        searchOpen={searchOpen}
+        onSearchOpenChange={setSearchOpen}
+        resultLabel={
+          filteredAndSortedLocations.length === locations.length
+            ? `${locations.length} location${locations.length !== 1 ? "s" : ""}`
+            : `${filteredAndSortedLocations.length} of ${locations.length}`
+        }
+      />
+
+      {filteredAndSortedLocations.length === 0 ? (
+        <EmptyState
+          icon={<IconMapPin size={48} color="var(--mantine-color-dimmed)" />}
+          message={
+            search || filter !== "all"
+              ? "No locations match your filters."
+              : "No locations yet. Create one to get started."
+          }
+        />
       ) : (
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
-          {filteredAndSortedVenues.map((venue) => (
-            <VenueCard
-              key={venue.id.toString()}
-              venue={venue}
-              trackCount={trackCounts.get(venue.id) ?? 0}
-              onClick={() => navigate(`/locations/${venue.id}`)}
+          {filteredAndSortedLocations.map((loc) => (
+            <LocationCard
+              key={loc.id.toString()}
+              location={loc}
+              trackCount={trackCounts.get(loc.id) ?? 0}
+              onClick={() => navigate(`/locations/${loc.id}`)}
             />
           ))}
         </SimpleGrid>
@@ -756,3 +666,5 @@ export function LocationsView() {
     </Stack>
   );
 }
+
+

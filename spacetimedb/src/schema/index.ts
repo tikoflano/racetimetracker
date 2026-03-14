@@ -8,7 +8,7 @@ const spacetimedb = schema({
   championship_member: tables.championship_member,
   event_member: tables.event_member,
   championship: tables.championship,
-  venue: tables.venue,
+  location: tables.location,
   event: tables.event,
   track: tables.track,
   track_variation: tables.track_variation,

@@ -3,12 +3,12 @@ import spacetimedb from '../schema';
 import { requireLocationManager } from '../lib/auth';
 
 export const create_track = spacetimedb.reducer(
-  { venue_id: t.u64(), name: t.string(), color: t.string() },
+  { location_id: t.u64(), name: t.string(), color: t.string() },
   (ctx, args) => {
-    requireLocationManager(ctx, args.venue_id);
+    requireLocationManager(ctx, args.location_id);
     const track = ctx.db.track.insert({
       id: 0n,
-      venue_id: args.venue_id,
+      location_id: args.location_id,
       name: args.name,
       color: args.color,
     });
@@ -30,7 +30,7 @@ export const update_track = spacetimedb.reducer(
   (ctx, args) => {
     const track = ctx.db.track.id.find(args.track_id);
     if (!track) throw new SenderError('Track not found');
-    requireLocationManager(ctx, track.venue_id);
+    requireLocationManager(ctx, track.location_id);
     ctx.db.track.id.update({ ...track, name: args.name, color: args.color });
   }
 );
@@ -38,7 +38,7 @@ export const update_track = spacetimedb.reducer(
 export const delete_track = spacetimedb.reducer({ track_id: t.u64() }, (ctx, args) => {
   const track = ctx.db.track.id.find(args.track_id);
   if (!track) throw new SenderError('Track not found');
-  requireLocationManager(ctx, track.venue_id);
+  requireLocationManager(ctx, track.location_id);
   for (const tv of ctx.db.track_variation.iter()) {
     if (tv.track_id === track.id) ctx.db.track_variation.id.delete(tv.id);
   }
@@ -58,7 +58,7 @@ export const create_track_variation = spacetimedb.reducer(
   (ctx, args) => {
     const track = ctx.db.track.id.find(args.track_id);
     if (!track) throw new SenderError('Track not found');
-    requireLocationManager(ctx, track.venue_id);
+    requireLocationManager(ctx, track.location_id);
     ctx.db.track_variation.insert({
       id: 0n,
       track_id: args.track_id,
@@ -87,7 +87,7 @@ export const update_track_variation = spacetimedb.reducer(
     if (!tv) throw new SenderError('Track variation not found');
     const track = ctx.db.track.id.find(tv.track_id);
     if (!track) throw new SenderError('Track not found');
-    requireLocationManager(ctx, track.venue_id);
+    requireLocationManager(ctx, track.location_id);
     ctx.db.track_variation.id.update({
       ...tv,
       name: args.name,
@@ -107,7 +107,7 @@ export const delete_track_variation = spacetimedb.reducer(
     if (!tv) throw new SenderError('Track variation not found');
     const track = ctx.db.track.id.find(tv.track_id);
     if (!track) throw new SenderError('Track not found');
-    requireLocationManager(ctx, track.venue_id);
+    requireLocationManager(ctx, track.location_id);
     // Don't allow deleting the last variation
     let count = 0;
     for (const v of ctx.db.track_variation.iter()) {

@@ -3,11 +3,7 @@ import { Button, Group, Paper, Select, SimpleGrid, Stack, Text, Title } from "@m
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
 import type { Organization, OrgMember, User } from "@/module_bindings/types";
-
-function getErrorMessage(e: unknown, fallback: string): string {
-  if (e instanceof Error && e.message) return e.message;
-  return fallback;
-}
+import { getErrorMessage } from "@/utils";
 
 function StatusMessage({ status }: { status: string | null }) {
   if (!status) return null;
@@ -188,7 +184,9 @@ export function DevToolsView() {
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
               <Select
                 label="Organization"
-                placeholder={orgOptions.length ? "Select organization..." : "No organizations found"}
+                placeholder={
+                  orgOptions.length ? "Select organization..." : "No organizations found"
+                }
                 searchable
                 data={orgOptions}
                 value={selectedOrgId}
@@ -210,16 +208,15 @@ export function DevToolsView() {
                 onChange={setSelectedUserId}
                 disabled={!selectedOrg}
                 nothingFoundMessage={
-                  selectedOrg ? "No admin users found for this organization" : "Select an organization first"
+                  selectedOrg
+                    ? "No admin users found for this organization"
+                    : "Select an organization first"
                 }
               />
             </SimpleGrid>
 
             <Group gap="xs">
-              <Button
-                onClick={handleTransfer}
-                disabled={!selectedOrg || !selectedUser}
-              >
+              <Button onClick={handleTransfer} disabled={!selectedOrg || !selectedUser}>
                 Transfer ownership
               </Button>
             </Group>
@@ -231,4 +228,5 @@ export function DevToolsView() {
     </Stack>
   );
 }
+
 

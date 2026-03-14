@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Badge, Box, Button, Group, Text, ThemeIcon, Title } from "@mantine/core";
+import { Badge, Box, Button, Group, Text } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import classes from "./EventPreviewView.module.css";
+import { ViewHeader } from "@/components/common";
 
 interface EventInfo {
   name: string;
@@ -239,41 +240,24 @@ export function EventPreviewView() {
 
   return (
     <div className={classes.eventPage}>
-      <Box
-        p="xl"
-        mb="xl"
-        style={{
-          background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
-          borderRadius: "var(--mantine-radius-md)",
-          border: "1px solid #1e2028",
-        }}
-      >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="green" variant="light">
-              <Text fw={700}>EV</Text>
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="green.3" tt="uppercase" fw={600} mb={2}>
-                {info.championshipName}
+      <Box mb="xl">
+        <ViewHeader
+          icon={<Text fw={700}>EV</Text>}
+          iconColor="green"
+          eyebrow={info.championshipName}
+          title={info.name}
+          subtitle={`${info.roundLabel} · ${info.locationName} · ${info.dateRange}`}
+          actions={
+            <Group gap="xs" align="flex-end">
+              <Badge color="green" radius="sm">
+                {info.status}
+              </Badge>
+              <Text size="xs" c="dimmed">
+                Stage 3 · Creek Run · LIVE
               </Text>
-              <Title order={2} c="white" fw={700}>
-                {info.name}
-              </Title>
-              <Text size="sm" c="green.2" mt={2}>
-                {info.roundLabel} · {info.locationName} · {info.dateRange}
-              </Text>
-            </div>
-          </Group>
-          <Group gap="xs" align="flex-end">
-            <Badge color="green" radius="sm">
-              {info.status}
-            </Badge>
-            <Text size="xs" c="dimmed">
-              Stage 3 · Creek Run · LIVE
-            </Text>
-          </Group>
-        </Group>
+            </Group>
+          }
+        />
       </Box>
 
       <section className={classes.overviewGrid}>

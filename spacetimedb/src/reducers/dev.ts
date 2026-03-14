@@ -16,7 +16,7 @@ export const wipe_all_data = spacetimedb.reducer((ctx) => {
     ctx.db.championship,
     ctx.db.track_variation,
     ctx.db.track,
-    ctx.db.venue,
+    ctx.db.location,
     ctx.db.rider,
     ctx.db.pinned_event,
     ctx.db.event_member,

@@ -1,14 +1,14 @@
-const STORAGE_KEY = "rtt_venues";
+const STORAGE_KEY = "rtt_locations";
 
-export interface VenueImage {
+export interface LocationImage {
   id: bigint;
   url: string;
   caption?: string;
-  /** Exactly one image per venue should have isCover === true */
+  /** Exactly one image per location should have isCover === true */
   isCover: boolean;
 }
 
-export interface Venue {
+export interface Location {
   id: bigint;
   name: string;
   description: string;
@@ -18,14 +18,14 @@ export interface Venue {
    * current cover image url when present.
    */
   imageUrl?: string;
-  images?: VenueImage[];
+  images?: LocationImage[];
 }
 
-export const MOCK_VENUES: Venue[] = [
+export const MOCK_LOCATIONS: Location[] = [
   {
     id: 1n,
     name: "Mountain Ridge Park",
-    description: "Premier enduro venue with varied terrain",
+    description: "Premier enduro location with varied terrain",
     address: "1234 Mountain Rd, Denver, CO 80210",
   },
   {
@@ -54,20 +54,20 @@ export const MOCK_VENUES: Venue[] = [
   },
 ];
 
-type SerializedVenueImage = Omit<VenueImage, "id"> & { id: string };
-type SerializedVenue = Omit<Venue, "id" | "images"> & {
+type SerializedLocationImage = Omit<LocationImage, "id"> & { id: string };
+type SerializedLocation = Omit<Location, "id" | "images"> & {
   id: string;
-  images?: SerializedVenueImage[];
+  images?: SerializedLocationImage[];
 };
 
-export function loadVenues(): Venue[] {
+export function loadLocations(): Location[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return MOCK_VENUES;
-    const parsed: SerializedVenue[] = JSON.parse(raw);
+    if (!raw) return MOCK_LOCATIONS;
+    const parsed: SerializedLocation[] = JSON.parse(raw);
     return parsed.map((v, index) => {
-      // Migrate any saved images into runtime VenueImage[]
-      let images: VenueImage[] =
+      // Migrate any saved images into runtime LocationImage[]
+      let images: LocationImage[] =
         v.images?.map((img) => ({
           ...img,
           id: BigInt(img.id),
@@ -98,17 +98,17 @@ export function loadVenues(): Venue[] {
       };
     });
   } catch {
-    return MOCK_VENUES;
+    return MOCK_LOCATIONS;
   }
 }
 
-export function saveVenues(venues: Venue[]): void {
+export function saveLocations(locations: Location[]): void {
   try {
-    const serialized: SerializedVenue[] = venues.map((v) => {
+    const serialized: SerializedLocation[] = locations.map((v) => {
       const images = v.images ?? [];
       const cover = images.find((img) => img.isCover) ?? images[0];
 
-      const serializedImages: SerializedVenueImage[] =
+      const serializedImages: SerializedLocationImage[] =
         images.length > 0
           ? images.map((img) => ({
               id: String(img.id),

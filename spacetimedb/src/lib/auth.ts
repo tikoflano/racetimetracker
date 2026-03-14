@@ -208,11 +208,11 @@ export function getEventIdFromEventTrack(ctx: Ctx, eventTrackId: bigint): bigint
   return et.event_id;
 }
 
-// Can the user manage this location? (org event manager+ via venue)
-export function requireLocationManager(ctx: Ctx, venueId: bigint) {
-  const venue = ctx.db.venue.id.find(venueId);
-  if (!venue) throw new SenderError('Venue not found');
-  return requireOrgEventManager(ctx, venue.org_id);
+// Can the user manage this location?
+export function requireLocationManager(ctx: Ctx, locationId: bigint) {
+  const location = ctx.db.location.id.find(locationId);
+  if (!location) throw new SenderError('Location not found');
+  return requireOrgEventManager(ctx, location.org_id);
 }
 
 // Check if a number range overlaps with any existing category in the event.
@@ -234,28 +234,28 @@ export function checkCategoryRangeOverlap(
   }
 }
 
-// Resolve entity to its venue's org_id for permission checks
+// Resolve entity to its location's org_id for permission checks
 export function getEntityOrgId(ctx: Ctx, entityType: string, entityId: bigint): bigint {
-  if (entityType === 'venue') {
-    const venue = ctx.db.venue.id.find(entityId);
-    if (!venue) throw new SenderError('Venue not found');
-    return venue.org_id;
+  if (entityType === 'location') {
+    const location = ctx.db.location.id.find(entityId);
+    if (!location) throw new SenderError('Location not found');
+    return location.org_id;
   }
   if (entityType === 'track') {
     const track = ctx.db.track.id.find(entityId);
     if (!track) throw new SenderError('Track not found');
-    const venue = ctx.db.venue.id.find(track.venue_id);
-    if (!venue) throw new SenderError('Venue not found');
-    return venue.org_id;
+    const location = ctx.db.location.id.find(track.location_id);
+    if (!location) throw new SenderError('Location not found');
+    return location.org_id;
   }
   if (entityType === 'track_variation') {
     const tv = ctx.db.track_variation.id.find(entityId);
     if (!tv) throw new SenderError('Track variation not found');
     const track = ctx.db.track.id.find(tv.track_id);
     if (!track) throw new SenderError('Track not found');
-    const venue = ctx.db.venue.id.find(track.venue_id);
-    if (!venue) throw new SenderError('Venue not found');
-    return venue.org_id;
+    const location = ctx.db.location.id.find(track.location_id);
+    if (!location) throw new SenderError('Location not found');
+    return location.org_id;
   }
   throw new SenderError('Invalid entity type');
 }

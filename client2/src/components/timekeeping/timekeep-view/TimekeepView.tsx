@@ -35,8 +35,6 @@ import type {
   ServerTimeResponse,
 } from "@/module_bindings/types";
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
 function formatElapsed(ms: number): string {
   if (ms < 0) ms = 0;
   const totalSeconds = Math.floor(ms / 1000);
@@ -46,12 +44,8 @@ function formatElapsed(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}.${tenths}`;
 }
 
-// ─── ElapsedTimer ─────────────────────────────────────────────────────────────
-
 interface ElapsedTimerProps {
-  /** Run startTime as milliseconds (from the server) */
   startTimeMs: number;
-  /** Offset to add to Date.now() to get corrected server time */
   clockOffset: number;
 }
 
@@ -71,8 +65,6 @@ function ElapsedTimer({ startTimeMs, clockOffset }: ElapsedTimerProps) {
   );
 }
 
-// ─── ConnectionIndicator ──────────────────────────────────────────────────────
-
 function ConnectionIndicator({ isConnected }: { isConnected: boolean }) {
   return (
     <Badge
@@ -86,26 +78,21 @@ function ConnectionIndicator({ isConnected }: { isConnected: boolean }) {
   );
 }
 
-// ─── TimekeepView ─────────────────────────────────────────────────────────────
-
 export function TimekeepView() {
   const connState = useSpacetimeDB();
   const isConnected = connState.isActive;
   const { user, isAuthenticated } = useAuth();
 
-  // Clock sync state
   const [clockOffset, setClockOffset] = useState(0);
   const [clockSynced, setClockSynced] = useState(false);
   const clockRequestId = useRef(BigInt(Date.now()));
 
-  // Reducers
   const getServerTime = useReducer(reducers.getServerTime);
   const startRun = useReducer(reducers.startRun);
   const finishRun = useReducer(reducers.finishRun);
   const dnfRun = useReducer(reducers.dnfRun);
   const dnsRun = useReducer(reducers.dnsRun);
 
-  // Tables
   const [serverTimeResponses] = useTable(tables.server_time_response);
   const [assignments] = useTable(tables.timekeeper_assignment);
   const [eventTracks] = useTable(tables.event_track);
@@ -117,19 +104,16 @@ export function TimekeepView() {
   const [eventRiders] = useTable(tables.event_rider);
   const [eventCategories] = useTable(tables.event_category);
 
-  // Request server time once connected
   useEffect(() => {
     if (isConnected) {
       getServerTime({ requestId: clockRequestId.current });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected]);
+  }, [isConnected, getServerTime]);
 
-  // Compute clock offset when the server response arrives
   useEffect(() => {
     if (clockSynced) return;
     const response = serverTimeResponses.find(
-      (r: ServerTimeResponse) => r.requestId === clockRequestId.current
+      (r: ServerTimeResponse) => r.requestId === clockRequestId.current,
     );
     if (response) {
       setClockOffset(Number(response.serverTime) - Date.now());
@@ -137,14 +121,12 @@ export function TimekeepView() {
     }
   }, [serverTimeResponses, clockSynced]);
 
-  // Build rider lookup map
   const riderMap = useMemo(() => {
     const m = new Map<bigint, Rider>();
     for (const r of riders) m.set((r as Rider).id, r as Rider);
     return m;
   }, [riders]);
 
-  // Build rider number lookup: `${eventId}-${riderId}` → display number
   const riderNumberMap = useMemo(() => {
     const m = new Map<string, number>();
     const catStartMap = new Map<bigint, number>();
@@ -164,7 +146,6 @@ export function TimekeepView() {
     return m;
   }, [eventRiders, eventCategories]);
 
-  // My assignments enriched with event/track/runs data
   const myAssignments = useMemo(() => {
     if (!user) return [];
     return assignments
@@ -186,7 +167,6 @@ export function TimekeepView() {
       .filter((a) => a.eventTrack && a.event);
   }, [user, assignments, eventTracks, events, trackVariations, tracksData, runs]);
 
-  // Corrected server time in milliseconds as bigint
   const getCorrectedTime = () => BigInt(Date.now() + clockOffset);
 
   const getRiderNumber = (eventId: bigint, riderId: bigint) =>
@@ -205,7 +185,6 @@ export function TimekeepView() {
 
   return (
     <Stack gap="lg">
-      {/* Header */}
       <Group justify="space-between" align="center" wrap="wrap">
         <Title order={2} fw={700}>
           Timekeeping
@@ -220,7 +199,6 @@ export function TimekeepView() {
         </Group>
       </Group>
 
-      {/* Empty state */}
       {myAssignments.length === 0 && (
         <Paper withBorder p="xl" radius="md" style={{ textAlign: "center" }}>
           <IconClock size={48} color="var(--mantine-color-dimmed)" />
@@ -233,7 +211,6 @@ export function TimekeepView() {
         </Paper>
       )}
 
-      {/* Assignment cards */}
       {myAssignments.length > 0 && (
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
           {myAssignments.map(({ assignment, event, track, trackRuns }) => {
@@ -269,7 +246,6 @@ export function TimekeepView() {
                 radius="md"
                 style={{ display: "flex", flexDirection: "column" }}
               >
-                {/* Card header */}
                 <Group justify="space-between" align="flex-start" mb="sm">
                   <Box style={{ minWidth: 0 }}>
                     <Group gap="xs" mb={4}>
@@ -297,7 +273,6 @@ export function TimekeepView() {
                   </Badge>
                 </Group>
 
-                {/* Running riders */}
                 {runningRuns.map((run: Run) => {
                   const rider = riderMap.get(run.riderId);
                   const num = getRiderNumber(event!.id, run.riderId);
@@ -336,7 +311,9 @@ export function TimekeepView() {
                             size="md"
                             style={{ flex: 1 }}
                             leftSection={<IconPlayerStop size={18} />}
-                            onClick={() => finishRun({ runId: run.id, clientTime: getCorrectedTime() })}
+                            onClick={() =>
+                              finishRun({ runId: run.id, clientTime: getCorrectedTime() })
+                            }
                           >
                             STOP
                           </Button>
@@ -359,7 +336,6 @@ export function TimekeepView() {
                   );
                 })}
 
-                {/* Next queued rider (Start / Both positions only) */}
                 {canStart && nextQueued && (
                   <Box
                     p="sm"
@@ -392,7 +368,9 @@ export function TimekeepView() {
                         size="md"
                         style={{ flex: 1 }}
                         leftSection={<IconPlayerPlay size={18} />}
-                        onClick={() => startRun({ runId: nextQueued.id, clientTime: getCorrectedTime() })}
+                        onClick={() =>
+                          startRun({ runId: nextQueued.id, clientTime: getCorrectedTime() })
+                        }
                       >
                         START
                       </Button>
@@ -409,7 +387,6 @@ export function TimekeepView() {
                   </Box>
                 )}
 
-                {/* Empty state for this card */}
                 {queuedRuns.length === 0 && runningRuns.length === 0 && (
                   <Box py="lg" style={{ textAlign: "center" }}>
                     <IconClock size={32} color="var(--mantine-color-dimmed)" />
@@ -419,7 +396,6 @@ export function TimekeepView() {
                   </Box>
                 )}
 
-                {/* Summary footer */}
                 <Text
                   size="xs"
                   c="dimmed"
@@ -438,3 +414,5 @@ export function TimekeepView() {
     </Stack>
   );
 }
+
+

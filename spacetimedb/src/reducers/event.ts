@@ -8,7 +8,7 @@ export const create_event = spacetimedb.reducer(
   {
     org_id: t.u64(),
     championship_id: t.u64(),
-    venue_id: t.u64(),
+    location_id: t.u64(),
     name: t.string(),
     description: t.string(),
     start_date: t.string(),
@@ -27,7 +27,7 @@ export const create_event = spacetimedb.reducer(
       id: 0n,
       org_id: args.org_id,
       championship_id: args.championship_id,
-      venue_id: args.venue_id,
+      location_id: args.location_id,
       name: trimmed,
       slug: uniqueEventSlug(ctx, args.org_id, slugify(trimmed)),
       description: args.description,

@@ -19,7 +19,6 @@ import {
   Text,
   Textarea,
   TextInput,
-  ThemeIcon,
   Title,
   UnstyledButton,
 } from '@mantine/core';
@@ -43,8 +42,9 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from '@tabler/icons-react';
-import { resizeImage } from './ImageUploader';
-import { type Venue, type VenueImage, loadVenues, saveVenues } from './venueStorage';
+import { resizeImage } from '../ImageUploader';
+import { type Location, type LocationImage, loadLocations, saveLocations } from '../locationStorage';
+import { ModalHeader, modalHeaderStyles, FormError, ModalFooter } from '@/components/common';
 
 // Leaflet pin icons
 function pinIcon(color: string, label: string) {
@@ -118,7 +118,7 @@ function MapClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => v
 // Types
 interface Track {
   id: bigint;
-  venueId: bigint;
+  locationId: bigint;
   name: string;
   color: string;
 }
@@ -143,12 +143,12 @@ interface TrackImage {
 }
 
 const MOCK_TRACKS: Track[] = [
-  { id: 1n, venueId: 1n, name: 'Summit Run', color: '#ef4444' },
-  { id: 2n, venueId: 1n, name: 'Ridge Line', color: '#22c55e' },
-  { id: 3n, venueId: 1n, name: 'Valley Drop', color: '#3b82f6' },
-  { id: 4n, venueId: 2n, name: 'Sand Storm', color: '#f59e0b' },
-  { id: 5n, venueId: 2n, name: 'Cactus Trail', color: '#8b5cf6' },
-  { id: 6n, venueId: 3n, name: 'Pine Loop', color: '#22c55e' },
+  { id: 1n, locationId: 1n, name: 'Summit Run', color: '#ef4444' },
+  { id: 2n, locationId: 1n, name: 'Ridge Line', color: '#22c55e' },
+  { id: 3n, locationId: 1n, name: 'Valley Drop', color: '#3b82f6' },
+  { id: 4n, locationId: 2n, name: 'Sand Storm', color: '#f59e0b' },
+  { id: 5n, locationId: 2n, name: 'Cactus Trail', color: '#8b5cf6' },
+  { id: 6n, locationId: 3n, name: 'Pine Loop', color: '#22c55e' },
 ];
 
 const MOCK_VARIATIONS: TrackVariation[] = [
@@ -225,21 +225,21 @@ const MOCK_VARIATIONS: TrackVariation[] = [
 ];
 
 export function LocationDetailView() {
-  const { venueId: venueIdParam } = useParams<{ venueId: string }>();
+  const { locationId: locationIdParam } = useParams<{ locationId: string }>();
   const navigate = useNavigate();
-  const venueId = useMemo(() => {
+  const locationId = useMemo(() => {
     try {
-      return BigInt(venueIdParam ?? '0');
+      return BigInt(locationIdParam ?? '0');
     } catch {
       return 0n;
     }
-  }, [venueIdParam]);
+  }, [locationIdParam]);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const onBack = () => navigate('/locations');
-  const [venues, setVenues] = useState<Venue[]>(loadVenues);
+  const [locations, setLocations] = useState<Location[]>(loadLocations);
   useEffect(() => {
-    saveVenues(venues);
-  }, [venues]);
+    saveLocations(locations);
+  }, [locations]);
   const [tracks, setTracks] = useState<Track[]>(MOCK_TRACKS);
   const [variations, setVariations] = useState<TrackVariation[]>(MOCK_VARIATIONS);
   const [trackImagesByTrack, setTrackImagesByTrack] = useState<Map<bigint, TrackImage[]>>(() => {
@@ -269,8 +269,8 @@ export function LocationDetailView() {
       return new Map();
     }
   });
-  const [editingVenue, setEditingVenue] = useState(false);
-  const [venueForm, setVenueForm] = useState({
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [locationForm, setLocationForm] = useState({
     name: '',
     description: '',
     address: '',
@@ -303,22 +303,22 @@ export function LocationDetailView() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [isMapCollapsed, setIsMapCollapsed] = useState(true);
 
-  const venue = venues.find((v) => v.id === venueId);
+  const currentLocation = locations.find((v) => v.id === locationId);
 
-  const venueImages: VenueImage[] = useMemo(() => venue?.images ?? [], [venue?.images]);
-  const coverImage: VenueImage | undefined =
-    venueImages.find((img) => img.isCover) ?? venueImages[0];
+  const locationImages: LocationImage[] = useMemo(() => currentLocation?.images ?? [], [currentLocation?.images]);
+  const coverImage: LocationImage | undefined =
+    locationImages.find((img) => img.isCover) ?? locationImages[0];
 
-  const bannerContrast = useImageContrast(coverImage?.url ?? venue?.imageUrl);
-  const venueTracks = useMemo(
-    () => tracks.filter((t) => t.venueId === venueId).sort((a, b) => a.name.localeCompare(b.name)),
-    [tracks, venueId]
+  const bannerContrast = useImageContrast(coverImage?.url ?? currentLocation?.imageUrl);
+  const locationTracks = useMemo(
+    () => tracks.filter((t) => t.locationId === locationId).sort((a, b) => a.name.localeCompare(b.name)),
+    [tracks, locationId]
   );
 
   const variationsByTrack = useMemo(() => {
     const m = new Map<bigint, TrackVariation[]>();
     for (const v of variations) {
-      for (const t of venueTracks) {
+      for (const t of locationTracks) {
         if (v.trackId === t.id) {
           const arr = m.get(t.id) ?? [];
           arr.push(v);
@@ -327,7 +327,7 @@ export function LocationDetailView() {
       }
     }
     return m;
-  }, [variations, venueTracks]);
+  }, [variations, locationTracks]);
 
   // Get default variation for each track for the map
   const defaultVariations = useMemo(() => {
@@ -387,8 +387,8 @@ export function LocationDetailView() {
 
   const variationModalTrack = useMemo(() => {
     if (showVarForm === null) return null;
-    return venueTracks.find((t) => t.id === showVarForm) ?? null;
-  }, [showVarForm, venueTracks]);
+    return locationTracks.find((t) => t.id === showVarForm) ?? null;
+  }, [showVarForm, locationTracks]);
 
   const scrollToTrack = useCallback((trackId: bigint) => {
     const el = trackRefs.current.get(trackId);
@@ -414,9 +414,9 @@ export function LocationDetailView() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       const url = await resizeImage(file);
-      setVenues((prev) =>
+      setLocations((prev) =>
         prev.map((v) => {
-          if (v.id !== venueId) return v;
+          if (v.id !== locationId) return v;
           const existingImages = v.images ?? [];
           const nextId =
             existingImages.length > 0
@@ -425,7 +425,7 @@ export function LocationDetailView() {
                   existingImages[0].id
                 ) + 1n
               : BigInt(Date.now());
-          const newImage: VenueImage = {
+          const newImage: LocationImage = {
             id: nextId,
             url,
             caption: '',
@@ -485,7 +485,7 @@ export function LocationDetailView() {
     input.click();
   };
 
-  if (!venue) {
+  if (!currentLocation) {
     return (
       <Stack gap="lg">
         <Button
@@ -505,39 +505,39 @@ export function LocationDetailView() {
     );
   }
 
-  // Venue edit handlers
-  const startEditVenue = () => {
-    setVenueForm({
-      name: venue.name,
-      description: venue.description,
-      address: venue.address,
-      imageUrl: coverImage?.url ?? venue.imageUrl,
+  // Location edit handlers
+  const startEditLocation = () => {
+    setLocationForm({
+      name: currentLocation.name,
+      description: currentLocation.description,
+      address: currentLocation.address,
+      imageUrl: coverImage?.url ?? currentLocation.imageUrl,
     });
-    setEditingVenue(true);
+    setEditingLocation(true);
     setError('');
   };
 
-  const saveVenue = () => {
+  const saveLocation = () => {
     setError('');
-    if (!venueForm.name.trim()) {
+    if (!locationForm.name.trim()) {
       setError('Name is required');
       return;
     }
-    setVenues((prev) =>
+    setLocations((prev) =>
       prev.map((v) => {
-        if (v.id !== venueId) return v;
+        if (v.id !== locationId) return v;
 
         const existingImages = v.images ?? [];
         let images = existingImages;
 
         // If a new banner image was provided, add/update it as the cover image
-        // and ensure only one image per venue has isCover === true.
-        if (venueForm.imageUrl) {
-          const existing = existingImages.find((img) => img.url === venueForm.imageUrl);
+        // and ensure only one image per location has isCover === true.
+        if (locationForm.imageUrl) {
+          const existing = existingImages.find((img) => img.url === locationForm.imageUrl);
           if (existing) {
             images = existingImages.map((img) => ({
               ...img,
-              isCover: img.url === venueForm.imageUrl,
+              isCover: img.url === locationForm.imageUrl,
             }));
           } else {
             const nextId =
@@ -547,9 +547,9 @@ export function LocationDetailView() {
                     existingImages[0].id
                   ) + 1n
                 : BigInt(Date.now());
-            const newImage: VenueImage = {
+            const newImage: LocationImage = {
               id: nextId,
-              url: venueForm.imageUrl,
+              url: locationForm.imageUrl,
               caption: '',
               isCover: true,
             };
@@ -564,20 +564,20 @@ export function LocationDetailView() {
 
         return {
           ...v,
-          name: venueForm.name.trim(),
-          description: venueForm.description.trim(),
-          address: venueForm.address.trim(),
+          name: locationForm.name.trim(),
+          description: locationForm.description.trim(),
+          address: locationForm.address.trim(),
           imageUrl: cover?.url,
           images: images.length > 0 ? images : undefined,
         };
       })
     );
-    setEditingVenue(false);
+    setEditingLocation(false);
   };
 
-  const deleteVenue = () => {
+  const deleteLocation = () => {
     if (!confirm('Delete this location and all its tracks? This cannot be undone.')) return;
-    setVenues((prev) => prev.filter((v) => v.id !== venueId));
+    setLocations((prev) => prev.filter((v) => v.id !== locationId));
     onBack();
   };
 
@@ -613,7 +613,7 @@ export function LocationDetailView() {
     } else {
       const newTrack: Track = {
         id: BigInt(Date.now()),
-        venueId,
+        locationId,
         name: trackForm.name.trim(),
         color: trackForm.color,
       };
@@ -814,13 +814,13 @@ export function LocationDetailView() {
                           <Menu.Divider />
                         </>
                       )}
-                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                      <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditLocation}>
                         Edit
                       </Menu.Item>
                       <Menu.Item
                         leftSection={<IconTrash size={14} />}
                         color="red"
-                        onClick={deleteVenue}
+                        onClick={deleteLocation}
                       >
                         Delete
                       </Menu.Item>
@@ -841,9 +841,9 @@ export function LocationDetailView() {
                       paddingRight: isMobile ? 48 : 0,
                     }}
                   >
-                    {venue.name}
+                    {currentLocation.name}
                   </Title>
-                  {venue.description && (
+                  {currentLocation.description && (
                     <Text
                       size="sm"
                       style={{
@@ -851,14 +851,14 @@ export function LocationDetailView() {
                         color: bannerContrast === 'dark' ? 'var(--mantine-color-dark-6)' : 'white',
                       }}
                     >
-                      {venue.description}
+                      {currentLocation.description}
                     </Text>
                   )}
-                  {venue.address && (
+                  {currentLocation.address && (
                     <Text
                       component="a"
                       href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                        venue.address
+                        currentLocation.address
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -871,7 +871,7 @@ export function LocationDetailView() {
                     >
                       <Group gap={4} align="center">
                         <IconMapPin size={12} />
-                        {venue.address}
+                        {currentLocation.address}
                       </Group>
                     </Text>
                   )}
@@ -932,13 +932,13 @@ export function LocationDetailView() {
                             <Menu.Divider />
                           </>
                         )}
-                        <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                        <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditLocation}>
                           Edit
                         </Menu.Item>
                         <Menu.Item
                           leftSection={<IconTrash size={14} />}
                           color="red"
-                          onClick={deleteVenue}
+                          onClick={deleteLocation}
                         >
                           Delete
                         </Menu.Item>
@@ -955,17 +955,17 @@ export function LocationDetailView() {
               <Stack gap={4} style={{ minWidth: 0 }}>
                 <Group gap="xs" align="center">
                   <IconMapPin size={24} color="var(--mantine-color-blue-6)" />
-                  <Title order={2}>{venue.name}</Title>
+                  <Title order={2}>{currentLocation.name}</Title>
                 </Group>
-                {venue.description && (
+                {currentLocation.description && (
                   <Text size="sm" c="dimmed">
-                    {venue.description}
+                    {currentLocation.description}
                   </Text>
                 )}
-                {venue.address && (
+                {currentLocation.address && (
                   <Text
                     component="a"
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.address)}`}
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentLocation.address)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     c="dimmed"
@@ -974,7 +974,7 @@ export function LocationDetailView() {
                   >
                     <Group gap={4} align="center">
                       <IconMapPin size={12} />
-                      {venue.address}
+                      {currentLocation.address}
                     </Group>
                   </Text>
                 )}
@@ -1012,13 +1012,13 @@ export function LocationDetailView() {
                         <Menu.Divider />
                       </>
                     )}
-                    <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditVenue}>
+                    <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditLocation}>
                       Edit
                     </Menu.Item>
                     <Menu.Item
                       leftSection={<IconTrash size={14} />}
                       color="red"
-                      onClick={deleteVenue}
+                      onClick={deleteLocation}
                     >
                       Delete
                     </Menu.Item>
@@ -1086,7 +1086,7 @@ export function LocationDetailView() {
                   attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png"
                 />
-                {venueTracks.map((track) => {
+                {locationTracks.map((track) => {
                   const tv = defaultVariations.get(track.id);
                   if (!tv) return null;
                   const start: [number, number] = [tv.startLatitude, tv.startLongitude];
@@ -1144,7 +1144,7 @@ export function LocationDetailView() {
                 }}
               >
                 <Group gap="md" wrap="wrap">
-                  {venueTracks.map((t) => (
+                  {locationTracks.map((t) => (
                     <Group key={String(t.id)} gap="xs">
                       <Box
                         w={12}
@@ -1168,70 +1168,53 @@ export function LocationDetailView() {
 
       {/* Edit location modal */}
       <Modal
-        opened={editingVenue}
-        onClose={() => setEditingVenue(false)}
+        opened={editingLocation}
+        onClose={() => setEditingLocation(false)}
         title={
-          <Group gap="sm">
-            <ThemeIcon size={36} radius="md" color="blue" variant="light">
-              <IconMapPin size={20} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
-                Location
-              </Text>
-              <Text fw={700} size="lg" lh={1.3}>
-                Edit Location
-              </Text>
-            </div>
-          </Group>
+          <ModalHeader
+            icon={<IconMapPin size={20} />}
+            iconColor="blue"
+            label="Location"
+            title="Edit Location"
+          />
         }
         centered
         radius="md"
         size="lg"
         overlayProps={{ blur: 3 }}
-        styles={{
-          header: {
-            background: "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
-            borderBottom: "1px solid #1e2028",
-          },
-          close: { color: "white" },
-        }}
+        styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          {error && (
-            <Text size="sm" c="red">
-              {error}
-            </Text>
-          )}
+          <FormError error={error} />
           <TextInput
             label="Name"
-            value={venueForm.name}
-            onChange={(e) => setVenueForm((f) => ({ ...f, name: e.target.value }))}
+            value={locationForm.name}
+            onChange={(e) => setLocationForm((f) => ({ ...f, name: e.target.value }))}
             autoFocus
           />
           <TextInput
             label="Description"
             placeholder="Description (optional)"
-            value={venueForm.description}
-            onChange={(e) => setVenueForm((f) => ({ ...f, description: e.target.value }))}
+            value={locationForm.description}
+            onChange={(e) => setLocationForm((f) => ({ ...f, description: e.target.value }))}
           />
           <TextInput
             label="Address"
             placeholder="Address (optional)"
-            value={venueForm.address}
-            onChange={(e) => setVenueForm((f) => ({ ...f, address: e.target.value }))}
+            value={locationForm.address}
+            onChange={(e) => setLocationForm((f) => ({ ...f, address: e.target.value }))}
           />
           {/* Banner image */}
           <Stack gap="xs">
             <Text size="sm" fw={500}>
               Banner image
             </Text>
-            {venueImages.length > 0 ? (
+            {locationImages.length > 0 ? (
               <Text size="xs" c="dimmed">
                 This location already has gallery images. Change the cover picture from the gallery
                 instead.
               </Text>
-            ) : venueForm.imageUrl ? (
+            ) : locationForm.imageUrl ? (
               <Box
                 style={{
                   position: 'relative',
@@ -1242,7 +1225,7 @@ export function LocationDetailView() {
               >
                 <Box
                   component="img"
-                  src={venueForm.imageUrl}
+                  src={locationForm.imageUrl}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
                 <ActionIcon
@@ -1250,7 +1233,7 @@ export function LocationDetailView() {
                   color="red"
                   variant="filled"
                   style={{ position: 'absolute', top: 6, right: 6 }}
-                  onClick={() => setVenueForm((f) => ({ ...f, imageUrl: undefined }))}
+                  onClick={() => setLocationForm((f) => ({ ...f, imageUrl: undefined }))}
                 >
                   <IconX size={12} />
                 </ActionIcon>
@@ -1272,7 +1255,7 @@ export function LocationDetailView() {
                     const file = (e.target as HTMLInputElement).files?.[0];
                     if (file) {
                       const url = await resizeImage(file);
-                      setVenueForm((f) => ({ ...f, imageUrl: url }));
+                      setLocationForm((f) => ({ ...f, imageUrl: url }));
                     }
                   };
                   input.click();
@@ -1287,14 +1270,12 @@ export function LocationDetailView() {
               </Box>
             )}
           </Stack>
-          <Group gap="xs" justify="flex-end" mt="xs">
-            <Button variant="subtle" size="sm" onClick={() => setEditingVenue(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={saveVenue}>
-              Save
-            </Button>
-          </Group>
+          <ModalFooter
+            onCancel={() => setEditingLocation(false)}
+            submitLabel="Save"
+            onSubmit={saveLocation}
+            size="sm"
+          />
         </Stack>
       </Modal>
 
@@ -1303,38 +1284,21 @@ export function LocationDetailView() {
         opened={showTrackForm}
         onClose={resetTrackForm}
         title={
-          <Group gap="sm">
-            <ThemeIcon size={36} radius="md" color="blue" variant="light">
-              <IconRoute size={20} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.4" tt="uppercase" fw={600} lh={1}>
-                Track
-              </Text>
-              <Text fw={700} size="lg" lh={1.3}>
-                {editingTrackId ? 'Edit Track' : 'New Track'}
-              </Text>
-            </div>
-          </Group>
+          <ModalHeader
+            icon={<IconRoute size={20} />}
+            iconColor="blue"
+            label="Track"
+            title={editingTrackId ? 'Edit Track' : 'New Track'}
+          />
         }
         centered
         radius="md"
         size="lg"
         overlayProps={{ blur: 3 }}
-        styles={{
-          header: {
-            background: 'linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)',
-            borderBottom: '1px solid #1e2028',
-          },
-          close: { color: 'white' },
-        }}
+        styles={modalHeaderStyles()}
       >
         <Stack gap="md" pt="xs">
-          {error && (
-            <Text size="sm" c="red">
-              {error}
-            </Text>
-          )}
+          <FormError error={error} />
           <TextInput
             label="Name"
             value={trackForm.name}
@@ -1347,14 +1311,12 @@ export function LocationDetailView() {
             value={trackForm.color}
             onChange={(c) => setTrackForm((f) => ({ ...f, color: c }))}
           />
-          <Group gap="xs" justify="flex-end" mt="xs">
-            <Button variant="subtle" size="sm" onClick={resetTrackForm}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleTrackSubmit}>
-              {editingTrackId ? 'Save' : 'Create'}
-            </Button>
-          </Group>
+          <ModalFooter
+            onCancel={resetTrackForm}
+            submitLabel={editingTrackId ? 'Save' : 'Create'}
+            onSubmit={handleTrackSubmit}
+            size="sm"
+          />
         </Stack>
       </Modal>
 
@@ -1387,7 +1349,7 @@ export function LocationDetailView() {
             <IconX size={18} />
           </ActionIcon>
 
-          {venueImages.length === 0 ? (
+          {locationImages.length === 0 ? (
             <Box p="lg">
               <Text size="sm" c="dimmed">
                 No images available for this location yet.
@@ -1406,8 +1368,8 @@ export function LocationDetailView() {
             <>
               <Carousel
                 initialSlide={galleryIndex}
-                withIndicators={venueImages.length > 1}
-                withControls={venueImages.length > 1}
+                withIndicators={locationImages.length > 1}
+                withControls={locationImages.length > 1}
                 onSlideChange={setGalleryIndex}
                 height="70vh"
                 loop
@@ -1421,7 +1383,7 @@ export function LocationDetailView() {
                   },
                 }}
               >
-                {venueImages.map((img) => (
+                {locationImages.map((img) => (
                   <Carousel.Slide key={String(img.id)}>
                     <Box
                       style={{
@@ -1433,7 +1395,7 @@ export function LocationDetailView() {
                     >
                       <img
                         src={img.url}
-                        alt={img.caption || venue.name}
+                        alt={img.caption || currentLocation.name}
                         style={{
                           maxWidth: '100%',
                           maxHeight: '100%',
@@ -1444,30 +1406,30 @@ export function LocationDetailView() {
                   </Carousel.Slide>
                 ))}
               </Carousel>
-              {venueImages[galleryIndex] && (
+              {locationImages[galleryIndex] && (
                 <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-dark-5)' }}>
                   <Group justify="space-between" align="center">
                     <Stack gap={2} style={{ flex: 1 }}>
                       <Text size="sm" c="dimmed">
-                        {venueImages[galleryIndex].caption || venue.name}
+                        {locationImages[galleryIndex].caption || currentLocation.name}
                       </Text>
                       <Text size="xs" c="dimmed">
-                        {galleryIndex + 1} / {venueImages.length}
+                        {galleryIndex + 1} / {locationImages.length}
                       </Text>
                     </Stack>
                     <Group gap="xs">
                       <Button size="xs" variant="subtle" onClick={handleUploadGalleryImage}>
                         Add image
                       </Button>
-                      {!venueImages[galleryIndex].isCover && (
+                      {!locationImages[galleryIndex].isCover && (
                         <Button
                           size="xs"
                           variant="subtle"
                           onClick={() => {
-                            const targetId = venueImages[galleryIndex].id;
-                            setVenues((prev) =>
+                            const targetId = locationImages[galleryIndex].id;
+                            setLocations((prev) =>
                               prev.map((v) => {
-                                if (v.id !== venueId) return v;
+                                if (v.id !== locationId) return v;
                                 const existing = v.images ?? [];
                                 const images = existing.map((img) => ({
                                   ...img,
@@ -1486,17 +1448,17 @@ export function LocationDetailView() {
                           Set as cover
                         </Button>
                       )}
-                      {venueImages.length > 1 && (
+                      {locationImages.length > 1 && (
                         <Button
                           size="xs"
                           variant="subtle"
                           color="red"
                           onClick={() => {
-                            const targetId = venueImages[galleryIndex].id;
+                            const targetId = locationImages[galleryIndex].id;
                             if (!confirm('Remove this image from the gallery?')) return;
-                            setVenues((prev) =>
+                            setLocations((prev) =>
                               prev.map((v) => {
-                                if (v.id !== venueId) return v;
+                                if (v.id !== locationId) return v;
                                 const existing = v.images ?? [];
                                 const images = existing.filter((img) => img.id !== targetId);
                                 const cover = images.find((img) => img.isCover) ?? images[0];
@@ -1508,7 +1470,7 @@ export function LocationDetailView() {
                               })
                             );
                             setGalleryIndex((idx) =>
-                              Math.max(0, Math.min(idx, venueImages.length - 2))
+                              Math.max(0, Math.min(idx, locationImages.length - 2))
                             );
                           }}
                         >
@@ -1542,7 +1504,7 @@ export function LocationDetailView() {
       >
         {(() => {
           if (trackGalleryTrackId === null) return null;
-          const track = venueTracks.find((t) => t.id === trackGalleryTrackId);
+          const track = locationTracks.find((t) => t.id === trackGalleryTrackId);
           if (!track) return null;
           const images = trackImagesByTrack.get(track.id) ?? [];
 
@@ -1708,21 +1670,22 @@ export function LocationDetailView() {
         opened={showVarForm !== null}
         onClose={resetVarForm}
         title={
-          editingVarId
-            ? `Edit Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
-            : `New Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
+          <ModalHeader
+            icon={<IconRoute size={20} />}
+            iconColor="blue"
+            label="Track variation"
+            title={
+              editingVarId
+                ? `Edit Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
+                : `New Variation${variationModalTrack ? ` — ${variationModalTrack.name}` : ''}`
+            }
+          />
         }
         centered
         radius="md"
         size="lg"
         overlayProps={{ blur: 3 }}
-        styles={{
-          header: {
-            background: 'linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)',
-            borderBottom: '1px solid #1e2028',
-          },
-          close: { color: 'white' },
-        }}
+        styles={modalHeaderStyles()}
       >
         {(() => {
           const track = variationModalTrack;
@@ -1924,12 +1887,11 @@ export function LocationDetailView() {
                 />
               </Group>
 
-              <Group gap="xs" justify="flex-end">
-                <Button variant="subtle" onClick={resetVarForm}>
-                  Cancel
-                </Button>
-                <Button onClick={handleVarSubmit}>{editingVarId ? 'Save' : 'Add'}</Button>
-              </Group>
+              <ModalFooter
+                onCancel={resetVarForm}
+                submitLabel={editingVarId ? 'Save' : 'Add'}
+                onSubmit={handleVarSubmit}
+              />
             </Stack>
           );
         })()}
@@ -1944,19 +1906,19 @@ export function LocationDetailView() {
               Tracks
             </Text>
             <Badge size="sm" variant="light" color="gray">
-              {venueTracks.length}
+              {locationTracks.length}
             </Badge>
           </Group>
         </Group>
 
-        {error && !editingVenue && (
+        {error && !editingLocation && (
           <Text size="sm" c="red">
             {error}
           </Text>
         )}
 
         {/* Track cards */}
-        {venueTracks.length === 0 && !showTrackForm ? (
+        {locationTracks.length === 0 && !showTrackForm ? (
           <Paper withBorder p="xl">
             <Stack align="center" gap="sm">
               <IconRoute size={48} color="var(--mantine-color-dimmed)" />
@@ -1967,7 +1929,7 @@ export function LocationDetailView() {
           </Paper>
         ) : (
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-            {venueTracks.map((track) => {
+            {locationTracks.map((track) => {
               const vars = variationsByTrack.get(track.id) ?? [];
               const isExpanded = expandedTrack === track.id;
               const defaultVar = defaultVariations.get(track.id);
@@ -2133,7 +2095,7 @@ export function LocationDetailView() {
         {/* Expanded variations panel for selected track */}
         <Collapse in={expandedTrack !== null}>
           {expandedTrack !== null && (() => {
-            const track = venueTracks.find((t) => t.id === expandedTrack);
+            const track = locationTracks.find((t) => t.id === expandedTrack);
             if (!track) return null;
             const vars = variationsByTrack.get(track.id) ?? [];
             return (

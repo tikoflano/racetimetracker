@@ -68,7 +68,7 @@ export const championship = table(
   }
 );
 
-export const venue = table(
+export const location = table(
   { public: true },
   {
     id: t.u64().primaryKey().autoInc(),
@@ -86,7 +86,7 @@ export const event = table(
     id: t.u64().primaryKey().autoInc(),
     org_id: t.u64().index('btree'),
     championship_id: t.u64().index('btree'),
-    venue_id: t.u64().index('btree'),
+    location_id: t.u64().index('btree'),
     name: t.string(),
     slug: t.string(),
     description: t.string(),
@@ -99,7 +99,7 @@ export const track = table(
   { public: true },
   {
     id: t.u64().primaryKey().autoInc(),
-    venue_id: t.u64().index('btree'),
+    location_id: t.u64().index('btree'),
     name: t.string(),
     color: t.string(),
   }
@@ -249,7 +249,7 @@ export const image = table(
   { public: true },
   {
     id: t.u64().primaryKey().autoInc(),
-    entity_type: t.string(), // 'venue' | 'track' | 'track_variation'
+    entity_type: t.string(), // 'location' | 'track' | 'track_variation'
     entity_id: t.u64().index('btree'),
     data: t.string(), // base64 data URI
     caption: t.string(),

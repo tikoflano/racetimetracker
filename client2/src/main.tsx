@@ -6,7 +6,7 @@ import { SpacetimeDBProvider } from 'spacetimedb/react';
 import { DbConnection } from './module_bindings';
 import { AuthProvider } from './auth';
 import App from './App';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary from './components/error-boundary';
 import { theme } from './theme';
 import '@mantine/core/styles.css';
 import '@mantine/carousel/styles.css';

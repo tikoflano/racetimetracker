@@ -241,16 +241,16 @@ export const leave_organization = spacetimedb.reducer({ org_id: t.u64() }, (ctx,
   for (const c of ctx.db.championship.iter()) {
     if (c.org_id === args.org_id) ctx.db.championship.id.delete(c.id);
   }
-  for (const v of ctx.db.venue.iter()) {
+  for (const v of ctx.db.location.iter()) {
     if (v.org_id !== args.org_id) continue;
     for (const track of ctx.db.track.iter()) {
-      if (track.venue_id !== v.id) continue;
+      if (track.location_id !== v.id) continue;
       for (const tv of ctx.db.track_variation.iter()) {
         if (tv.track_id === track.id) ctx.db.track_variation.id.delete(tv.id);
       }
       ctx.db.track.id.delete(track.id);
     }
-    ctx.db.venue.id.delete(v.id);
+    ctx.db.location.id.delete(v.id);
   }
   for (const r of ctx.db.rider.iter()) {
     if (r.org_id === args.org_id) ctx.db.rider.id.delete(r.id);

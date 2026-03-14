@@ -6,8 +6,6 @@ import {
   Menu,
   Checkbox,
   Text,
-  Title,
-  ThemeIcon,
   Box,
   Stack,
   Paper,
@@ -20,6 +18,7 @@ import {
   IconCalendarEvent,
   IconFilter,
 } from "@tabler/icons-react";
+import { ViewHeader } from "@/components/common";
 
 import { useTable } from "spacetimedb/react";
 import { tables } from "@/module_bindings";
@@ -218,9 +217,7 @@ export function CalendarView() {
   const navigate = useNavigate();
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
-  const [selectedChampIds, setSelectedChampIds] = useState<Set<bigint> | null>(
-    null
-  );
+  const [selectedChampIds, setSelectedChampIds] = useState<Set<bigint> | null>(null);
 
   const [orgs] = useTable(tables.organization);
   const [allChampionships] = useTable(tables.championship);
@@ -302,7 +299,7 @@ export function CalendarView() {
     return m;
   }, [filteredEvents]);
 
-  const prevMonth =() => {
+  const prevMonth = () => {
     if (month === 0) {
       setMonth(11);
       setYear((y) => y - 1);
@@ -370,50 +367,26 @@ export function CalendarView() {
     navigate(`/events/${evt.id}`);
   };
 
-  const dropdownLabel = allSelected
-    ? "All Championships"
-    : noneSelected
-      ? "No Championships"
-      : activeChampIds.size === 1
-        ? (champMap.get([...activeChampIds][0])?.name ?? "1 selected")
-        : `${activeChampIds.size} Championships`;
+  const dropdownLabel =
+    allSelected
+      ? "All Championships"
+      : noneSelected
+        ? "No Championships"
+        : activeChampIds.size === 1
+          ? champMap.get([...activeChampIds][0])?.name ?? "1 selected"
+          : `${activeChampIds.size} Championships`;
 
   return (
     <Stack gap="lg">
       {/* Header banner */}
-      <Box
-        p="xl"
-        style={{
-          background:
-            "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
-          borderRadius: "var(--mantine-radius-md)",
-          border: "1px solid #1e2028",
-        }}
-      >
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
-          <Group gap="md" align="center">
-            <ThemeIcon size={52} radius="md" color="blue" variant="light">
-              <IconCalendarEvent size={28} />
-            </ThemeIcon>
-            <div>
-              <Text size="xs" c="blue.3" tt="uppercase" fw={600} mb={2}>
-                Schedule
-              </Text>
-              <Title order={2} c="white" fw={700}>
-                Calendar
-              </Title>
-              <Text size="sm" c="blue.2" mt={2}>
-                {filteredEvents.length} event
-                {filteredEvents.length !== 1 ? "s" : ""}
-              </Text>
-            </div>
-          </Group>
-          <Menu
-            shadow="md"
-            width={260}
-            position="bottom-end"
-            closeOnItemClick={false}
-          >
+      <ViewHeader
+        icon={<IconCalendarEvent size={28} />}
+        iconColor="blue"
+        eyebrow="Schedule"
+        title="Calendar"
+        subtitle={`${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""}`}
+        actions={
+          <Menu shadow="md" width={260} position="bottom-end" closeOnItemClick={false}>
             <Menu.Target>
               <Button
                 variant="white"
@@ -424,18 +397,10 @@ export function CalendarView() {
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item
-                onClick={selectAll}
-                disabled={allSelected}
-                fw={500}
-              >
+              <Menu.Item onClick={selectAll} disabled={allSelected} fw={500}>
                 Select all
               </Menu.Item>
-              <Menu.Item
-                onClick={selectNone}
-                disabled={noneSelected}
-                fw={500}
-              >
+              <Menu.Item onClick={selectNone} disabled={noneSelected} fw={500}>
                 Select none
               </Menu.Item>
               <Menu.Divider />
@@ -466,13 +431,11 @@ export function CalendarView() {
                   </Group>
                 </Menu.Item>
               ))}
-              {championships.length === 0 && (
-                <Menu.Item disabled>No championships</Menu.Item>
-              )}
+              {championships.length === 0 && <Menu.Item disabled>No championships</Menu.Item>}
             </Menu.Dropdown>
           </Menu>
-        </Group>
-      </Box>
+        }
+      />
 
       {/* Month navigation */}
       <Group gap="sm" wrap="wrap">
@@ -540,3 +503,5 @@ export function CalendarView() {
     </Stack>
   );
 }
+
+

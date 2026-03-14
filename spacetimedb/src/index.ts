@@ -50,7 +50,7 @@ export {
   update_championship_member,
   remove_championship_member,
 } from './reducers/championship_member';
-export { create_venue, update_venue, delete_venue } from './reducers/location';
+export { create_location, update_location, delete_location } from './reducers/location';
 export { create_event, update_event, toggle_pin_event } from './reducers/event';
 export {
   create_track,

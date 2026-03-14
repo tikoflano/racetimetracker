@@ -51,21 +51,21 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   });
 
   // Locations
-  const venue1 = ctx.db.venue.insert({
+  const location1 = ctx.db.location.insert({
     id: 0n,
     org_id: org.id,
     name: 'Pine Mountain Bike Park',
     description: 'Technical enduro trails in the Blue Ridge',
     address: '1234 Mountain Rd, Blue Ridge, VA 24064',
   });
-  const venue2 = ctx.db.venue.insert({
+  const location2 = ctx.db.location.insert({
     id: 0n,
     org_id: org.id,
     name: 'Eagle Rock Resort',
     description: 'Steep downhill runs with jumps',
     address: '5678 Eagle Rock Dr, Hazleton, PA 18202',
   });
-  const venue3 = ctx.db.venue.insert({
+  const location3 = ctx.db.location.insert({
     id: 0n,
     org_id: org.id,
     name: 'Lakeside Trails',
@@ -76,7 +76,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   // Tracks & variations
   const track1 = ctx.db.track.insert({
     id: 0n,
-    venue_id: venue1.id,
+    location_id: location1.id,
     name: 'Widow Maker',
     color: '#ef4444',
   });
@@ -102,7 +102,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   });
   const track2 = ctx.db.track.insert({
     id: 0n,
-    venue_id: venue1.id,
+    location_id: location1.id,
     name: 'Rock Garden',
     color: '#22c55e',
   });
@@ -118,7 +118,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   });
   const track3 = ctx.db.track.insert({
     id: 0n,
-    venue_id: venue2.id,
+    location_id: location2.id,
     name: 'Thunderbolt',
     color: '#3b82f6',
   });
@@ -144,7 +144,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   });
   const track4 = ctx.db.track.insert({
     id: 0n,
-    venue_id: venue3.id,
+    location_id: location3.id,
     name: 'Lakeshore Loop',
     color: '#eab308',
   });
@@ -171,7 +171,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
 
   const insertEvent = (
     champId: bigint,
-    venueId: bigint,
+    locationId: bigint,
     name: string,
     desc: string,
     start: string,
@@ -181,7 +181,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
       id: 0n,
       org_id: org.id,
       championship_id: champId,
-      venue_id: venueId,
+      location_id: locationId,
       name,
       slug: uniqueEventSlug(ctx, org.id, slugify(name)),
       description: desc,
@@ -192,7 +192,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   // Enduro Series events
   const evt1 = insertEvent(
     champ1.id,
-    venue1.id,
+    location1.id,
     'Enduro R1 - Pine Mountain',
     'Opening round',
     '2025-03-15',
@@ -200,7 +200,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   );
   const evt2 = insertEvent(
     champ1.id,
-    venue2.id,
+    location2.id,
     'Enduro R2 - Eagle Rock',
     'Second round',
     '2025-05-10',
@@ -208,7 +208,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   );
   const evt3 = insertEvent(
     champ1.id,
-    venue3.id,
+    location3.id,
     'Enduro R3 - Lakeside',
     'Season finale',
     '2025-07-19',
@@ -216,7 +216,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   );
   const evtUpcoming = insertEvent(
     champ1.id,
-    venue1.id,
+    location1.id,
     'Enduro R4 - Pine Mountain',
     'Upcoming round (not started yet)',
     '2029-09-20',
@@ -226,7 +226,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   // Downhill Cup events
   const evt4 = insertEvent(
     champ2.id,
-    venue2.id,
+    location2.id,
     'DH Cup R1 - Eagle Rock',
     'Downhill opener',
     '2025-04-05',
@@ -234,7 +234,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   );
   const evt5 = insertEvent(
     champ2.id,
-    venue1.id,
+    location1.id,
     'DH Cup R2 - Pine Mountain',
     'Mid-season round',
     '2025-06-14',
@@ -244,7 +244,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   // XC Marathon events
   const evt6 = insertEvent(
     champ3.id,
-    venue3.id,
+    location3.id,
     'XC Marathon R1 - Lakeside',
     'Endurance opener',
     '2025-04-26',
@@ -252,7 +252,7 @@ export const seed_demo_data = spacetimedb.reducer((ctx) => {
   );
   const evt7 = insertEvent(
     champ3.id,
-    venue1.id,
+    location1.id,
     'XC Marathon R2 - Pine Mountain',
     'Mountain stage',
     '2025-08-09',

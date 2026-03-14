@@ -9,16 +9,16 @@ import {
   IconEye,
 } from "@tabler/icons-react";
 import classes from "./MainContent.module.css";
-import { EventPreviewView } from "./EventPreviewView";
-import { MembersView } from "./MembersView";
-import { CalendarView } from "./CalendarView";
-import { LocationsView } from "./LocationsView";
-import { LocationDetailView } from "./LocationDetailView";
-import { TimekeepView } from "./TimekeepView";
-import { DevToolsView } from "./DevToolsView";
-import { RidersView } from "./RidersView";
-import { ChampionshipsView } from "./ChampionshipsView";
-import { ChampionshipDetailView } from "./ChampionshipDetailView";
+import { EventPreviewView } from "../events/event-preview/EventPreviewView";
+import { MembersView } from "../members/members-view";
+import { CalendarView } from "../calendar/calendar-view/CalendarView";
+import { LocationsView } from "../locations/locations-view/LocationsView";
+import { LocationDetailView } from "../locations/location-detail/LocationDetailView";
+import { TimekeepView } from "../timekeeping/timekeep-view/TimekeepView";
+import { DevToolsView } from "../devtools/dev-tools-view/DevToolsView";
+import { RidersView } from "../riders/riders-view/RidersView";
+import { ChampionshipsView } from "../championships/championships-view/ChampionshipsView";
+import { ChampionshipDetailView } from "../championships/championship-detail/ChampionshipDetailView";
 
 interface MainContentProps {
   collapsed: boolean;
@@ -243,7 +243,6 @@ function DashboardView() {
   );
 }
 
-
 export function MainContent({ collapsed }: MainContentProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   return (
@@ -256,7 +255,7 @@ export function MainContent({ collapsed }: MainContentProps) {
         <Route path="/event-preview" element={<EventPreviewView />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/locations" element={<LocationsView />} />
-        <Route path="/locations/:venueId" element={<LocationDetailView />} />
+        <Route path="/locations/:locationId" element={<LocationDetailView />} />
         <Route path="/timekeep" element={<TimekeepView />} />
         <Route path="/riders" element={<RidersView />} />
         <Route path="/championships" element={<ChampionshipsView />} />
@@ -267,3 +266,5 @@ export function MainContent({ collapsed }: MainContentProps) {
     </main>
   );
 }
+
+
