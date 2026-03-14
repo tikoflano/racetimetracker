@@ -352,42 +352,6 @@ export function ChampionshipsView() {
         searchOpen={showSearch}
         onSearchOpenChange={(open) => { setShowSearch(open); if (!open) setSearch(""); }}
         resultLabel={`${filteredRows.length} result${filteredRows.length !== 1 ? "s" : ""}`}
-        leftContent={
-          !isMobile ? (
-            <Group gap="xs" wrap="wrap">
-              {filterBadges}
-              <Group gap="xs">
-                <Select
-                  size="xs"
-                  data={sortOptions}
-                  value={sortStatus.columnAccessor}
-                  onChange={(v) =>
-                    v && setSortStatus((s) => ({ ...s, columnAccessor: v }))
-                  }
-                  allowDeselect={false}
-                  style={{ width: 130 }}
-                />
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
-                  onClick={() =>
-                    setSortStatus((s) => ({
-                      ...s,
-                      direction: s.direction === "asc" ? "desc" : "asc",
-                    }))
-                  }
-                >
-                  {sortStatus.direction === "asc" ? (
-                    <IconArrowUp size={14} />
-                  ) : (
-                    <IconArrowDown size={14} />
-                  )}
-                </ActionIcon>
-              </Group>
-            </Group>
-          ) : undefined
-        }
       />
 
       {/* Content */}
