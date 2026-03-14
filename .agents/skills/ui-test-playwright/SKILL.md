@@ -15,11 +15,25 @@ Use Playwright to test a specific UI behavior or flow in the app on demand. No p
 - User asks to **test** a specific behavior, flow, or UI in the app using a **real browser** (or "with Playwright").
 - User asks to verify that something works in the browser (e.g. "check that the login redirects", "test that the modal opens").
 
-## Video recording
+## Video and trace artifacts
 
-- **Only when the user asks:** Enable video recording only if the user explicitly asks to **record**, **video**, **capture video**, or **show (me) the video** of the run (e.g. "run the test and record it", "test X and show me the video").
-- **When they ask for video:** Run the scratch test with `PLAYWRIGHT_VIDEO=on` (e.g. `PLAYWRIGHT_VIDEO=on npm run test:e2e:scratch`). After the run, report the path to the generated video (under `test-results/.../video.webm`) so they can open it.
-- **When they do not ask for video:** Run the test without setting `PLAYWRIGHT_VIDEO`; no video is recorded (default is off).
+Recognize when the user asks for **video** or **trace** (or both) and run the test with the right flags, then output the correct artifacts.
+
+### Video
+
+- **When the user asks for:** record, **video**, capture video, or show (me) the video (e.g. "run the test and record it", "test X and show me the video").
+- **Run with:** `PLAYWRIGHT_VIDEO=on` (e.g. `PLAYWRIGHT_VIDEO=on npm run test:e2e:scratch`).
+- **Output:** Find the generated video under `test-results/<run-folder>/video.webm`, run `cursor <video_file_path>` so it opens in the editor, and report the path in your summary.
+
+### Trace
+
+- **When the user asks for:** **trace**, trace viewer, or see where it clicked / action timeline (e.g. "run with trace", "show me the trace", "I want to see the trace").
+- **Run with:** `--trace on` (e.g. `npx playwright test e2e/scratch/ --trace on`, or combined with video: `PLAYWRIGHT_VIDEO=on npx playwright test e2e/scratch/ --trace on`).
+- **Output:** Find the trace under `test-results/<run-folder>/trace.zip`. Report the path and how to open it: `npx playwright show-trace test-results/<run-folder>/trace.zip`. Optionally run that command so the user can view the trace (in environments where a browser can open, or serve with `-h 0.0.0.0 -p 9323` for remote access).
+
+### Default (no video/trace requested)
+
+- Do not set `PLAYWRIGHT_VIDEO` and do not pass `--trace on`; no video or trace is recorded.
 
 ## Steps
 
@@ -42,13 +56,18 @@ Use Playwright to test a specific UI behavior or flow in the app on demand. No p
 
 4. **Run the scratch test**
    - From the **repo root**: `npm run test:e2e:scratch` or `npx playwright test e2e/scratch/`.
+   - If the user asked for **video**, prefix with `PLAYWRIGHT_VIDEO=on`.
+   - If the user asked for **trace**, append `--trace on`.
+   - Example (both): `PLAYWRIGHT_VIDEO=on npx playwright test e2e/scratch/ --trace on`.
 
-5. **Report results**
+5. **Report results and output artifacts**
    - Summarize pass or fail. If the test failed, include the error output or a short explanation. Mention any screenshots or artifacts if relevant.
-   - If the user asked for video, report the path to the recording (e.g. `test-results/.../video.webm`) so they can open it.
+   - **If the user asked for video:** find `test-results/<run-folder>/video.webm`, run `cursor <video_file_path>` to open it in the editor, and report the path in your summary.
+   - **If the user asked for trace:** find `test-results/<run-folder>/trace.zip`, report the path and the command to open it: `npx playwright show-trace <path-to-trace.zip>`. Optionally run that command (or serve with `-h 0.0.0.0 -p 9323` if in a headless environment).
 
 ## Conventions
 
 - One scenario per request in `e2e/scratch/`; use a single spec file and name it as you see fit (e.g. `scratch.spec.ts` or a descriptive name like `members.spec.ts`).
+- The user may ask for **video**, **trace**, or **both**; apply the corresponding flags and output each requested artifact.
 - Do not add a full E2E suite or many committed test files unless the user asks for it.
 - Base URL: default is `http://localhost:5173` (client2). Override with `PLAYWRIGHT_BASE_URL` for client on 5174 or another URL.
