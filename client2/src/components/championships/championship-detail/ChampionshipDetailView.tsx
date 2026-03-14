@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useForm } from "@mantine/form";
 import {
   Box,
   Group,
@@ -174,122 +175,114 @@ export function ChampionshipDetailView() {
 
   // Edit championship modal
   const [showEdit, setShowEdit] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editColor, setEditColor] = useState("");
-  const [editError, setEditError] = useState("");
+  const editChampForm = useForm({
+    initialValues: { name: "", description: "", color: "" },
+    validate: {
+      name: (v) => (!v?.trim() ? "Name cannot be empty" : null),
+    },
+  });
 
   const startEditing = () => {
     if (!champ) return;
-    setEditName(champ.name);
-    setEditDesc(champ.description);
-    setEditColor(champ.color);
-    setEditError("");
+    editChampForm.setValues({
+      name: champ.name,
+      description: champ.description,
+      color: champ.color,
+    });
+    editChampForm.clearErrors();
     setShowEdit(true);
   };
 
   const handleSave = async () => {
-    setEditError("");
-    const trimmed = editName.trim();
-    if (!trimmed) {
-      setEditError("Name cannot be empty");
-      return;
-    }
+    if (!editChampForm.validate()) return;
     try {
       await updateChampionship({
         championshipId: cid,
-        name: trimmed,
-        description: editDesc.trim(),
-        color: editColor,
+        name: editChampForm.values.name.trim(),
+        description: editChampForm.values.description.trim(),
+        color: editChampForm.values.color,
       });
       setShowEdit(false);
     } catch (e: unknown) {
-      setEditError(getErrorMessage(e, "Failed to update"));
+      editChampForm.setFieldError("name", getErrorMessage(e, "Failed to update"));
     }
   };
 
   // Add event modal
   const [showAddEvent, setShowAddEvent] = useState(false);
-  const [evtName, setEvtName] = useState("");
-  const [evtDesc, setEvtDesc] = useState("");
-  const [evtStart, setEvtStart] = useState("");
-  const [evtEnd, setEvtEnd] = useState("");
-  const [evtLocationId, setEvtLocationId] = useState<string | null>(null);
-  const [evtError, setEvtError] = useState("");
+  const addEventForm = useForm<{
+    name: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    locationId: string | null;
+  }>({
+    initialValues: {
+      name: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      locationId: null,
+    },
+    validate: {
+      name: (v) => (!v?.trim() ? "Event name is required" : null),
+      startDate: (v) => (!v ? "Start date is required" : null),
+      endDate: (v) => (!v ? "End date is required" : null),
+      locationId: (v) => (!v ? "Select a location" : null),
+    },
+  });
 
   const resetEventForm = () => {
-    setEvtName("");
-    setEvtDesc("");
-    setEvtStart("");
-    setEvtEnd("");
-    setEvtLocationId(null);
-    setEvtError("");
+    addEventForm.reset();
     setShowAddEvent(false);
   };
 
   const handleAddEvent = async () => {
-    setEvtError("");
-    if (!evtName.trim()) {
-      setEvtError("Event name is required");
-      return;
-    }
-    if (!evtStart) {
-      setEvtError("Start date is required");
-      return;
-    }
-    if (!evtEnd) {
-      setEvtError("End date is required");
-      return;
-    }
-    if (!evtLocationId) {
-      setEvtError("Select a location");
-      return;
-    }
+    if (!addEventForm.validate()) return;
     try {
       await createEvent({
         orgId: activeOrgId!,
         championshipId: cid,
-        locationId: BigInt(evtLocationId),
-        name: evtName.trim(),
-        description: evtDesc.trim(),
-        startDate: evtStart,
-        endDate: evtEnd,
+        locationId: BigInt(addEventForm.values.locationId!),
+        name: addEventForm.values.name.trim(),
+        description: addEventForm.values.description.trim(),
+        startDate: addEventForm.values.startDate,
+        endDate: addEventForm.values.endDate,
       });
       resetEventForm();
     } catch (e: unknown) {
-      setEvtError(getErrorMessage(e, "Failed to create event"));
+      addEventForm.setFieldError("name", getErrorMessage(e, "Failed to create event"));
     }
   };
 
   // Inline event rename
   const [editingEventId, setEditingEventId] = useState<bigint | null>(null);
-  const [editEventName, setEditEventName] = useState("");
-  const [editEventError, setEditEventError] = useState("");
+  const editEventNameForm = useForm({
+    initialValues: { name: "" },
+    validate: {
+      name: (v) => (!v?.trim() ? "Name cannot be empty" : null),
+    },
+  });
 
   const startEditEvent = (e: Event) => {
     setEditingEventId(e.id);
-    setEditEventName(e.name);
-    setEditEventError("");
+    editEventNameForm.setValues({ name: e.name });
+    editEventNameForm.clearErrors();
   };
 
-  const handleSaveEventName = async (e: Event) => {
-    setEditEventError("");
-    const trimmed = editEventName.trim();
-    if (!trimmed) {
-      setEditEventError("Name cannot be empty");
-      return;
-    }
+  const handleSaveEventName = async (ev: Event) => {
+    if (!editEventNameForm.validate()) return;
     try {
       await updateEvent({
-        eventId: e.id,
-        name: trimmed,
-        description: e.description,
-        startDate: e.startDate,
-        endDate: e.endDate,
+        eventId: ev.id,
+        name: editEventNameForm.values.name.trim(),
+        description: ev.description,
+        startDate: ev.startDate,
+        endDate: ev.endDate,
       });
       setEditingEventId(null);
     } catch (err: unknown) {
-      setEditEventError(getErrorMessage(err, "Failed to rename"));
+      editEventNameForm.setFieldError("name", getErrorMessage(err, "Failed to rename"));
     }
   };
 
@@ -551,11 +544,10 @@ export function ChampionshipDetailView() {
                 accessor: "name",
                 title: "Name",
                 render: (r: EventRow) =>
-                  editingEventId === r.event.id ? (
+                    editingEventId === r.event.id ? (
                     <Group gap="xs" align="center" onClick={(e) => e.stopPropagation()}>
                       <TextInput
-                        value={editEventName}
-                        onChange={(ev) => setEditEventName(ev.target.value)}
+                        {...editEventNameForm.getInputProps("name")}
                         onKeyDown={(ev) => {
                           if (ev.key === "Enter") handleSaveEventName(r.event);
                           if (ev.key === "Escape") setEditingEventId(null);
@@ -574,9 +566,9 @@ export function ChampionshipDetailView() {
                       >
                         Cancel
                       </Button>
-                      {editEventError && (
+                      {editEventNameForm.errors.name && (
                         <Text size="xs" c="red">
-                          {editEventError}
+                          {editEventNameForm.errors.name}
                         </Text>
                       )}
                     </Group>
@@ -650,21 +642,22 @@ export function ChampionshipDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={editError} />
+          <FormError error={typeof editChampForm.errors.name === "string" ? editChampForm.errors.name : undefined} />
           <TextInput
             label="Name *"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
+            {...editChampForm.getInputProps("name")}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
             autoFocus
           />
           <TextInput
             label="Description"
-            value={editDesc}
-            onChange={(e) => setEditDesc(e.target.value)}
+            {...editChampForm.getInputProps("description")}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
           />
-          <ColorInput label="Color" value={editColor} onChange={setEditColor} />
+          <ColorInput
+            label="Color"
+            {...editChampForm.getInputProps("color")}
+          />
           <ModalFooter
             onCancel={() => setShowEdit(false)}
             submitLabel="Save"
@@ -692,38 +685,35 @@ export function ChampionshipDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={evtError} />
+          <FormError error={typeof addEventForm.errors.name === "string" ? addEventForm.errors.name : undefined} />
           <TextInput
             label="Event Name *"
             placeholder="Event name"
-            value={evtName}
-            onChange={(e) => setEvtName(e.target.value)}
+            {...addEventForm.getInputProps("name")}
             autoFocus
           />
           <TextInput
             label="Description"
             placeholder="Optional description"
-            value={evtDesc}
-            onChange={(e) => setEvtDesc(e.target.value)}
+            {...addEventForm.getInputProps("description")}
           />
           <Group grow wrap="wrap">
             <DatePickerInput
               label="Start date *"
-              value={evtStart ? new Date(evtStart + "T00:00:00") : null}
-              onChange={(d) => setEvtStart(d ? d.toISOString().slice(0, 10) : "")}
+              value={addEventForm.values.startDate ? new Date(addEventForm.values.startDate + "T00:00:00") : null}
+              onChange={(d) => addEventForm.setFieldValue("startDate", d ? d.toISOString().slice(0, 10) : "")}
             />
             <DatePickerInput
               label="End date *"
-              value={evtEnd ? new Date(evtEnd + "T00:00:00") : null}
-              onChange={(d) => setEvtEnd(d ? d.toISOString().slice(0, 10) : "")}
+              value={addEventForm.values.endDate ? new Date(addEventForm.values.endDate + "T00:00:00") : null}
+              onChange={(d) => addEventForm.setFieldValue("endDate", d ? d.toISOString().slice(0, 10) : "")}
             />
           </Group>
           <Select
             label="Location *"
             placeholder="Select location..."
             data={orgLocations.map((v) => ({ value: String(v.id), label: v.name }))}
-            value={evtLocationId}
-            onChange={setEvtLocationId}
+            {...addEventForm.getInputProps("locationId")}
             searchable
             allowDeselect={false}
           />

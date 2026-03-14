@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "@mantine/form";
 import {
   Box,
   Group,
@@ -179,36 +180,30 @@ export function ChampionshipsView() {
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newColor, setNewColor] = useState("#3b82f6");
-  const [createError, setCreateError] = useState("");
+  const createChampForm = useForm({
+    initialValues: { name: "", description: "", color: "#3b82f6" },
+    validate: {
+      name: (v) => (!v?.trim() ? "Name is required" : null),
+    },
+  });
 
   const resetCreate = () => {
-    setNewName("");
-    setNewDesc("");
-    setNewColor("#3b82f6");
-    setCreateError("");
+    createChampForm.reset();
     setShowCreate(false);
   };
 
   const handleCreate = async () => {
-    setCreateError("");
-    const trimmed = newName.trim();
-    if (!trimmed) {
-      setCreateError("Name is required");
-      return;
-    }
+    if (!createChampForm.validate()) return;
     try {
       await createChampionship({
         orgId: activeOrgId!,
-        name: trimmed,
-        description: newDesc.trim(),
-        color: newColor,
+        name: createChampForm.values.name.trim(),
+        description: createChampForm.values.description.trim(),
+        color: createChampForm.values.color,
       });
       resetCreate();
     } catch (e: unknown) {
-      setCreateError(getErrorMessage(e, "Failed to create championship"));
+      createChampForm.setFieldError("name", getErrorMessage(e, "Failed to create championship"));
     }
   };
 
@@ -529,23 +524,21 @@ export function ChampionshipsView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={createError} />
+          <FormError error={typeof createChampForm.errors.name === "string" ? createChampForm.errors.name : undefined} />
           <TextInput
             label="Name *"
             placeholder="Championship name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            {...createChampForm.getInputProps("name")}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             autoFocus
           />
           <TextInput
             label="Description"
             placeholder="Optional description"
-            value={newDesc}
-            onChange={(e) => setNewDesc(e.target.value)}
+            {...createChampForm.getInputProps("description")}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
           />
-          <ColorInput label="Color" value={newColor} onChange={setNewColor} />
+          <ColorInput label="Color" {...createChampForm.getInputProps("color")} />
           <ModalFooter
             onCancel={resetCreate}
             submitLabel="Create"

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Button,
   Collapse,
@@ -8,36 +9,68 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
+import { useForm } from "@mantine/form";
 import { IconChevronDown, IconChevronRight, IconUserPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { ModalHeader, modalHeaderStyles, FormError, ModalFooter } from "@/components/common";
+import { getErrorMessage } from "@/utils";
 
 export interface InviteMemberModalProps {
   opened: boolean;
   onClose: () => void;
-  name: string;
-  setName: (v: string) => void;
-  email: string;
-  setEmail: (v: string) => void;
-  role: "admin" | "manager" | "timekeeper";
-  setRole: (v: "admin" | "manager" | "timekeeper") => void;
-  error: string | null;
-  onInvite: () => void;
+  orgId: bigint | null;
+  inviteOrgMember: (args: {
+    orgId: bigint;
+    email: string;
+    name: string;
+    role: string;
+  }) => Promise<unknown>;
 }
 
 export function InviteMemberModal({
   opened,
   onClose,
-  name,
-  setName,
-  email,
-  setEmail,
-  role,
-  setRole,
-  error,
-  onInvite,
+  orgId,
+  inviteOrgMember,
 }: InviteMemberModalProps) {
   const [inviteScopesOpen, { toggle: toggleInviteScopes }] = useDisclosure(false);
+  const form = useForm({
+    initialValues: {
+      name: "",
+      email: "",
+      role: "manager" as "admin" | "manager" | "timekeeper",
+    },
+    validate: {
+      email: (v) => {
+        const trimmed = v?.trim();
+        if (!trimmed) return "Email is required";
+        if (!trimmed.includes("@")) return "Please enter a valid email address.";
+        return null;
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (!opened) {
+      form.reset();
+    }
+  }, [opened]);
+
+  const handleInvite = async () => {
+    if (!orgId || !form.validate()) return;
+    try {
+      await inviteOrgMember({
+        orgId,
+        email: form.values.email.trim(),
+        name: form.values.name.trim(),
+        role: form.values.role,
+      });
+      form.reset();
+      onClose();
+    } catch (e: unknown) {
+      form.setFieldError("email", getErrorMessage(e, "Failed to invite member"));
+    }
+  };
 
   return (
     <Modal
@@ -60,26 +93,21 @@ export function InviteMemberModal({
       )}
     >
       <Stack gap="md" pt="xs">
-        <FormError error={error} />
+        <FormError error={typeof form.errors.email === "string" ? form.errors.email : undefined} />
         <TextInput
           label="Name"
           placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
+          {...form.getInputProps("name")}
         />
         <TextInput
           label="Email address"
           placeholder="Email address"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.currentTarget.value)}
+          {...form.getInputProps("email")}
         />
         <Select
           label="Role"
-          value={role}
-          onChange={(v) =>
-            setRole((v as "admin" | "manager" | "timekeeper") || "manager")
-          }
+          {...form.getInputProps("role")}
           data={[
             { value: "manager", label: "Manager" },
             { value: "timekeeper", label: "Timekeeper" },
@@ -111,7 +139,7 @@ export function InviteMemberModal({
         <ModalFooter
           onCancel={onClose}
           submitLabel="Invite"
-          onSubmit={onInvite}
+          onSubmit={handleInvite}
         />
       </Stack>
     </Modal>

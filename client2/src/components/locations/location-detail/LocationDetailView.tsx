@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from '@mantine/form';
 import {
   ActionIcon,
   Badge,
@@ -270,15 +271,25 @@ export function LocationDetailView() {
     }
   });
   const [editingLocation, setEditingLocation] = useState(false);
-  const [locationForm, setLocationForm] = useState({
-    name: '',
-    description: '',
-    address: '',
-    imageUrl: undefined as string | undefined,
+  const locationForm = useForm({
+    initialValues: {
+      name: '',
+      description: '',
+      address: '',
+      imageUrl: undefined as string | undefined,
+    },
+    validate: {
+      name: (v) => (!v?.trim() ? 'Name is required' : null),
+    },
   });
 
   const [showTrackForm, setShowTrackForm] = useState(false);
-  const [trackForm, setTrackForm] = useState({ name: '', color: '#3b82f6' });
+  const trackForm = useForm({
+    initialValues: { name: '', color: '#3b82f6' },
+    validate: {
+      name: (v) => (!v?.trim() ? 'Track name is required' : null),
+    },
+  });
   const [editingTrackId, setEditingTrackId] = useState<bigint | null>(null);
 
   const [expandedTrack, setExpandedTrack] = useState<bigint | null>(null);
@@ -286,18 +297,21 @@ export function LocationDetailView() {
   const [trackGalleryIndex, setTrackGalleryIndex] = useState(0);
 
   const [showVarForm, setShowVarForm] = useState<bigint | null>(null);
-  const [varForm, setVarForm] = useState({
-    name: '',
-    description: '',
-    startLat: '',
-    startLng: '',
-    endLat: '',
-    endLng: '',
+  const varForm = useForm({
+    initialValues: {
+      name: '',
+      description: '',
+      startLat: '',
+      startLng: '',
+      endLat: '',
+      endLng: '',
+    },
+    validate: {
+      name: (v) => (!v?.trim() ? 'Variation name is required' : null),
+    },
   });
   const [placingPin, setPlacingPin] = useState<'start' | 'end' | null>(null);
   const [editingVarId, setEditingVarId] = useState<bigint | null>(null);
-
-  const [error, setError] = useState('');
   const trackRefs = useRef(new Map<bigint, HTMLDivElement>());
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -507,22 +521,19 @@ export function LocationDetailView() {
 
   // Location edit handlers
   const startEditLocation = () => {
-    setLocationForm({
+    locationForm.setValues({
       name: currentLocation.name,
       description: currentLocation.description,
       address: currentLocation.address,
       imageUrl: coverImage?.url ?? currentLocation.imageUrl,
     });
+    locationForm.clearErrors();
     setEditingLocation(true);
-    setError('');
   };
 
   const saveLocation = () => {
-    setError('');
-    if (!locationForm.name.trim()) {
-      setError('Name is required');
-      return;
-    }
+    if (!locationForm.validate()) return;
+    const values = locationForm.values;
     setLocations((prev) =>
       prev.map((v) => {
         if (v.id !== locationId) return v;
@@ -532,12 +543,12 @@ export function LocationDetailView() {
 
         // If a new banner image was provided, add/update it as the cover image
         // and ensure only one image per location has isCover === true.
-        if (locationForm.imageUrl) {
-          const existing = existingImages.find((img) => img.url === locationForm.imageUrl);
+        if (values.imageUrl) {
+          const existing = existingImages.find((img) => img.url === values.imageUrl);
           if (existing) {
             images = existingImages.map((img) => ({
               ...img,
-              isCover: img.url === locationForm.imageUrl,
+              isCover: img.url === values.imageUrl,
             }));
           } else {
             const nextId =
@@ -549,7 +560,7 @@ export function LocationDetailView() {
                 : BigInt(Date.now());
             const newImage: LocationImage = {
               id: nextId,
-              url: locationForm.imageUrl,
+              url: values.imageUrl,
               caption: '',
               isCover: true,
             };
@@ -564,9 +575,9 @@ export function LocationDetailView() {
 
         return {
           ...v,
-          name: locationForm.name.trim(),
-          description: locationForm.description.trim(),
-          address: locationForm.address.trim(),
+          name: values.name.trim(),
+          description: values.description.trim(),
+          address: values.address.trim(),
           imageUrl: cover?.url,
           images: images.length > 0 ? images : undefined,
         };
@@ -583,30 +594,26 @@ export function LocationDetailView() {
 
   // Track handlers
   const startEditTrack = (t: Track) => {
-    setTrackForm({ name: t.name, color: t.color });
+    trackForm.setValues({ name: t.name, color: t.color });
+    trackForm.clearErrors();
     setEditingTrackId(t.id);
     setShowTrackForm(true);
-    setError('');
   };
 
   const resetTrackForm = () => {
-    setTrackForm({ name: '', color: '#3b82f6' });
+    trackForm.reset();
     setEditingTrackId(null);
     setShowTrackForm(false);
-    setError('');
   };
 
   const handleTrackSubmit = () => {
-    setError('');
-    if (!trackForm.name.trim()) {
-      setError('Track name is required');
-      return;
-    }
+    if (!trackForm.validate()) return;
+    const { name, color } = trackForm.values;
     if (editingTrackId !== null) {
       setTracks((prev) =>
         prev.map((t) =>
           t.id === editingTrackId
-            ? { ...t, name: trackForm.name.trim(), color: trackForm.color }
+            ? { ...t, name: name.trim(), color }
             : t
         )
       );
@@ -614,8 +621,8 @@ export function LocationDetailView() {
       const newTrack: Track = {
         id: BigInt(Date.now()),
         locationId,
-        name: trackForm.name.trim(),
-        color: trackForm.color,
+        name: name.trim(),
+        color,
       };
       setTracks((prev) => [...prev, newTrack]);
       // Create default variation
@@ -642,22 +649,14 @@ export function LocationDetailView() {
 
   // Variation handlers
   const startAddVar = (trackId: bigint) => {
-    setVarForm({
-      name: '',
-      description: '',
-      startLat: '',
-      startLng: '',
-      endLat: '',
-      endLng: '',
-    });
+    varForm.reset();
     setEditingVarId(null);
     setShowVarForm(trackId);
     setPlacingPin(null);
-    setError('');
   };
 
   const startEditVar = (tv: TrackVariation) => {
-    setVarForm({
+    varForm.setValues({
       name: tv.name,
       description: tv.description,
       startLat: String(tv.startLatitude || ''),
@@ -665,43 +664,32 @@ export function LocationDetailView() {
       endLat: String(tv.endLatitude || ''),
       endLng: String(tv.endLongitude || ''),
     });
+    varForm.clearErrors();
     setEditingVarId(tv.id);
     setShowVarForm(tv.trackId);
     setPlacingPin(null);
-    setError('');
   };
 
   const resetVarForm = () => {
-    setVarForm({
-      name: '',
-      description: '',
-      startLat: '',
-      startLng: '',
-      endLat: '',
-      endLng: '',
-    });
+    varForm.reset();
     setEditingVarId(null);
     setShowVarForm(null);
     setPlacingPin(null);
-    setError('');
   };
 
   const handleVarSubmit = () => {
-    setError('');
-    if (!varForm.name.trim()) {
-      setError('Variation name is required');
-      return;
-    }
+    if (!varForm.validate()) return;
+    const v = varForm.values;
     const data = {
-      name: varForm.name.trim(),
-      description: varForm.description.trim(),
-      startLatitude: parseFloat(varForm.startLat) || 0,
-      startLongitude: parseFloat(varForm.startLng) || 0,
-      endLatitude: parseFloat(varForm.endLat) || 0,
-      endLongitude: parseFloat(varForm.endLng) || 0,
+      name: v.name.trim(),
+      description: v.description.trim(),
+      startLatitude: parseFloat(v.startLat) || 0,
+      startLongitude: parseFloat(v.startLng) || 0,
+      endLatitude: parseFloat(v.endLat) || 0,
+      endLongitude: parseFloat(v.endLng) || 0,
     };
     if (editingVarId !== null) {
-      setVariations((prev) => prev.map((v) => (v.id === editingVarId ? { ...v, ...data } : v)));
+      setVariations((prev) => prev.map((ev) => (ev.id === editingVarId ? { ...ev, ...data } : ev)));
     } else {
       const newVar: TrackVariation = {
         id: BigInt(Date.now()),
@@ -795,9 +783,8 @@ export function LocationDetailView() {
                         leftSection={<IconPlus size={14} />}
                         onClick={() => {
                           setEditingTrackId(null);
-                          setTrackForm({ name: '', color: '#3b82f6' });
+                          trackForm.reset();
                           setShowTrackForm(true);
-                          setError('');
                         }}
                       >
                         Add Track
@@ -885,9 +872,8 @@ export function LocationDetailView() {
                       leftSection={<IconPlus size={14} />}
                       onClick={() => {
                         setEditingTrackId(null);
-                        setTrackForm({ name: '', color: '#3b82f6' });
+                        trackForm.reset();
                         setShowTrackForm(true);
-                        setError('');
                       }}
                       style={{
                         backgroundColor:
@@ -987,9 +973,8 @@ export function LocationDetailView() {
                   leftSection={<IconPlus size={14} />}
                   onClick={() => {
                     setEditingTrackId(null);
-                    setTrackForm({ name: '', color: '#3b82f6' });
+                    trackForm.reset();
                     setShowTrackForm(true);
-                    setError('');
                   }}
                 >
                   Add Track
@@ -1185,24 +1170,21 @@ export function LocationDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={error} />
+          <FormError error={typeof locationForm.errors.name === 'string' ? locationForm.errors.name : undefined} />
           <TextInput
             label="Name"
-            value={locationForm.name}
-            onChange={(e) => setLocationForm((f) => ({ ...f, name: e.target.value }))}
+            {...locationForm.getInputProps('name')}
             autoFocus
           />
           <TextInput
             label="Description"
             placeholder="Description (optional)"
-            value={locationForm.description}
-            onChange={(e) => setLocationForm((f) => ({ ...f, description: e.target.value }))}
+            {...locationForm.getInputProps('description')}
           />
           <TextInput
             label="Address"
             placeholder="Address (optional)"
-            value={locationForm.address}
-            onChange={(e) => setLocationForm((f) => ({ ...f, address: e.target.value }))}
+            {...locationForm.getInputProps('address')}
           />
           {/* Banner image */}
           <Stack gap="xs">
@@ -1214,7 +1196,7 @@ export function LocationDetailView() {
                 This location already has gallery images. Change the cover picture from the gallery
                 instead.
               </Text>
-            ) : locationForm.imageUrl ? (
+            ) : locationForm.values.imageUrl ? (
               <Box
                 style={{
                   position: 'relative',
@@ -1225,7 +1207,7 @@ export function LocationDetailView() {
               >
                 <Box
                   component="img"
-                  src={locationForm.imageUrl}
+                  src={locationForm.values.imageUrl}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
                 <ActionIcon
@@ -1233,7 +1215,7 @@ export function LocationDetailView() {
                   color="red"
                   variant="filled"
                   style={{ position: 'absolute', top: 6, right: 6 }}
-                  onClick={() => setLocationForm((f) => ({ ...f, imageUrl: undefined }))}
+                  onClick={() => locationForm.setFieldValue('imageUrl', undefined)}
                 >
                   <IconX size={12} />
                 </ActionIcon>
@@ -1255,7 +1237,7 @@ export function LocationDetailView() {
                     const file = (e.target as HTMLInputElement).files?.[0];
                     if (file) {
                       const url = await resizeImage(file);
-                      setLocationForm((f) => ({ ...f, imageUrl: url }));
+                      locationForm.setFieldValue('imageUrl', url);
                     }
                   };
                   input.click();
@@ -1298,18 +1280,16 @@ export function LocationDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="md" pt="xs">
-          <FormError error={error} />
+          <FormError error={typeof trackForm.errors.name === 'string' ? trackForm.errors.name : undefined} />
           <TextInput
             label="Name"
-            value={trackForm.name}
-            onChange={(e) => setTrackForm((f) => ({ ...f, name: e.target.value }))}
+            {...trackForm.getInputProps('name')}
             onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
             autoFocus
           />
           <ColorInput
             label="Color"
-            value={trackForm.color}
-            onChange={(c) => setTrackForm((f) => ({ ...f, color: c }))}
+            {...trackForm.getInputProps('color')}
           />
           <ModalFooter
             onCancel={resetTrackForm}
@@ -1691,43 +1671,44 @@ export function LocationDetailView() {
           const track = variationModalTrack;
           if (!track) return null;
 
-          const hasStart = varForm.startLat !== '' && varForm.startLng !== '';
-          const hasEnd = varForm.endLat !== '' && varForm.endLng !== '';
+          const v = varForm.values;
+          const hasStart = v.startLat !== '' && v.startLng !== '';
+          const hasEnd = v.endLat !== '' && v.endLng !== '';
           const startPos: [number, number] | null = hasStart
-            ? [parseFloat(varForm.startLat), parseFloat(varForm.startLng)]
+            ? [parseFloat(v.startLat), parseFloat(v.startLng)]
             : null;
           const endPos: [number, number] | null = hasEnd
-            ? [parseFloat(varForm.endLat), parseFloat(varForm.endLng)]
+            ? [parseFloat(v.endLat), parseFloat(v.endLng)]
             : null;
 
           const handleMapPlace = (lat: number, lng: number) => {
             if (placingPin === 'start') {
-              setVarForm((f) => ({
-                ...f,
+              varForm.setValues({
+                ...varForm.values,
                 startLat: lat.toFixed(6),
                 startLng: lng.toFixed(6),
-              }));
+              });
               setPlacingPin(hasEnd ? null : 'end');
             } else if (placingPin === 'end') {
-              setVarForm((f) => ({
-                ...f,
+              varForm.setValues({
+                ...varForm.values,
                 endLat: lat.toFixed(6),
                 endLng: lng.toFixed(6),
-              }));
+              });
               setPlacingPin(null);
             } else if (!hasStart) {
-              setVarForm((f) => ({
-                ...f,
+              varForm.setValues({
+                ...varForm.values,
                 startLat: lat.toFixed(6),
                 startLng: lng.toFixed(6),
-              }));
+              });
               setPlacingPin('end');
             } else if (!hasEnd) {
-              setVarForm((f) => ({
-                ...f,
+              varForm.setValues({
+                ...varForm.values,
                 endLat: lat.toFixed(6),
                 endLng: lng.toFixed(6),
-              }));
+              });
               setPlacingPin(null);
             }
           };
@@ -1736,16 +1717,15 @@ export function LocationDetailView() {
 
           return (
             <Stack gap="sm" pt="xs">
+              <FormError error={typeof varForm.errors.name === 'string' ? varForm.errors.name : undefined} />
               <TextInput
                 label="Name"
-                value={varForm.name}
-                onChange={(e) => setVarForm((f) => ({ ...f, name: e.target.value }))}
+                {...varForm.getInputProps('name')}
                 autoFocus
               />
               <Textarea
                 label="Description"
-                value={varForm.description}
-                onChange={(e) => setVarForm((f) => ({ ...f, description: e.target.value }))}
+                {...varForm.getInputProps('description')}
                 rows={2}
               />
 
@@ -1815,11 +1795,11 @@ export function LocationDetailView() {
                       eventHandlers={{
                         dragend(e) {
                           const latlng = (e.target as L.Marker).getLatLng();
-                          setVarForm((f) => ({
-                            ...f,
+                          varForm.setValues({
+                            ...varForm.values,
                             startLat: latlng.lat.toFixed(6),
                             startLng: latlng.lng.toFixed(6),
-                          }));
+                          });
                         },
                       }}
                     />
@@ -1832,11 +1812,11 @@ export function LocationDetailView() {
                       eventHandlers={{
                         dragend(e) {
                           const latlng = (e.target as L.Marker).getLatLng();
-                          setVarForm((f) => ({
-                            ...f,
+                          varForm.setValues({
+                            ...varForm.values,
                             endLat: latlng.lat.toFixed(6),
                             endLng: latlng.lng.toFixed(6),
-                          }));
+                          });
                         },
                       }}
                     />
@@ -1850,10 +1830,10 @@ export function LocationDetailView() {
                 </MapContainer>
                 <Group gap="md" mt="xs" wrap="wrap">
                   <Text size="xs" c="dimmed">
-                    Start: {hasStart ? `${varForm.startLat}, ${varForm.startLng}` : 'not set'}
+                    Start: {hasStart ? `${v.startLat}, ${v.startLng}` : 'not set'}
                   </Text>
                   <Text size="xs" c="dimmed">
-                    End: {hasEnd ? `${varForm.endLat}, ${varForm.endLng}` : 'not set'}
+                    End: {hasEnd ? `${v.endLat}, ${v.endLng}` : 'not set'}
                   </Text>
                 </Group>
               </Box>
@@ -1862,28 +1842,24 @@ export function LocationDetailView() {
                 <TextInput
                   label="Start Latitude"
                   placeholder="e.g. 39.7392"
-                  value={varForm.startLat}
-                  onChange={(e) => setVarForm((f) => ({ ...f, startLat: e.target.value }))}
+                  {...varForm.getInputProps('startLat')}
                 />
                 <TextInput
                   label="Start Longitude"
                   placeholder="e.g. -104.9903"
-                  value={varForm.startLng}
-                  onChange={(e) => setVarForm((f) => ({ ...f, startLng: e.target.value }))}
+                  {...varForm.getInputProps('startLng')}
                 />
               </Group>
               <Group gap="sm" grow>
                 <TextInput
                   label="End Latitude"
                   placeholder="e.g. 39.7489"
-                  value={varForm.endLat}
-                  onChange={(e) => setVarForm((f) => ({ ...f, endLat: e.target.value }))}
+                  {...varForm.getInputProps('endLat')}
                 />
                 <TextInput
                   label="End Longitude"
                   placeholder="e.g. -104.9815"
-                  value={varForm.endLng}
-                  onChange={(e) => setVarForm((f) => ({ ...f, endLng: e.target.value }))}
+                  {...varForm.getInputProps('endLng')}
                 />
               </Group>
 
@@ -1910,12 +1886,6 @@ export function LocationDetailView() {
             </Badge>
           </Group>
         </Group>
-
-        {error && !editingLocation && (
-          <Text size="sm" c="red">
-            {error}
-          </Text>
-        )}
 
         {/* Track cards */}
         {locationTracks.length === 0 && !showTrackForm ? (

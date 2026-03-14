@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useForm } from "@mantine/form";
 import {
   Box,
   Group,
@@ -200,67 +201,74 @@ export function RidersView() {
   }, [search, sexFilter, ageFiltered, ageRange, pageSize]);
 
   // Create / edit modal
-  const emptyForm = { firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "", sex: "male", profilePicture: "" };
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<bigint | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const [formError, setFormError] = useState("");
+  const riderForm = useForm({
+    initialValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      dateOfBirth: "",
+      sex: "male" as "male" | "female",
+      profilePicture: "",
+    },
+    validate: {
+      firstName: (v) => (!v?.trim() ? "First name is required" : null),
+      lastName: (v) => (!v?.trim() ? "Last name is required" : null),
+    },
+  });
 
   const resetForm = () => {
-    setForm(emptyForm);
-    setFormError("");
+    riderForm.reset();
     setEditingId(null);
     setShowForm(false);
   };
 
   const startEdit = (r: Rider) => {
-    setForm({
+    riderForm.setValues({
       firstName: r.firstName,
       lastName: r.lastName,
       email: r.email,
       phone: r.phone,
       dateOfBirth: r.dateOfBirth,
-      sex: r.sex || "male",
+      sex: (r.sex || "male") as "male" | "female",
       profilePicture: r.profilePicture || "",
     });
+    riderForm.clearErrors();
     setEditingId(r.id);
-    setFormError("");
     setShowForm(true);
   };
 
   const handleSubmit = async () => {
-    setFormError("");
-    if (!form.firstName.trim() || !form.lastName.trim()) {
-      setFormError("First and last name are required");
-      return;
-    }
+    if (!riderForm.validate()) return;
     try {
       if (editingId !== null) {
         await updateRider({
           riderId: editingId,
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          dateOfBirth: form.dateOfBirth,
-          sex: form.sex,
-          profilePicture: form.profilePicture,
+          firstName: riderForm.values.firstName.trim(),
+          lastName: riderForm.values.lastName.trim(),
+          email: riderForm.values.email.trim(),
+          phone: riderForm.values.phone.trim(),
+          dateOfBirth: riderForm.values.dateOfBirth,
+          sex: riderForm.values.sex,
+          profilePicture: riderForm.values.profilePicture,
         });
       } else {
         await createRider({
           orgId: activeOrgId!,
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          dateOfBirth: form.dateOfBirth,
-          sex: form.sex,
-          profilePicture: form.profilePicture,
+          firstName: riderForm.values.firstName.trim(),
+          lastName: riderForm.values.lastName.trim(),
+          email: riderForm.values.email.trim(),
+          phone: riderForm.values.phone.trim(),
+          dateOfBirth: riderForm.values.dateOfBirth,
+          sex: riderForm.values.sex,
+          profilePicture: riderForm.values.profilePicture,
         });
       }
       resetForm();
     } catch (e: unknown) {
-      setFormError(getErrorMessage(e, "Failed to save rider"));
+      riderForm.setFieldError("firstName", getErrorMessage(e, "Failed to save rider"));
     }
   };
 
@@ -312,7 +320,7 @@ export function RidersView() {
                   variant="white"
                   color="dark"
                   leftSection={<IconPlus size={16} />}
-                  onClick={() => { setEditingId(null); setForm(emptyForm); setFormError(""); setShowForm(true); }}
+                  onClick={() => { setEditingId(null); riderForm.reset(); setShowForm(true); }}
                 >
                   Add Rider
                 </Button>
@@ -329,7 +337,7 @@ export function RidersView() {
                   <>
                     <Menu.Item
                       leftSection={<IconPlus size={14} />}
-                      onClick={() => { setEditingId(null); setForm(emptyForm); setFormError(""); setShowForm(true); }}
+                      onClick={() => { setEditingId(null); riderForm.reset(); setShowForm(true); }}
                     >
                       Add Rider
                     </Menu.Item>
@@ -594,7 +602,7 @@ export function RidersView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={formError} />
+          <FormError error={typeof riderForm.errors.firstName === "string" ? riderForm.errors.firstName : undefined} />
           <Group justify="center">
             <input
               id="rider-photo-input"
@@ -606,38 +614,38 @@ export function RidersView() {
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (ev) =>
-                  setForm((f) => ({ ...f, profilePicture: ev.target?.result as string ?? "" }));
+                  riderForm.setFieldValue("profilePicture", (ev.target?.result as string) ?? "");
                 reader.readAsDataURL(file);
                 e.target.value = "";
               }}
             />
             <Box style={{ position: "relative", display: "inline-block" }}>
               <Avatar
-                src={form.profilePicture || undefined}
+                src={riderForm.values.profilePicture || undefined}
                 size={64}
                 radius="xl"
                 style={{
                   cursor: "pointer",
-                  background: form.profilePicture
+                  background: riderForm.values.profilePicture
                     ? undefined
-                    : avatarColor(`${form.firstName}${form.lastName}`),
+                    : avatarColor(`${riderForm.values.firstName}${riderForm.values.lastName}`),
                 }}
                 onClick={() => document.getElementById("rider-photo-input")?.click()}
               >
-                {!form.profilePicture && (
+                {!riderForm.values.profilePicture && (
                   <Text size="lg" fw={600} c="white">
-                    {`${form.firstName[0] ?? ""}${form.lastName[0] ?? ""}`.toUpperCase() || "?"}
+                    {`${riderForm.values.firstName[0] ?? ""}${riderForm.values.lastName[0] ?? ""}`.toUpperCase() || "?"}
                   </Text>
                 )}
               </Avatar>
-              {form.profilePicture && (
+              {riderForm.values.profilePicture && (
                 <ActionIcon
                   size="sm"
                   radius="xl"
                   color="red"
                   variant="filled"
                   style={{ position: "absolute", top: 0, right: 0 }}
-                  onClick={() => setForm((f) => ({ ...f, profilePicture: "" }))}
+                  onClick={() => riderForm.setFieldValue("profilePicture", "")}
                 >
                   ×
                 </ActionIcon>
@@ -648,16 +656,14 @@ export function RidersView() {
             <TextInput
               label="First Name *"
               placeholder="First name"
-              value={form.firstName}
-              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+              {...riderForm.getInputProps("firstName")}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               autoFocus
             />
             <TextInput
               label="Last Name *"
               placeholder="Last name"
-              value={form.lastName}
-              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+              {...riderForm.getInputProps("lastName")}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
           </Group>
@@ -666,34 +672,28 @@ export function RidersView() {
               label="Email"
               placeholder="email@example.com"
               type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              {...riderForm.getInputProps("email")}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
             <TextInput
               label="Phone"
               placeholder="+1-555-0100"
               type="tel"
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              {...riderForm.getInputProps("phone")}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
           </Group>
           <Group grow>
             <DatePickerInput
               label="Date of Birth"
-              value={form.dateOfBirth ? new Date(form.dateOfBirth) : null}
+              value={riderForm.values.dateOfBirth ? new Date(riderForm.values.dateOfBirth) : null}
               onChange={(d) =>
-                setForm((f) => ({
-                  ...f,
-                  dateOfBirth: d ? d.toISOString().slice(0, 10) : "",
-                }))
+                riderForm.setFieldValue("dateOfBirth", d ? d.toISOString().slice(0, 10) : "")
               }
             />
             <Select
               label="Sex"
-              value={form.sex}
-              onChange={(v) => setForm((f) => ({ ...f, sex: v ?? "male" }))}
+              {...riderForm.getInputProps("sex")}
               data={[
                 { value: "male", label: "Male" },
                 { value: "female", label: "Female" },

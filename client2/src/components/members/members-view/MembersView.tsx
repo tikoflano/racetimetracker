@@ -79,47 +79,27 @@ export function MembersView() {
 
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "timekeeper">("manager");
   const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
-  const [renameName, setRenameName] = useState("");
-  const [renameError, setRenameError] = useState<string | null>(null);
   const [editMemberModal, setEditMemberModal] = useState<MemberRow | null>(null);
 
   const orgId = activeOrg?.id ?? null;
 
   const {
-    handleInvite,
     handleTransfer,
     handleLeave,
     handleImpersonate,
     handleResendInvite,
     handleRemove,
-    handleRename,
   } = useMembersActions({
     orgId,
-    activeOrg,
-    inviteEmail,
-    inviteName,
-    inviteRole,
-    renameName,
     transferTargetId,
     setError,
-    setRenameError,
-    setInviteModalOpen,
-    setInviteName,
-    setInviteEmail,
-    setInviteRole,
-    setRenameModalOpen,
     setTransferTargetId,
     setTransferModalOpen,
-    inviteOrgMember,
     transferOrgOwnership,
     leaveOrganization,
-    renameOrganization,
     resendOrgInvitation,
     removeOrgMember,
     startImpersonation,
@@ -165,8 +145,6 @@ export function MembersView() {
             onTransfer={() => setTransferModalOpen(true)}
             onRename={() => {
               if (!activeOrg) return;
-              setRenameName(activeOrg.name);
-              setRenameError(null);
               setRenameModalOpen(true);
             }}
             onLeave={handleLeave}
@@ -217,14 +195,8 @@ export function MembersView() {
       <MembersViewModals
         inviteModalOpen={inviteModalOpen}
         setInviteModalOpen={setInviteModalOpen}
-        inviteName={inviteName}
-        setInviteName={setInviteName}
-        inviteEmail={inviteEmail}
-        setInviteEmail={setInviteEmail}
-        inviteRole={inviteRole}
-        setInviteRole={setInviteRole}
-        inviteError={error}
-        onInvite={handleInvite}
+        orgId={orgId}
+        inviteOrgMember={inviteOrgMember}
         transferModalOpen={transferModalOpen}
         setTransferModalOpen={setTransferModalOpen}
         transferTargetId={transferTargetId}
@@ -232,17 +204,11 @@ export function MembersView() {
         adminCandidates={adminCandidates}
         onTransfer={handleTransfer}
         renameModalOpen={renameModalOpen}
-        onCloseRename={() => {
-          setRenameModalOpen(false);
-          setRenameError(null);
-        }}
-        renameName={renameName}
-        setRenameName={setRenameName}
-        renameError={renameError}
-        onRename={handleRename}
+        setRenameModalOpen={setRenameModalOpen}
+        renameInitialName={activeOrg?.name ?? ""}
+        renameOrganization={renameOrganization}
         editMemberModal={editMemberModal}
         setEditMemberModal={setEditMemberModal}
-        orgId={orgId}
         championships={championships}
         events={events}
         editReducers={{

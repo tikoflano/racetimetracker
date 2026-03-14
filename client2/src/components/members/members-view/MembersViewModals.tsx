@@ -11,14 +11,13 @@ import type { MemberEditModalReducers } from "./types";
 export interface MembersViewModalsProps {
   inviteModalOpen: boolean;
   setInviteModalOpen: (v: boolean) => void;
-  inviteName: string;
-  setInviteName: (v: string) => void;
-  inviteEmail: string;
-  setInviteEmail: (v: string) => void;
-  inviteRole: "admin" | "manager" | "timekeeper";
-  setInviteRole: (v: "admin" | "manager" | "timekeeper") => void;
-  inviteError: string | null;
-  onInvite: () => void;
+  orgId: bigint | null;
+  inviteOrgMember: (args: {
+    orgId: bigint;
+    email: string;
+    name: string;
+    role: string;
+  }) => Promise<unknown>;
 
   transferModalOpen: boolean;
   setTransferModalOpen: (v: boolean) => void;
@@ -28,15 +27,12 @@ export interface MembersViewModalsProps {
   onTransfer: () => void;
 
   renameModalOpen: boolean;
-  onCloseRename: () => void;
-  renameName: string;
-  setRenameName: (v: string) => void;
-  renameError: string | null;
-  onRename: () => void;
+  setRenameModalOpen: (v: boolean) => void;
+  renameInitialName: string;
+  renameOrganization: (args: { orgId: bigint; name: string }) => Promise<unknown>;
 
   editMemberModal: MemberRow | null;
   setEditMemberModal: (v: MemberRow | null) => void;
-  orgId: bigint | null;
   championships: ReadonlyArray<Championship>;
   events: ReadonlyArray<Event>;
   editReducers: MemberEditModalReducers;
@@ -45,14 +41,8 @@ export interface MembersViewModalsProps {
 export function MembersViewModals({
   inviteModalOpen,
   setInviteModalOpen,
-  inviteName,
-  setInviteName,
-  inviteEmail,
-  setInviteEmail,
-  inviteRole,
-  setInviteRole,
-  inviteError,
-  onInvite,
+  orgId,
+  inviteOrgMember,
 
   transferModalOpen,
   setTransferModalOpen,
@@ -62,15 +52,12 @@ export function MembersViewModals({
   onTransfer,
 
   renameModalOpen,
-  onCloseRename,
-  renameName,
-  setRenameName,
-  renameError,
-  onRename,
+  setRenameModalOpen,
+  renameInitialName,
+  renameOrganization,
 
   editMemberModal,
   setEditMemberModal,
-  orgId,
   championships,
   events,
   editReducers,
@@ -80,14 +67,8 @@ export function MembersViewModals({
       <InviteMemberModal
         opened={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
-        name={inviteName}
-        setName={setInviteName}
-        email={inviteEmail}
-        setEmail={setInviteEmail}
-        role={inviteRole}
-        setRole={setInviteRole}
-        error={inviteError}
-        onInvite={onInvite}
+        orgId={orgId}
+        inviteOrgMember={inviteOrgMember}
       />
 
       <TransferOwnershipModal
@@ -104,11 +85,10 @@ export function MembersViewModals({
 
       <RenameOrgModal
         opened={renameModalOpen}
-        onClose={onCloseRename}
-        name={renameName}
-        setName={setRenameName}
-        error={renameError}
-        onSave={onRename}
+        onClose={() => setRenameModalOpen(false)}
+        orgId={orgId}
+        initialName={renameInitialName}
+        renameOrganization={renameOrganization}
       />
 
       {editMemberModal && editMemberModal.userId && orgId && (

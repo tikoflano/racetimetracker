@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "@mantine/form";
 import {
   ActionIcon,
   Anchor,
@@ -308,16 +309,21 @@ export function LocationsView() {
   const activeFilterCount = filter !== "all" ? 1 : 0;
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", address: "" });
+  const locationForm = useForm({
+    initialValues: { name: "", description: "", address: "" },
+    validate: {
+      name: (v) => (!v?.trim() ? "Name is required" : null),
+      address: (v) => (!v?.trim() ? "Address is required" : null),
+    },
+  });
   const [images, setImages] = useState<string[]>([]);
   const [coverIndex, setCoverIndex] = useState<number | null>(null);
-  const [error, setError] = useState("");
   const [markerPos, setMarkerPos] = useState<[number, number] | null>(null);
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
   const [geocoding, setGeocoding] = useState(false);
 
   const handleForwardGeocode = useCallback(async () => {
-    const address = form.address.trim();
+    const address = locationForm.values.address.trim();
     if (!address) return;
     setGeocoding(true);
     try {
@@ -338,7 +344,7 @@ export function LocationsView() {
     } finally {
       setGeocoding(false);
     }
-  }, [form.address]);
+  }, [locationForm.values.address]);
 
   const trackCounts = useMemo(() => {
     const m = new Map<bigint, number>();
@@ -383,10 +389,9 @@ export function LocationsView() {
   }, [locations, search, sortField, sortDir, filter, trackCounts]);
 
   const resetForm = () => {
-    setForm({ name: "", description: "", address: "" });
+    locationForm.reset();
     setImages([]);
     setCoverIndex(null);
-    setError("");
     setShowForm(false);
     setMarkerPos(null);
     setFlyTarget(null);
@@ -425,7 +430,7 @@ export function LocationsView() {
         { headers: { "User-Agent": "RaceTimeTracker/1.0" } },
       );
       const data = await res.json();
-      setForm((f) => ({ ...f, address: formatAddress(data) }));
+      locationForm.setFieldValue("address", formatAddress(data));
     } catch {
     } finally {
       setGeocoding(false);
@@ -433,20 +438,12 @@ export function LocationsView() {
   }, []);
 
   const handleCreate = () => {
-    setError("");
-    if (!form.name.trim()) {
-      setError("Name is required");
-      return;
-    }
-    if (!form.address.trim()) {
-      setError("Address is required");
-      return;
-    }
+    if (!locationForm.validate()) return;
     const newLocation: Location = {
       id: BigInt(Date.now()),
-      name: form.name.trim(),
-      description: form.description.trim(),
-      address: form.address.trim(),
+      name: locationForm.values.name.trim(),
+      description: locationForm.values.description.trim(),
+      address: locationForm.values.address.trim(),
       imageUrl: coverIndex !== null ? images[coverIndex] : undefined,
     };
     setLocations((prev) => [...prev, newLocation]);
@@ -513,12 +510,11 @@ export function LocationsView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="md" pt="xs">
-          <FormError error={error} />
+          <FormError error={typeof locationForm.errors.name === "string" ? locationForm.errors.name : typeof locationForm.errors.address === "string" ? locationForm.errors.address : undefined} />
           <TextInput
             label="Name"
             placeholder="e.g. Mountain Ridge Park"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            {...locationForm.getInputProps("name")}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             autoFocus
             required
@@ -536,8 +532,7 @@ export function LocationsView() {
             required
             placeholder="e.g. 1234 Mountain Rd, Denver, CO"
             leftSection={<IconMapPin size={14} />}
-            value={form.address}
-            onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            {...locationForm.getInputProps("address")}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleForwardGeocode();
             }}
@@ -549,7 +544,7 @@ export function LocationsView() {
                   variant="subtle"
                   size="sm"
                   color="gray"
-                  disabled={!form.address.trim()}
+                  disabled={!locationForm.values.address.trim()}
                   onClick={handleForwardGeocode}
                 >
                   <IconSearch size={14} />
@@ -566,8 +561,7 @@ export function LocationsView() {
           <Textarea
             label="Description"
             placeholder="Brief description of the location (optional)"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            {...locationForm.getInputProps("description")}
             minRows={4}
             resize="vertical"
           />
