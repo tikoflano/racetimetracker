@@ -1994,9 +1994,14 @@ export function LocationDetailView() {
                           'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.7) 100%)',
                       }}
                     />
-                    {/* Dots menu pinned to top-right */}
+                    {/* Dots menu pinned to top-right (z-index so it's above the overlay Group) */}
                     <Box
-                      style={{ position: 'absolute', top: 8, right: 8 }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        zIndex: 10,
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Menu shadow="md" width={180} position="bottom-end">
