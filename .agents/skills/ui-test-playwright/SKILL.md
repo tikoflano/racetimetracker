@@ -21,9 +21,9 @@ Recognize when the user asks for **video** or **trace** (or both) and run the te
 
 ### Video
 
-- **When the user asks for:** record, **video**, capture video, or show (me) the video (e.g. "run the test and record it", "test X and show me the video").
+- **When the user asks for:** record, **video**, capture video, or show (me) the video (e.g. "run the test and record it", "test that X and show me the video").
 - **Run with:** `PLAYWRIGHT_VIDEO=on` (e.g. `PLAYWRIGHT_VIDEO=on npm run test:e2e:scratch`).
-- **Output:** Find the generated video under `test-results/<run-folder>/video.webm`, run `cursor <video_file_path>` so it opens in the editor, and report the path in your summary.
+- **Output:** Find the generated video under `test-results/<run-folder>/video.webm`. **Always** run `cursor <video_file_path>` so the video opens in the editor (do not skip this). Then report the path in your summary. If multiple tests produced videos, open at least the first one (or the one most relevant to the request).
 
 ### Trace
 
@@ -62,7 +62,7 @@ Recognize when the user asks for **video** or **trace** (or both) and run the te
 
 5. **Report results and output artifacts**
    - Summarize pass or fail. If the test failed, include the error output or a short explanation. Mention any screenshots or artifacts if relevant.
-   - **If the user asked for video:** find `test-results/<run-folder>/video.webm`, run `cursor <video_file_path>` to open it in the editor, and report the path in your summary.
+   - **If the user asked for video:** find `test-results/<run-folder>/video.webm` (or each `video.webm` when multiple tests ran). **Always** run `cursor <video_file_path>` to open the video in the editor—this step is required, not optional. If there are multiple videos, open at least the first. Then report the path(s) in your summary.
    - **If the user asked for trace:** find `test-results/<run-folder>/trace.zip`, report the path and the command to open it: `npx playwright show-trace <path-to-trace.zip>`. Optionally run that command (or serve with `-h 0.0.0.0 -p 9323` if in a headless environment).
 
 ## Conventions
