@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -A 10 export.*Venue /workspaces/racetimetracker/client2/src/module_bindings/index.ts)",
+      "Bash(npm run:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(agent create-chat:*)",
+      "WebFetch(domain:cursor.com)",
+      "Bash(agent about:*)",
+      "WebSearch",
+      "WebFetch(domain:spacetimedb.com)",
+      "Bash(sed -i \\\\\n  -e 's/\\\\bVenue\\\\b/Location/g' \\\\\n  -e 's/\\\\ballVenues\\\\b/allLocations/g' \\\\\n  -e 's/\\\\borgVenues\\\\b/orgLocations/g' \\\\\n  -e 's/\\\\bvenueMap\\\\b/locationMap/g' \\\\\n  -e 's/\\\\bvenueName\\\\b/locationName/g' \\\\\n  -e 's/\\\\bevtVenueId\\\\b/evtLocationId/g' \\\\\n  -e 's/\\\\bsetEvtVenueId\\\\b/setEvtLocationId/g' \\\\\n  -e 's/tables\\\\.venue\\\\b/tables.location/g' \\\\\n  -e 's/venueId\\\\b/locationId/g' \\\\\n  /workspaces/racetimetracker/client2/src/components/championships/championship-detail/ChampionshipDetailView.tsx\n\necho \"done\")"
+    ]
+  }
+}

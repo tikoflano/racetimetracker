@@ -18,10 +18,13 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "remote-control": "while true; do claude remote-control; sleep 5; done"
+    "remote-control": "while true; do claude remote-control; sleep 5; done",
+    "test:e2e": "playwright test",
+    "test:e2e:scratch": "playwright test e2e/scratch/"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.49.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-react": "^7.37.2",

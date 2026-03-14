@@ -28,8 +28,13 @@ RUN mkdir -p /etc/apt/keyrings \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install SpacetimeDB CLI (installs to ~/.local/bin)
+# Playwright: system deps + Chromium for ad-hoc UI tests (project node_modules are not installed in image)
+USER root
+RUN npm install -g @playwright/test && npx playwright install-deps
 USER vscode
+RUN npx playwright install chromium
+
+# Install SpacetimeDB CLI (installs to ~/.local/bin)
 RUN curl -sSf https://install.spacetimedb.com | sh -s -- --yes
 
 # Add ~/.local/bin to PATH for SpacetimeDB CLI

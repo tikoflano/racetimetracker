@@ -110,3 +110,7 @@ Implementation pattern:
 - **Visibility:** Show pagination controls only when `filteredRows.length > PAGE_SIZE_OPTIONS[0]` (i.e. more than the smallest option)
 - **Disabled states:** Previous disabled when `page === 0`, Next disabled when `page >= totalPages - 1`
 - See `RidersView.tsx` as the reference implementation.
+
+## UI testing
+
+- **Ad-hoc browser tests:** Use the ui-test-playwright skill when the user asks to test a specific behavior in a real browser. Always implement the scenario in a spec file under `e2e/scratch/` (name the file as appropriate, e.g. `scratch.spec.ts` or a descriptive name). Run `npm run test:e2e:scratch` from the repo root, and report pass/fail.

@@ -10,3 +10,7 @@ client2/src/module_bindings/
 .cursor/
 .vercel
 .env*.local
+test-results/
+playwright-report/
+playwright/.cache/
+e2e/scratch/
