@@ -24,11 +24,12 @@ import { getErrorMessage } from '../utils';
 import BackLink from '../components/BackLink';
 import ActionMenu from '../components/ActionMenu';
 import { RowActionMenu } from '../components/ActionMenu';
+import ListFilterBar from '../components/ListFilterBar';
 import SearchableSelect from '../components/SearchableSelect';
 import type {
   Championship,
   Event,
-  Venue,
+  Location,
   Organization,
   PinnedEvent,
 } from '../module_bindings/types';
@@ -62,7 +63,7 @@ export default function ChampionshipDetailView() {
   const [orgs] = useTable(tables.organization);
   const [championships] = useTable(tables.championship);
   const [events] = useTable(tables.event);
-  const [venues] = useTable(tables.venue);
+  const [locations] = useTable(tables.location);
   const [pinnedEvents] = useTable(tables.pinned_event);
 
   const updateChampionship = useReducer(reducers.updateChampionship);
@@ -93,7 +94,7 @@ export default function ChampionshipDetailView() {
   const [evtDesc, setEvtDesc] = useState('');
   const [evtStart, setEvtStart] = useState('');
   const [evtEnd, setEvtEnd] = useState('');
-  const [evtVenueId, setEvtVenueId] = useState('');
+  const [evtLocationId, setEvtLocationId] = useState('');
   const [evtError, setEvtError] = useState('');
 
   // Edit event name state
@@ -139,20 +140,20 @@ export default function ChampionshipDetailView() {
     return counts;
   }, [eventRows]);
 
-  const venueMap = useMemo(() => {
-    const m = new Map<bigint, Venue>();
-    for (const v of venues) m.set(v.id, v);
+  const locationMap = useMemo(() => {
+    const m = new Map<bigint, Location>();
+    for (const v of locations) m.set(v.id, v);
     return m;
-  }, [venues]);
+  }, [locations]);
 
-  const orgVenues = useMemo(() => {
+  const orgLocations = useMemo(() => {
     if (!oid) return [];
-    return venues
-      .filter((v: Venue) => v.orgId === oid)
-      .sort((a: Venue, b: Venue) => a.name.localeCompare(b.name));
-  }, [venues, oid]);
+    return locations
+      .filter((v: Location) => v.orgId === oid)
+      .sort((a: Location, b: Location) => a.name.localeCompare(b.name));
+  }, [locations, oid]);
 
-  const selectedVenue = evtVenueId ? orgVenues.find((v: Venue) => String(v.id) === evtVenueId) ?? null : null;
+  const selectedLocation = evtLocationId ? orgLocations.find((v: Location) => String(v.id) === evtLocationId) ?? null : null;
 
   if (!isReady) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -222,8 +223,8 @@ export default function ChampionshipDetailView() {
       setEvtError('End date is required');
       return;
     }
-    const venueId = evtVenueId ? BigInt(evtVenueId) : 0n;
-    if (!venueId) {
+    const locationId = evtLocationId ? BigInt(evtLocationId) : 0n;
+    if (!locationId) {
       setEvtError('Select a location');
       return;
     }
@@ -231,7 +232,7 @@ export default function ChampionshipDetailView() {
       await createEvent({
         orgId: oid,
         championshipId: cid,
-        venueId,
+        locationId,
         name: evtName.trim(),
         description: evtDesc.trim(),
         startDate: evtStart,
@@ -241,7 +242,7 @@ export default function ChampionshipDetailView() {
       setEvtDesc('');
       setEvtStart('');
       setEvtEnd('');
-      setEvtVenueId('');
+      setEvtLocationId('');
       setShowEventForm(false);
     } catch (e: unknown) {
       setEvtError(getErrorMessage(e, 'Failed to create event'));
@@ -373,28 +374,20 @@ export default function ChampionshipDetailView() {
           )}
         </Group>
 
-        {/* Status filter */}
         {eventRows.length > 0 && (
-          <Group gap="xs" mb="sm">
-            {(['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
-              const labels: Record<string, string> = {
-                all: 'All',
-                in_progress: 'In Progress',
-                not_started: 'Not Started',
-                completed: 'Completed',
-              };
-              return (
-                <Button
-                  key={f}
-                  size="xs"
-                  variant={statusFilter === f ? 'filled' : 'subtle'}
-                  onClick={() => setStatusFilter(f)}
-                >
-                  {labels[f]} ({statusCounts[f]})
-                </Button>
-              );
-            })}
-          </Group>
+          <ListFilterBar
+            mb="sm"
+            filterButtons={{
+              options: [
+                { value: 'all', label: 'All', count: statusCounts.all },
+                { value: 'in_progress', label: 'In Progress', count: statusCounts.in_progress },
+                { value: 'not_started', label: 'Not Started', count: statusCounts.not_started },
+                { value: 'completed', label: 'Completed', count: statusCounts.completed },
+              ],
+              value: statusFilter,
+              onChange: (v) => setStatusFilter(v as EventStatus | 'all'),
+            }}
+          />
         )}
 
         {showEventForm && (
@@ -432,11 +425,11 @@ export default function ChampionshipDetailView() {
                   }
                 />
               </Group>
-              <SearchableSelect<Venue>
+              <SearchableSelect<Location>
                 label="Location"
-                items={orgVenues}
-                value={selectedVenue}
-                onChange={(v) => setEvtVenueId(v ? String(v.id) : '')}
+                items={orgLocations}
+                value={selectedLocation}
+                onChange={(v) => setEvtLocationId(v ? String(v.id) : '')}
                 getLabel={(v) => v.name}
                 getKey={(v) => String(v.id)}
                 placeholder="Select location..."
@@ -544,7 +537,7 @@ export default function ChampionshipDetailView() {
                       {STATUS_LABEL[status]}
                     </Badge>
                   </Table.Td>
-                  <Table.Td>{venueMap.get(e.venueId)?.name ?? '—'}</Table.Td>
+                  <Table.Td>{locationMap.get(e.locationId)?.name ?? '—'}</Table.Td>
                   <Table.Td>{e.startDate}</Table.Td>
                   <Table.Td>{e.endDate}</Table.Td>
                   <Table.Td>

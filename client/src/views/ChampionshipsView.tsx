@@ -18,6 +18,7 @@ import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import { IconTrash } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
+import ListFilterBar from '../components/ListFilterBar';
 import { getErrorMessage } from '../utils';
 import type { Championship, Event, Organization } from '../module_bindings/types';
 
@@ -223,34 +224,20 @@ export default function ChampionshipsView() {
         )}
       </Group>
 
-      {/* Status filter */}
       {champRows.length > 0 && (
-        <Group gap="xs" mb="md">
-          {(['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
-            const labels: Record<string, string> = {
-              all: 'All',
-              in_progress: 'In Progress',
-              not_started: 'Not Started',
-              completed: 'Completed',
-            };
-            const counts: Record<string, number> = {
-              all: champRows.length,
-              in_progress: champRows.filter((r) => r.status === 'in_progress').length,
-              not_started: champRows.filter((r) => r.status === 'not_started').length,
-              completed: champRows.filter((r) => r.status === 'completed').length,
-            };
-            return (
-              <Button
-                key={f}
-                size="xs"
-                variant={statusFilter === f ? 'filled' : 'subtle'}
-                onClick={() => setStatusFilter(f)}
-              >
-                {labels[f]} ({counts[f]})
-              </Button>
-            );
-          })}
-        </Group>
+        <ListFilterBar
+          mb="md"
+          filterButtons={{
+            options: [
+              { value: 'all', label: 'All', count: champRows.length },
+              { value: 'in_progress', label: 'In Progress', count: champRows.filter((r) => r.status === 'in_progress').length },
+              { value: 'not_started', label: 'Not Started', count: champRows.filter((r) => r.status === 'not_started').length },
+              { value: 'completed', label: 'Completed', count: champRows.filter((r) => r.status === 'completed').length },
+            ],
+            value: statusFilter,
+            onChange: (v) => setStatusFilter(v as ChampStatus | 'all'),
+          }}
+        />
       )}
 
       {showForm && (

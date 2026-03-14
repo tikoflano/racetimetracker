@@ -46,6 +46,7 @@ import {
 import Modal from '../components/Modal';
 import ActionMenu, { RowActionMenu, type ActionMenuItem } from '../components/ActionMenu';
 import ErrorBanner from '../components/ErrorBanner';
+import ListFilterBar from '../components/ListFilterBar';
 import { getErrorMessage } from '../utils';
 import type {
   Organization,
@@ -559,42 +560,25 @@ export default function OrgMembersView() {
           Members
         </Text>
         {(ownerDisplay || members.length > 0) && (
-          <Group gap="md" wrap="wrap" align="center">
-            <TextInput
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ maxWidth: 280 }}
-            />
-            <Group gap="xs">
-              {(['all', 'owner', 'admin', 'manager', 'timekeeper'] as const).map((f) => {
-                const labels: Record<string, string> = {
-                  all: 'All',
-                  owner: 'Owner',
-                  admin: 'Admin',
-                  manager: 'Manager',
-                  timekeeper: 'Timekeeper',
-                };
-                const counts: Record<string, number> = {
-                  all: (ownerDisplay ? 1 : 0) + members.length,
-                  owner: ownerDisplay ? 1 : 0,
-                  admin: members.filter((m) => m.member.role === 'admin').length,
-                  manager: members.filter((m) => m.member.role === 'manager').length,
-                  timekeeper: members.filter((m) => m.member.role === 'timekeeper').length,
-                };
-                return (
-                  <Button
-                    key={f}
-                    size="xs"
-                    variant={roleFilter === f ? 'filled' : 'subtle'}
-                    onClick={() => setRoleFilter(f)}
-                  >
-                    {labels[f]} ({counts[f]})
-                  </Button>
-                );
-              })}
-            </Group>
-          </Group>
+          <ListFilterBar
+            search={{
+              placeholder: 'Search by name or email...',
+              value: search,
+              onChange: setSearch,
+              maxWidth: 280,
+            }}
+            filterButtons={{
+              options: [
+                { value: 'all', label: 'All', count: (ownerDisplay ? 1 : 0) + members.length },
+                { value: 'owner', label: 'Owner', count: ownerDisplay ? 1 : 0 },
+                { value: 'admin', label: 'Admin', count: members.filter((m) => m.member.role === 'admin').length },
+                { value: 'manager', label: 'Manager', count: members.filter((m) => m.member.role === 'manager').length },
+                { value: 'timekeeper', label: 'Timekeeper', count: members.filter((m) => m.member.role === 'timekeeper').length },
+              ],
+              value: roleFilter,
+              onChange: (v) => setRoleFilter(v as 'all' | 'owner' | 'admin' | 'manager' | 'timekeeper'),
+            }}
+          />
         )}
         <Table>
           <Table.Thead>

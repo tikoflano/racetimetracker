@@ -23,6 +23,7 @@ import { useAuth } from '../auth';
 import { useActiveOrgMaybe } from '../OrgContext';
 import { IconPencil, IconTrash, IconDotsVertical, IconShare3 } from '../icons';
 import { RowActionMenu } from '../components/ActionMenu';
+import ListFilterBar from '../components/ListFilterBar';
 import Modal from '../components/Modal';
 import type { Rider, Organization } from '../module_bindings/types';
 import { getErrorMessage } from '../utils';
@@ -303,16 +304,16 @@ export default function RidersView() {
         </Paper>
       )}
 
-      {/* Search and filters */}
       {orgRiders.length > 0 && (
-        <Group gap="md" align="flex-end" wrap="wrap" mb="md">
-          <TextInput
-            label="Search"
-            placeholder="Search by name or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ maxWidth: 280 }}
-          />
+        <ListFilterBar
+          mb="md"
+          search={{
+            placeholder: 'Search by name or email...',
+            value: search,
+            onChange: setSearch,
+            maxWidth: 280,
+          }}
+        >
           <Group gap="xs" align="flex-end">
             <NumberInput
               label="Min Age"
@@ -334,7 +335,7 @@ export default function RidersView() {
               w={72}
             />
           </Group>
-        </Group>
+        </ListFilterBar>
       )}
 
       {/* Riders table */}
