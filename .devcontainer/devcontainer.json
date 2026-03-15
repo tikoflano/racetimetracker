@@ -10,6 +10,7 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
+  "runArgs": ["--name", "racetimetracker-dev"],
   "mounts": [
     "source=racetimetracker-node-modules,target=/workspaces/racetimetracker/node_modules,type=volume",
     "source=racetimetracker-client-node-modules,target=/workspaces/racetimetracker/client/node_modules,type=volume",
