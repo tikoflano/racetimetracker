@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useForm } from "@mantine/form";
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from '@mantine/form';
 import {
   ActionIcon,
   Anchor,
@@ -19,11 +19,11 @@ import {
   Text,
   Textarea,
   TextInput,
-} from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+} from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   IconDotsVertical,
   IconExternalLink,
@@ -33,7 +33,7 @@ import {
   IconSearch,
   IconArrowUp,
   IconArrowDown,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 import {
   ViewHeader,
   FilterToolbar,
@@ -42,12 +42,12 @@ import {
   ModalFooter,
   EmptyState,
   FormError,
-} from "@/components/common";
-import { ImageUploader, resizeImage } from "../ImageUploader";
-import { type Location, loadLocations, saveLocations } from "../locationStorage";
+} from '@/components/common';
+import { ImageUploader, resizeImage } from '../ImageUploader';
+import { type Location, loadLocations, saveLocations } from '../locationStorage';
 
 const pickerIcon = L.divIcon({
-  className: "",
+  className: '',
   html: `<div style="width:18px;height:18px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
@@ -105,16 +105,16 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
   return (
     <Box
       style={{
-        position: "relative",
-        borderRadius: "var(--mantine-radius-sm)",
-        overflow: "hidden",
-        border: "1px solid var(--mantine-color-dark-4)",
+        position: 'relative',
+        borderRadius: 'var(--mantine-radius-sm)',
+        overflow: 'hidden',
+        border: '1px solid var(--mantine-color-dark-4)',
       }}
     >
       <MapContainer
         center={[20, 0]}
         zoom={2}
-        style={{ height: 260, width: "100%", cursor: "crosshair" }}
+        style={{ height: 260, width: '100%', cursor: 'crosshair' }}
         scrollWheelZoom
       >
         <TileLayer
@@ -127,12 +127,12 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
       {geocoding && (
         <Box
           style={{
-            position: "absolute",
+            position: 'absolute',
             inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.35)",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.35)',
             zIndex: 1000,
           }}
         >
@@ -143,15 +143,15 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
       {!markerPos && !geocoding && (
         <Box
           style={{
-            position: "absolute",
+            position: 'absolute',
             bottom: 10,
-            left: "50%",
-            transform: "translateX(-50%)",
+            left: '50%',
+            transform: 'translateX(-50%)',
             zIndex: 1000,
-            pointerEvents: "none",
+            pointerEvents: 'none',
           }}
         >
-          <Paper px="sm" py={5} radius="sm" style={{ background: "rgba(0,0,0,0.65)" }}>
+          <Paper px="sm" py={5} radius="sm" style={{ background: 'rgba(0,0,0,0.65)' }}>
             <Text size="xs" c="white">
               Click anywhere to place a pin
             </Text>
@@ -162,10 +162,7 @@ function MapLocationPicker({ markerPos, flyTarget, onPick, geocoding }: MapLocat
   );
 }
 
-function formatAddress(data: {
-  display_name: string;
-  address?: Record<string, string>;
-}): string {
+function formatAddress(data: { display_name: string; address?: Record<string, string> }): string {
   const a = data.address;
   if (!a) return data.display_name;
   const parts: string[] = [];
@@ -175,7 +172,7 @@ function formatAddress(data: {
   if (city) parts.push(city);
   if (a.state) parts.push(a.postcode ? `${a.state} ${a.postcode}` : a.state);
   if (a.country_code) parts.push(a.country_code.toUpperCase());
-  return parts.length > 0 ? parts.join(", ") : data.display_name;
+  return parts.length > 0 ? parts.join(', ') : data.display_name;
 }
 
 interface Track {
@@ -186,21 +183,21 @@ interface Track {
 }
 
 const MOCK_TRACKS: Track[] = [
-  { id: 1n, locationId: 1n, name: "Summit Run", color: "#ef4444" },
-  { id: 2n, locationId: 1n, name: "Ridge Line", color: "#22c55e" },
-  { id: 3n, locationId: 1n, name: "Valley Drop", color: "#3b82f6" },
-  { id: 4n, locationId: 2n, name: "Sand Storm", color: "#f59e0b" },
-  { id: 5n, locationId: 2n, name: "Cactus Trail", color: "#8b5cf6" },
-  { id: 6n, locationId: 3n, name: "Pine Loop", color: "#22c55e" },
-  { id: 7n, locationId: 3n, name: "Oak Descent", color: "#ef4444" },
-  { id: 8n, locationId: 3n, name: "Fern Gully", color: "#06b6d4" },
-  { id: 9n, locationId: 3n, name: "Maple Ridge", color: "#ec4899" },
-  { id: 10n, locationId: 4n, name: "Cliff Hanger", color: "#3b82f6" },
+  { id: 1n, locationId: 1n, name: 'Summit Run', color: '#ef4444' },
+  { id: 2n, locationId: 1n, name: 'Ridge Line', color: '#22c55e' },
+  { id: 3n, locationId: 1n, name: 'Valley Drop', color: '#3b82f6' },
+  { id: 4n, locationId: 2n, name: 'Sand Storm', color: '#f59e0b' },
+  { id: 5n, locationId: 2n, name: 'Cactus Trail', color: '#8b5cf6' },
+  { id: 6n, locationId: 3n, name: 'Pine Loop', color: '#22c55e' },
+  { id: 7n, locationId: 3n, name: 'Oak Descent', color: '#ef4444' },
+  { id: 8n, locationId: 3n, name: 'Fern Gully', color: '#06b6d4' },
+  { id: 9n, locationId: 3n, name: 'Maple Ridge', color: '#ec4899' },
+  { id: 10n, locationId: 4n, name: 'Cliff Hanger', color: '#3b82f6' },
 ];
 
-type SortField = "name" | "tracks";
-type SortDir = "asc" | "desc";
-type FilterOption = "all" | "has-tracks" | "no-tracks";
+type SortField = 'name' | 'tracks';
+type SortDir = 'asc' | 'desc';
+type FilterOption = 'all' | 'has-tracks' | 'no-tracks';
 
 function mapsUrl(address: string) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
@@ -219,7 +216,7 @@ function LocationCard({ location, trackCount, onClick }: LocationCardProps) {
       padding={0}
       radius="md"
       withBorder
-      style={{ cursor: "pointer" }}
+      style={{ cursor: 'pointer' }}
       onClick={onClick}
     >
       <Card.Section>
@@ -228,23 +225,20 @@ function LocationCard({ location, trackCount, onClick }: LocationCardProps) {
             component="img"
             src={location.imageUrl}
             alt={location.name}
-            style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }}
+            style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }}
           />
         ) : (
           <Box
             style={{
               height: 160,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               background:
-                "linear-gradient(135deg, var(--mantine-color-dark-6) 0%, var(--mantine-color-dark-8) 100%)",
+                'linear-gradient(135deg, var(--mantine-color-dark-6) 0%, var(--mantine-color-dark-8) 100%)',
             }}
           >
-            <IconMapPin
-              size={48}
-              style={{ opacity: 0.2, color: "var(--mantine-color-gray-4)" }}
-            />
+            <IconMapPin size={48} style={{ opacity: 0.2, color: 'var(--mantine-color-gray-4)' }} />
           </Box>
         )}
       </Card.Section>
@@ -254,18 +248,18 @@ function LocationCard({ location, trackCount, onClick }: LocationCardProps) {
           {location.name}
         </Text>
 
-        <Text size="sm" c="dimmed" lineClamp={2} style={{ minHeight: "2.5em" }}>
-          {location.description || "No description provided."}
+        <Text size="sm" c="dimmed" lineClamp={2} style={{ minHeight: '2.5em' }}>
+          {location.description || 'No description provided.'}
         </Text>
 
         <Group justify="space-between" align="center" mt={4}>
           <Badge
             size="sm"
             variant="light"
-            color={trackCount > 0 ? "blue" : "gray"}
+            color={trackCount > 0 ? 'blue' : 'gray'}
             leftSection={<IconRoute size={12} />}
           >
-            {trackCount} {trackCount === 1 ? "track" : "tracks"}
+            {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
           </Badge>
 
           {location.address ? (
@@ -275,7 +269,7 @@ function LocationCard({ location, trackCount, onClick }: LocationCardProps) {
               rel="noopener noreferrer"
               size="xs"
               onClick={(e) => e.stopPropagation()}
-              style={{ display: "flex", alignItems: "center", gap: 4 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
             >
               <IconMapPin size={12} />
               {location.address}
@@ -299,21 +293,21 @@ export function LocationsView() {
     saveLocations(locations);
   }, [locations]);
   const [tracks] = useState<Track[]>(MOCK_TRACKS);
-  const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<SortField>("name");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [filter, setFilter] = useState<FilterOption>("all");
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [filter, setFilter] = useState<FilterOption>('all');
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const activeFilterCount = filter !== "all" ? 1 : 0;
+  const activeFilterCount = filter !== 'all' ? 1 : 0;
 
   const [showForm, setShowForm] = useState(false);
   const locationForm = useForm({
-    initialValues: { name: "", description: "", address: "" },
+    initialValues: { name: '', description: '', address: '' },
     validate: {
-      name: (v) => (!v?.trim() ? "Name is required" : null),
-      address: (v) => (!v?.trim() ? "Address is required" : null),
+      name: (v) => (!v?.trim() ? 'Name is required' : null),
+      address: (v) => (!v?.trim() ? 'Address is required' : null),
     },
   });
   const [images, setImages] = useState<string[]>([]);
@@ -329,9 +323,9 @@ export function LocationsView() {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          address,
+          address
         )}&limit=1`,
-        { headers: { "User-Agent": "RaceTimeTracker/1.0" } },
+        { headers: { 'User-Agent': 'RaceTimeTracker/1.0' } }
       );
       const data = await res.json();
       if (data.length > 0) {
@@ -363,22 +357,22 @@ export function LocationsView() {
         (v) =>
           v.name.toLowerCase().includes(s) ||
           v.description.toLowerCase().includes(s) ||
-          v.address.toLowerCase().includes(s),
+          v.address.toLowerCase().includes(s)
       );
     }
 
-    if (filter === "has-tracks") {
+    if (filter === 'has-tracks') {
       result = result.filter((v) => (trackCounts.get(v.id) ?? 0) > 0);
-    } else if (filter === "no-tracks") {
+    } else if (filter === 'no-tracks') {
       result = result.filter((v) => (trackCounts.get(v.id) ?? 0) === 0);
     }
 
-    const dir = sortDir === "asc" ? 1 : -1;
+    const dir = sortDir === 'asc' ? 1 : -1;
     result.sort((a, b) => {
       switch (sortField) {
-        case "name":
+        case 'name':
           return dir * a.name.localeCompare(b.name);
-        case "tracks":
+        case 'tracks':
           return dir * ((trackCounts.get(a.id) ?? 0) - (trackCounts.get(b.id) ?? 0));
         default:
           return 0;
@@ -427,10 +421,10 @@ export function LocationsView() {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-        { headers: { "User-Agent": "RaceTimeTracker/1.0" } },
+        { headers: { 'User-Agent': 'RaceTimeTracker/1.0' } }
       );
       const data = await res.json();
-      locationForm.setFieldValue("address", formatAddress(data));
+      locationForm.setFieldValue('address', formatAddress(data));
     } catch {
     } finally {
       setGeocoding(false);
@@ -457,7 +451,7 @@ export function LocationsView() {
         iconColor="blue"
         eyebrow="Manage"
         title="Locations"
-        subtitle={`${locations.length} location${locations.length !== 1 ? "s" : ""}${!isMobile ? " · manage locations and tracks for your events" : ""}`}
+        subtitle={`${locations.length} location${locations.length !== 1 ? 's' : ''}${!isMobile ? ' · manage locations and tracks for your events' : ''}`}
         isMobile={isMobile}
         actions={
           <>
@@ -479,10 +473,7 @@ export function LocationsView() {
               </Menu.Target>
               <Menu.Dropdown>
                 {isMobile && (
-                  <Menu.Item
-                    leftSection={<IconPlus size={14} />}
-                    onClick={() => setShowForm(true)}
-                  >
+                  <Menu.Item leftSection={<IconPlus size={14} />} onClick={() => setShowForm(true)}>
                     New Location
                   </Menu.Item>
                 )}
@@ -510,12 +501,20 @@ export function LocationsView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="md" pt="xs">
-          <FormError error={typeof locationForm.errors.name === "string" ? locationForm.errors.name : typeof locationForm.errors.address === "string" ? locationForm.errors.address : undefined} />
+          <FormError
+            error={
+              typeof locationForm.errors.name === 'string'
+                ? locationForm.errors.name
+                : typeof locationForm.errors.address === 'string'
+                  ? locationForm.errors.address
+                  : undefined
+            }
+          />
           <TextInput
             label="Name"
             placeholder="e.g. Mountain Ridge Park"
-            {...locationForm.getInputProps("name")}
-            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            {...locationForm.getInputProps('name')}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             autoFocus
             required
           />
@@ -532,9 +531,9 @@ export function LocationsView() {
             required
             placeholder="e.g. 1234 Mountain Rd, Denver, CO"
             leftSection={<IconMapPin size={14} />}
-            {...locationForm.getInputProps("address")}
+            {...locationForm.getInputProps('address')}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleForwardGeocode();
+              if (e.key === 'Enter') handleForwardGeocode();
             }}
             rightSection={
               geocoding ? (
@@ -561,35 +560,31 @@ export function LocationsView() {
           <Textarea
             label="Description"
             placeholder="Brief description of the location (optional)"
-            {...locationForm.getInputProps("description")}
+            {...locationForm.getInputProps('description')}
             minRows={4}
             resize="vertical"
           />
-          <ModalFooter
-            onCancel={resetForm}
-            submitLabel="Create Location"
-            onSubmit={handleCreate}
-          />
+          <ModalFooter onCancel={resetForm} submitLabel="Create Location" onSubmit={handleCreate} />
         </Stack>
       </Modal>
 
       <FilterToolbar
         filterContent={
           <Stack gap="xs">
-            {(["all", "has-tracks", "no-tracks"] as FilterOption[]).map((f) => {
+            {(['all', 'has-tracks', 'no-tracks'] as FilterOption[]).map((f) => {
               const labels: Record<FilterOption, string> = {
                 all: `All (${locations.length})`,
-                "has-tracks": "Has Tracks",
-                "no-tracks": "No Tracks",
+                'has-tracks': 'Has Tracks',
+                'no-tracks': 'No Tracks',
               };
               return (
                 <Badge
                   key={f}
                   size="lg"
-                  variant={filter === f ? "filled" : "light"}
+                  variant={filter === f ? 'filled' : 'light'}
                   color="blue"
                   leftSection={<IconRoute size={12} />}
-                  style={{ cursor: "pointer", minWidth: "max-content" }}
+                  style={{ cursor: 'pointer', minWidth: 'max-content' }}
                   onClick={() => setFilter(f)}
                 >
                   {labels[f]}
@@ -600,8 +595,8 @@ export function LocationsView() {
               <Select
                 size="xs"
                 data={[
-                  { value: "name", label: "Name" },
-                  { value: "tracks", label: "Tracks" },
+                  { value: 'name', label: 'Name' },
+                  { value: 'tracks', label: 'Tracks' },
                 ]}
                 value={sortField}
                 onChange={(v) => v && setSortField(v as SortField)}
@@ -612,13 +607,9 @@ export function LocationsView() {
                 variant="subtle"
                 color="gray"
                 size="sm"
-                onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
               >
-                {sortDir === "asc" ? (
-                  <IconArrowUp size={14} />
-                ) : (
-                  <IconArrowDown size={14} />
-                )}
+                {sortDir === 'asc' ? <IconArrowUp size={14} /> : <IconArrowDown size={14} />}
               </ActionIcon>
             </Group>
           </Stack>
@@ -631,7 +622,7 @@ export function LocationsView() {
         onSearchOpenChange={setSearchOpen}
         resultLabel={
           filteredAndSortedLocations.length === locations.length
-            ? `${locations.length} location${locations.length !== 1 ? "s" : ""}`
+            ? `${locations.length} location${locations.length !== 1 ? 's' : ''}`
             : `${filteredAndSortedLocations.length} of ${locations.length}`
         }
       />
@@ -640,9 +631,9 @@ export function LocationsView() {
         <EmptyState
           icon={<IconMapPin size={48} color="var(--mantine-color-dimmed)" />}
           message={
-            search || filter !== "all"
-              ? "No locations match your filters."
-              : "No locations yet. Create one to get started."
+            search || filter !== 'all'
+              ? 'No locations match your filters.'
+              : 'No locations yet. Create one to get started.'
           }
         />
       ) : (
@@ -660,5 +651,3 @@ export function LocationsView() {
     </Stack>
   );
 }
-
-

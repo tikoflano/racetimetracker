@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import { Modal, Stack, TextInput } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { IconBuilding } from "@tabler/icons-react";
-import { ModalHeader, modalHeaderStyles, FormError, ModalFooter } from "@/components/common";
-import { getErrorMessage } from "@/utils";
+import { useEffect } from 'react';
+import { Modal, Stack, TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { IconBuilding } from '@tabler/icons-react';
+import { ModalHeader, modalHeaderStyles, FormError, ModalFooter } from '@/components/common';
+import { getErrorMessage } from '@/utils';
 
 export interface RenameOrgModalProps {
   opened: boolean;
@@ -21,9 +21,9 @@ export function RenameOrgModal({
   renameOrganization,
 }: RenameOrgModalProps) {
   const form = useForm({
-    initialValues: { name: "" },
+    initialValues: { name: '' },
     validate: {
-      name: (v) => (!v?.trim() ? "Name cannot be empty" : null),
+      name: (v) => (!v?.trim() ? 'Name cannot be empty' : null),
     },
   });
 
@@ -41,7 +41,7 @@ export function RenameOrgModal({
       await renameOrganization({ orgId, name: trimmed });
       onClose();
     } catch (e: unknown) {
-      form.setFieldError("name", getErrorMessage(e, "Failed to rename organization"));
+      form.setFieldError('name', getErrorMessage(e, 'Failed to rename organization'));
     }
   };
 
@@ -61,25 +61,19 @@ export function RenameOrgModal({
       radius="md"
       size="lg"
       overlayProps={{ blur: 3 }}
-      styles={modalHeaderStyles(
-        "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)"
-      )}
+      styles={modalHeaderStyles('linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)')}
     >
       <Stack gap="md" pt="xs">
-        <FormError error={typeof form.errors.name === "string" ? form.errors.name : undefined} />
+        <FormError error={typeof form.errors.name === 'string' ? form.errors.name : undefined} />
         <TextInput
           label="Organization name"
-          {...form.getInputProps("name")}
+          {...form.getInputProps('name')}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave();
+            if (e.key === 'Enter') handleSave();
           }}
           autoFocus
         />
-        <ModalFooter
-          onCancel={onClose}
-          submitLabel="Save"
-          onSubmit={handleSave}
-        />
+        <ModalFooter onCancel={onClose} submitLabel="Save" onSubmit={handleSave} />
       </Stack>
     </Modal>
   );

@@ -1,14 +1,6 @@
-import { useState } from "react";
-import {
-  ActionIcon,
-  Group,
-  Indicator,
-  Paper,
-  Popover,
-  Text,
-  TextInput,
-} from "@mantine/core";
-import { IconFilter, IconSearch, IconX } from "@tabler/icons-react";
+import { useState } from 'react';
+import { ActionIcon, Group, Indicator, Paper, Popover, Text, TextInput } from '@mantine/core';
+import { IconFilter, IconSearch, IconX } from '@tabler/icons-react';
 
 interface FilterToolbarProps {
   filterContent: React.ReactNode;
@@ -27,7 +19,7 @@ export function FilterToolbar({
   activeFilterCount = 0,
   search,
   onSearchChange,
-  searchPlaceholder = "Search...",
+  searchPlaceholder = 'Search...',
   searchOpen,
   onSearchOpenChange,
   resultLabel,
@@ -36,7 +28,7 @@ export function FilterToolbar({
   const [filterOpen, setFilterOpen] = useState(false);
 
   return (
-    <Paper p="sm" style={{ background: "#13151b", border: "1px solid #1e2028" }}>
+    <Paper p="sm" style={{ background: '#13151b', border: '1px solid #1e2028' }}>
       <Group justify="space-between" align="center" gap="sm">
         <Group gap="sm" align="center">
           <Popover
@@ -54,8 +46,8 @@ export function FilterToolbar({
                 color="blue"
               >
                 <ActionIcon
-                  variant={activeFilterCount > 0 ? "filled" : "subtle"}
-                  color={activeFilterCount > 0 ? "blue" : "gray"}
+                  variant={activeFilterCount > 0 ? 'filled' : 'subtle'}
+                  color={activeFilterCount > 0 ? 'blue' : 'gray'}
                   size="md"
                   onClick={() => setFilterOpen((o) => !o)}
                 >
@@ -86,7 +78,7 @@ export function FilterToolbar({
                 color="gray"
                 onClick={() => {
                   onSearchOpenChange(false);
-                  onSearchChange("");
+                  onSearchChange('');
                 }}
               >
                 <IconX size={12} />
@@ -97,8 +89,8 @@ export function FilterToolbar({
           />
         ) : (
           <ActionIcon
-            variant={search ? "filled" : "subtle"}
-            color={search ? "blue" : "gray"}
+            variant={search ? 'filled' : 'subtle'}
+            color={search ? 'blue' : 'gray'}
             size="md"
             onClick={() => onSearchOpenChange(true)}
           >

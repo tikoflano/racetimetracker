@@ -1,13 +1,4 @@
-import {
-  Box,
-  Button,
-  Group,
-  Modal,
-  Stack,
-  Text,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+import { Box, Button, Group, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { IconRoute } from '@tabler/icons-react';
@@ -17,8 +8,7 @@ import { ModalHeader, modalHeaderStyles, FormError, ModalFooter } from '@/compon
 import { START_ICON, END_ICON } from '../mapIcons';
 
 const DEFAULT_MAP_CENTER: [number, number] = [39.7392, -104.9903];
-const TILE_LAYER_URL =
-  'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png';
+const TILE_LAYER_URL = 'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png';
 const TILE_LAYER_ATTRIBUTION =
   '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
@@ -118,10 +108,7 @@ export function AddOrEditVariationModal({
           const minLng = Math.min(startPos[1], endPos[1]);
           const maxLng = Math.max(startPos[1], endPos[1]);
           const pad = maxLat === minLat && maxLng === minLng ? 0.005 : 0;
-          return L.latLngBounds(
-            [minLat - pad, minLng - pad],
-            [maxLat + pad, maxLng + pad]
-          );
+          return L.latLngBounds([minLat - pad, minLng - pad], [maxLat + pad, maxLng + pad]);
         })()
       : null;
 
@@ -134,11 +121,7 @@ export function AddOrEditVariationModal({
           icon={<IconRoute size={20} />}
           iconColor="blue"
           label="Track variation"
-          title={
-            editingVarId
-              ? `Edit Variation — ${track.name}`
-              : `New Variation — ${track.name}`
-          }
+          title={editingVarId ? `Edit Variation — ${track.name}` : `New Variation — ${track.name}`}
         />
       }
       centered
@@ -151,16 +134,8 @@ export function AddOrEditVariationModal({
         <FormError
           error={typeof varForm.errors.name === 'string' ? varForm.errors.name : undefined}
         />
-        <TextInput
-          label="Name"
-          {...varForm.getInputProps('name')}
-          autoFocus
-        />
-        <Textarea
-          label="Description"
-          {...varForm.getInputProps('description')}
-          rows={2}
-        />
+        <TextInput label="Name" {...varForm.getInputProps('name')} autoFocus />
+        <Textarea label="Description" {...varForm.getInputProps('description')} rows={2} />
 
         <Box>
           <Group gap="xs" align="center" mb="xs" wrap="wrap">
@@ -186,9 +161,7 @@ export function AddOrEditVariationModal({
               aria-pressed={placingPin === 'end'}
               onClick={() => setPlacingPin(placingPin === 'end' ? null : 'end')}
               style={
-                placingPin === 'end'
-                  ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' }
-                  : {}
+                placingPin === 'end' ? { background: 'rgba(239,68,68,0.15)', color: '#ef4444' } : {}
               }
             >
               {hasEnd ? 'Move End' : 'Place End'}

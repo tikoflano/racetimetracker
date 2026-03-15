@@ -1,19 +1,17 @@
-import { Avatar, Badge, Group, Paper, Text } from "@mantine/core";
-import { DataTable } from "mantine-datatable";
-import type { DataTableSortStatus } from "mantine-datatable";
-import { IconCalendarEvent, IconTrophy } from "@tabler/icons-react";
-import type { MemberRow } from "./types";
-import { BADGE_FULL_STYLES } from "@/components/common";
-import { ROLE_COLORS, ROLE_LABELS } from "./constants";
-import { ROLE_ICONS } from "./roleConstants";
-import { MemberRowActions } from "./MemberRowActions";
+import { Avatar, Badge, Group, Paper, Text } from '@mantine/core';
+import { DataTable } from 'mantine-datatable';
+import type { DataTableSortStatus } from 'mantine-datatable';
+import { IconCalendarEvent, IconTrophy } from '@tabler/icons-react';
+import type { MemberRow } from './types';
+import { BADGE_FULL_STYLES } from '@/components/common';
+import { ROLE_COLORS, ROLE_LABELS } from './constants';
+import { ROLE_ICONS } from './roleConstants';
+import { MemberRowActions } from './MemberRowActions';
 
 export interface MembersTableProps {
   records: MemberRow[];
   sortStatus: DataTableSortStatus<MemberRow>;
-  onSortStatusChange: React.Dispatch<
-    React.SetStateAction<DataTableSortStatus<MemberRow>>
-  >;
+  onSortStatusChange: React.Dispatch<React.SetStateAction<DataTableSortStatus<MemberRow>>>;
   noRecordsText: string;
   canImpersonate: boolean;
   onEditRoles: (member: MemberRow) => void;
@@ -46,8 +44,8 @@ export function MembersTable({
         noRecordsText={noRecordsText}
         columns={[
           {
-            accessor: "name",
-            title: "Member",
+            accessor: 'name',
+            title: 'Member',
             sortable: true,
             render: (row) => (
               <Group gap="sm" wrap="nowrap">
@@ -65,22 +63,12 @@ export function MembersTable({
                     {row.name}
                   </Text>
                   {row.email && (
-                    <Text
-                      size="xs"
-                      c="dimmed"
-                      style={{ lineHeight: 1.3 }}
-                      truncate
-                    >
+                    <Text size="xs" c="dimmed" style={{ lineHeight: 1.3 }} truncate>
                       {row.email}
                     </Text>
                   )}
-                  {row.status === "pending" && (
-                    <Badge
-                      size="xs"
-                      color="orange"
-                      variant="light"
-                      mt={2}
-                    >
+                  {row.status === 'pending' && (
+                    <Badge size="xs" color="orange" variant="light" mt={2}>
                       Pending
                     </Badge>
                   )}
@@ -89,8 +77,8 @@ export function MembersTable({
             ),
           },
           {
-            accessor: "role",
-            title: "Role",
+            accessor: 'role',
+            title: 'Role',
             sortable: true,
             render: (row) => (
               <Badge
@@ -105,8 +93,8 @@ export function MembersTable({
             ),
           },
           {
-            accessor: "scopes" as const,
-            title: "Scopes",
+            accessor: 'scopes' as const,
+            title: 'Scopes',
             render: (row: MemberRow) => {
               const totalChamp = row.championshipScopes.length;
               const totalEvent = row.eventScopes.length;
@@ -147,8 +135,8 @@ export function MembersTable({
             },
           },
           {
-            accessor: "actions",
-            title: "",
+            accessor: 'actions',
+            title: '',
             width: 40,
             render: (row) => (
               <MemberRowActions

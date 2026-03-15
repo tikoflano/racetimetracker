@@ -1,4 +1,4 @@
-import { Text } from "@mantine/core";
+import { Text } from '@mantine/core';
 
 interface FormErrorProps {
   error?: string | null;

@@ -1,12 +1,12 @@
-import { ActionIcon, Button, Menu } from "@mantine/core";
+import { ActionIcon, Button, Menu } from '@mantine/core';
 import {
   IconArrowLeftRight,
   IconDotsVertical,
   IconLogout,
   IconPencil,
   IconUserPlus,
-} from "@tabler/icons-react";
-import type { Organization } from "@/module_bindings/types";
+} from '@tabler/icons-react';
+import type { Organization } from '@/module_bindings/types';
 
 export interface MembersViewHeaderActionsProps {
   isMobile: boolean;
@@ -48,10 +48,7 @@ export function MembersViewHeaderActions({
         <Menu.Dropdown>
           {isMobile && (
             <>
-              <Menu.Item
-                leftSection={<IconUserPlus size={14} />}
-                onClick={onInvite}
-              >
+              <Menu.Item leftSection={<IconUserPlus size={14} />} onClick={onInvite}>
                 Invite Member
               </Menu.Item>
               <Menu.Divider />
@@ -64,18 +61,11 @@ export function MembersViewHeaderActions({
           >
             Transfer ownership
           </Menu.Item>
-          <Menu.Item
-            leftSection={<IconPencil size={14} />}
-            onClick={onRename}
-          >
+          <Menu.Item leftSection={<IconPencil size={14} />} onClick={onRename}>
             Rename organization
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Item
-            leftSection={<IconLogout size={14} />}
-            color="red"
-            onClick={onLeave}
-          >
+          <Menu.Item leftSection={<IconLogout size={14} />} color="red" onClick={onLeave}>
             Leave organization
           </Menu.Item>
         </Menu.Dropdown>

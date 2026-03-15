@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
-import type { Championship, Event } from "@/module_bindings/types";
-import type { MemberRow, ScopeChampionship, ScopeEvent } from "../../types";
-import type { MemberEditModalReducers } from "../../types";
-import { getErrorMessage } from "@/utils";
+import { useState, useCallback } from 'react';
+import type { Championship, Event } from '@/module_bindings/types';
+import type { MemberRow, ScopeChampionship, ScopeEvent } from '../../types';
+import type { MemberEditModalReducers } from '../../types';
+import { getErrorMessage } from '@/utils';
 
 export interface UseMemberEditFormParams {
   member: MemberRow;
@@ -19,19 +19,13 @@ export function useMemberEditForm({
   onClose,
   reducers,
 }: UseMemberEditFormParams) {
-  const [role, setRole] = useState<"admin" | "manager" | "timekeeper">(
-    member.role === "owner"
-      ? "admin"
-      : (member.role as "admin" | "manager" | "timekeeper")
+  const [role, setRole] = useState<'admin' | 'manager' | 'timekeeper'>(
+    member.role === 'owner' ? 'admin' : (member.role as 'admin' | 'manager' | 'timekeeper')
   );
   const [addChampId, setAddChampId] = useState<string | null>(null);
-  const [addChampRole, setAddChampRole] = useState<"manager" | "timekeeper">(
-    "manager"
-  );
+  const [addChampRole, setAddChampRole] = useState<'manager' | 'timekeeper'>('manager');
   const [addEventId, setAddEventId] = useState<string | null>(null);
-  const [addEventRole, setAddEventRole] = useState<"manager" | "timekeeper">(
-    "manager"
-  );
+  const [addEventRole, setAddEventRole] = useState<'manager' | 'timekeeper'>('manager');
   const [loading, setLoading] = useState(false);
   const [scopeError, setScopeError] = useState<string | null>(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
@@ -39,12 +33,10 @@ export function useMemberEditForm({
   const availableChampionships = championships.filter(
     (c) => !member.championshipScopes.some((s) => s.championshipId === c.id)
   );
-  const availableEvents = events.filter(
-    (e) => !member.eventScopes.some((s) => s.eventId === e.id)
-  );
+  const availableEvents = events.filter((e) => !member.eventScopes.some((s) => s.eventId === e.id));
 
   const handleSaveRole = useCallback(async () => {
-    if (member.role === "owner" || !member.orgMemberId) return;
+    if (member.role === 'owner' || !member.orgMemberId) return;
     if (role === member.role) return;
     setLoading(true);
     setScopeError(null);
@@ -55,7 +47,7 @@ export function useMemberEditForm({
       });
       onClose();
     } catch (e: unknown) {
-      setScopeError(getErrorMessage(e, "Failed to update role"));
+      setScopeError(getErrorMessage(e, 'Failed to update role'));
     } finally {
       setLoading(false);
     }
@@ -73,9 +65,7 @@ export function useMemberEditForm({
       });
       setAddChampId(null);
     } catch (e: unknown) {
-      setScopeError(
-        getErrorMessage(e, "Failed to add championship scope")
-      );
+      setScopeError(getErrorMessage(e, 'Failed to add championship scope'));
     } finally {
       setLoading(false);
     }
@@ -93,7 +83,7 @@ export function useMemberEditForm({
       });
       setAddEventId(null);
     } catch (e: unknown) {
-      setScopeError(getErrorMessage(e, "Failed to add event scope"));
+      setScopeError(getErrorMessage(e, 'Failed to add event scope'));
     } finally {
       setLoading(false);
     }
@@ -108,9 +98,7 @@ export function useMemberEditForm({
           championshipMemberId: scope.id,
         });
       } catch (e: unknown) {
-        setScopeError(
-          getErrorMessage(e, "Failed to remove championship scope")
-        );
+        setScopeError(getErrorMessage(e, 'Failed to remove championship scope'));
       } finally {
         setLoading(false);
       }
@@ -118,20 +106,23 @@ export function useMemberEditForm({
     [reducers]
   );
 
-  const handleRemoveEvent = useCallback(async (scope: ScopeEvent) => {
-    setLoading(true);
-    setScopeError(null);
-    try {
-      await reducers.removeEventMember({ eventMemberId: scope.id });
-    } catch (e: unknown) {
-      setScopeError(getErrorMessage(e, "Failed to remove event scope"));
-    } finally {
-      setLoading(false);
-    }
-  }, [reducers]);
+  const handleRemoveEvent = useCallback(
+    async (scope: ScopeEvent) => {
+      setLoading(true);
+      setScopeError(null);
+      try {
+        await reducers.removeEventMember({ eventMemberId: scope.id });
+      } catch (e: unknown) {
+        setScopeError(getErrorMessage(e, 'Failed to remove event scope'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [reducers]
+  );
 
   const handleUpdateChampionshipRole = useCallback(
-    async (scope: ScopeChampionship, newRole: "manager" | "timekeeper") => {
+    async (scope: ScopeChampionship, newRole: 'manager' | 'timekeeper') => {
       if (scope.role === newRole) return;
       setLoading(true);
       setScopeError(null);
@@ -141,9 +132,7 @@ export function useMemberEditForm({
           role: newRole,
         });
       } catch (e: unknown) {
-        setScopeError(
-          getErrorMessage(e, "Failed to update championship role")
-        );
+        setScopeError(getErrorMessage(e, 'Failed to update championship role'));
       } finally {
         setLoading(false);
       }
@@ -152,7 +141,7 @@ export function useMemberEditForm({
   );
 
   const handleUpdateEventRole = useCallback(
-    async (scope: ScopeEvent, newRole: "manager" | "timekeeper") => {
+    async (scope: ScopeEvent, newRole: 'manager' | 'timekeeper') => {
       if (scope.role === newRole) return;
       setLoading(true);
       setScopeError(null);
@@ -162,7 +151,7 @@ export function useMemberEditForm({
           role: newRole,
         });
       } catch (e: unknown) {
-        setScopeError(getErrorMessage(e, "Failed to update event role"));
+        setScopeError(getErrorMessage(e, 'Failed to update event role'));
       } finally {
         setLoading(false);
       }

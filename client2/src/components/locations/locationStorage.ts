@@ -1,4 +1,4 @@
-const STORAGE_KEY = "rtt_locations";
+const STORAGE_KEY = 'rtt_locations';
 
 export interface LocationImage {
   id: bigint;
@@ -24,38 +24,38 @@ export interface Location {
 export const MOCK_LOCATIONS: Location[] = [
   {
     id: 1n,
-    name: "Mountain Ridge Park",
-    description: "Premier enduro location with varied terrain",
-    address: "1234 Mountain Rd, Denver, CO 80210",
+    name: 'Mountain Ridge Park',
+    description: 'Premier enduro location with varied terrain',
+    address: '1234 Mountain Rd, Denver, CO 80210',
   },
   {
     id: 2n,
-    name: "Desert Dunes Complex",
-    description: "Sandy trails and technical sections",
-    address: "5678 Desert Ave, Phoenix, AZ 85001",
+    name: 'Desert Dunes Complex',
+    description: 'Sandy trails and technical sections',
+    address: '5678 Desert Ave, Phoenix, AZ 85001',
   },
   {
     id: 3n,
-    name: "Forest Trail Center",
-    description: "Wooded single track paradise",
-    address: "9012 Forest Lane, Portland, OR 97201",
+    name: 'Forest Trail Center',
+    description: 'Wooded single track paradise',
+    address: '9012 Forest Lane, Portland, OR 97201',
   },
   {
     id: 4n,
-    name: "Coastal Cliffs",
-    description: "Ocean view trails with elevation changes",
-    address: "3456 Coastal Hwy, San Diego, CA 92101",
+    name: 'Coastal Cliffs',
+    description: 'Ocean view trails with elevation changes',
+    address: '3456 Coastal Hwy, San Diego, CA 92101',
   },
   {
     id: 5n,
-    name: "Valley Motorsports Park",
-    description: "",
-    address: "",
+    name: 'Valley Motorsports Park',
+    description: '',
+    address: '',
   },
 ];
 
-type SerializedLocationImage = Omit<LocationImage, "id"> & { id: string };
-type SerializedLocation = Omit<Location, "id" | "images"> & {
+type SerializedLocationImage = Omit<LocationImage, 'id'> & { id: string };
+type SerializedLocation = Omit<Location, 'id' | 'images'> & {
   id: string;
   images?: SerializedLocationImage[];
 };
@@ -81,7 +81,7 @@ export function loadLocations(): Location[] {
             id: BigInt(Date.now()) + BigInt(index),
             url: v.imageUrl,
             isCover: true,
-            caption: "",
+            caption: '',
           },
         ];
       }

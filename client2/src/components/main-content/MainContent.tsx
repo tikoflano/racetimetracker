@@ -1,5 +1,5 @@
-import { Routes, Route } from "react-router-dom";
-import { useMediaQuery } from "@mantine/hooks";
+import { Routes, Route } from 'react-router-dom';
+import { useMediaQuery } from '@mantine/hooks';
 import {
   IconArrowUpRight,
   IconArrowDownRight,
@@ -7,18 +7,18 @@ import {
   IconChartBar,
   IconCurrencyDollar,
   IconEye,
-} from "@tabler/icons-react";
-import classes from "./MainContent.module.css";
-import { EventPreviewView } from "../events/event-preview/EventPreviewView";
-import { MembersView } from "../members/members-view";
-import { CalendarView } from "../calendar/calendar-view/CalendarView";
-import { LocationsView } from "../locations/locations-view/LocationsView";
-import { LocationDetailView } from "../locations/location-detail/LocationDetailView";
-import { TimekeepView } from "../timekeeping/timekeep-view/TimekeepView";
-import { DevToolsView } from "../devtools/dev-tools-view/DevToolsView";
-import { RidersView } from "../riders/riders-view/RidersView";
-import { ChampionshipsView } from "../championships/championships-view/ChampionshipsView";
-import { ChampionshipDetailView } from "../championships/championship-detail/ChampionshipDetailView";
+} from '@tabler/icons-react';
+import classes from './MainContent.module.css';
+import { EventPreviewView } from '../events/event-preview/EventPreviewView';
+import { MembersView } from '../members/members-view';
+import { CalendarView } from '../calendar/calendar-view/CalendarView';
+import { LocationsView } from '../locations/locations-view/LocationsView';
+import { LocationDetailView } from '../locations/location-detail/LocationDetailView';
+import { TimekeepView } from '../timekeeping/timekeep-view/TimekeepView';
+import { DevToolsView } from '../devtools/dev-tools-view/DevToolsView';
+import { RidersView } from '../riders/riders-view/RidersView';
+import { ChampionshipsView } from '../championships/championships-view/ChampionshipsView';
+import { ChampionshipDetailView } from '../championships/championship-detail/ChampionshipDetailView';
 
 interface MainContentProps {
   collapsed: boolean;
@@ -26,111 +26,111 @@ interface MainContentProps {
 
 const stats = [
   {
-    label: "Total Revenue",
-    value: "$48,290",
-    change: "+12.5%",
+    label: 'Total Revenue',
+    value: '$48,290',
+    change: '+12.5%',
     positive: true,
     icon: IconCurrencyDollar,
-    color: "#22c55e",
-    bgColor: "rgba(34, 197, 94, 0.1)",
+    color: '#22c55e',
+    bgColor: 'rgba(34, 197, 94, 0.1)',
   },
   {
-    label: "Active Users",
-    value: "2,847",
-    change: "+8.2%",
+    label: 'Active Users',
+    value: '2,847',
+    change: '+8.2%',
     positive: true,
     icon: IconUsers,
-    color: "#3b82f6",
-    bgColor: "rgba(59, 130, 246, 0.1)",
+    color: '#3b82f6',
+    bgColor: 'rgba(59, 130, 246, 0.1)',
   },
   {
-    label: "Conversion Rate",
-    value: "3.24%",
-    change: "-0.4%",
+    label: 'Conversion Rate',
+    value: '3.24%',
+    change: '-0.4%',
     positive: false,
     icon: IconChartBar,
-    color: "#f59e0b",
-    bgColor: "rgba(245, 158, 11, 0.1)",
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
   },
   {
-    label: "Page Views",
-    value: "184K",
-    change: "+24.1%",
+    label: 'Page Views',
+    value: '184K',
+    change: '+24.1%',
     positive: true,
     icon: IconEye,
-    color: "#8b5cf6",
-    bgColor: "rgba(139, 92, 246, 0.1)",
+    color: '#8b5cf6',
+    bgColor: 'rgba(139, 92, 246, 0.1)',
   },
 ];
 
 const activities = [
   {
-    text: ["Sarah Chen", " completed the ", "Q4 Report"],
-    color: "#3b82f6",
-    time: "2 minutes ago",
+    text: ['Sarah Chen', ' completed the ', 'Q4 Report'],
+    color: '#3b82f6',
+    time: '2 minutes ago',
   },
   {
-    text: ["New signup: ", "Marcus Johnson", " joined the team"],
-    color: "#22c55e",
-    time: "15 minutes ago",
+    text: ['New signup: ', 'Marcus Johnson', ' joined the team'],
+    color: '#22c55e',
+    time: '15 minutes ago',
   },
   {
-    text: ["Payment of ", "$2,400", " received from Acme Corp"],
-    color: "#f59e0b",
-    time: "1 hour ago",
+    text: ['Payment of ', '$2,400', ' received from Acme Corp'],
+    color: '#f59e0b',
+    time: '1 hour ago',
   },
   {
-    text: ["Deployment ", "v2.4.1", " is now live"],
-    color: "#8b5cf6",
-    time: "3 hours ago",
+    text: ['Deployment ', 'v2.4.1', ' is now live'],
+    color: '#8b5cf6',
+    time: '3 hours ago',
   },
   {
-    text: ["Lisa Park", " updated the ", "Design System"],
-    color: "#ec4899",
-    time: "5 hours ago",
+    text: ['Lisa Park', ' updated the ', 'Design System'],
+    color: '#ec4899',
+    time: '5 hours ago',
   },
 ];
 
 const projects = [
   {
-    name: "Mobile App Redesign",
-    desc: "UI/UX overhaul for iOS and Android",
-    icon: "M",
-    color: "#3b82f6",
-    bgColor: "rgba(59, 130, 246, 0.1)",
-    status: "In Progress",
-    statusColor: "#3b82f6",
-    statusBg: "rgba(59, 130, 246, 0.12)",
+    name: 'Mobile App Redesign',
+    desc: 'UI/UX overhaul for iOS and Android',
+    icon: 'M',
+    color: '#3b82f6',
+    bgColor: 'rgba(59, 130, 246, 0.1)',
+    status: 'In Progress',
+    statusColor: '#3b82f6',
+    statusBg: 'rgba(59, 130, 246, 0.12)',
   },
   {
-    name: "API Integration",
-    desc: "Third-party payment gateway setup",
-    icon: "A",
-    color: "#22c55e",
-    bgColor: "rgba(34, 197, 94, 0.1)",
-    status: "Completed",
-    statusColor: "#22c55e",
-    statusBg: "rgba(34, 197, 94, 0.12)",
+    name: 'API Integration',
+    desc: 'Third-party payment gateway setup',
+    icon: 'A',
+    color: '#22c55e',
+    bgColor: 'rgba(34, 197, 94, 0.1)',
+    status: 'Completed',
+    statusColor: '#22c55e',
+    statusBg: 'rgba(34, 197, 94, 0.12)',
   },
   {
-    name: "Data Migration",
-    desc: "Legacy database to cloud migration",
-    icon: "D",
-    color: "#f59e0b",
-    bgColor: "rgba(245, 158, 11, 0.1)",
-    status: "Planning",
-    statusColor: "#f59e0b",
-    statusBg: "rgba(245, 158, 11, 0.12)",
+    name: 'Data Migration',
+    desc: 'Legacy database to cloud migration',
+    icon: 'D',
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
+    status: 'Planning',
+    statusColor: '#f59e0b',
+    statusBg: 'rgba(245, 158, 11, 0.12)',
   },
   {
-    name: "Security Audit",
-    desc: "Annual compliance and security review",
-    icon: "S",
-    color: "#ef4444",
-    bgColor: "rgba(239, 68, 68, 0.1)",
-    status: "Pending",
-    statusColor: "#a1a5b2",
-    statusBg: "rgba(161, 165, 178, 0.08)",
+    name: 'Security Audit',
+    desc: 'Annual compliance and security review',
+    icon: 'S',
+    color: '#ef4444',
+    bgColor: 'rgba(239, 68, 68, 0.1)',
+    status: 'Pending',
+    statusColor: '#a1a5b2',
+    statusBg: 'rgba(161, 165, 178, 0.08)',
   },
 ];
 
@@ -149,10 +149,7 @@ function DashboardView() {
           <div key={stat.label} className={classes.statCard}>
             <div className={classes.statHeader}>
               <span className={classes.statLabel}>{stat.label}</span>
-              <div
-                className={classes.statIconWrapper}
-                style={{ backgroundColor: stat.bgColor }}
-              >
+              <div className={classes.statIconWrapper} style={{ backgroundColor: stat.bgColor }}>
                 <stat.icon size={20} stroke={1.6} color={stat.color} />
               </div>
             </div>
@@ -180,10 +177,7 @@ function DashboardView() {
           <div className={classes.activityList}>
             {activities.map((activity, index) => (
               <div key={index} className={classes.activityItem}>
-                <div
-                  className={classes.activityDot}
-                  style={{ backgroundColor: activity.color }}
-                />
+                <div className={classes.activityDot} style={{ backgroundColor: activity.color }} />
                 <div className={classes.activityContent}>
                   <div className={classes.activityText}>
                     {activity.text.map((segment, i) =>
@@ -193,7 +187,7 @@ function DashboardView() {
                         </span>
                       ) : (
                         <span key={i}>{segment}</span>
-                      ),
+                      )
                     )}
                   </div>
                   <div className={classes.activityTime}>{activity.time}</div>
@@ -244,11 +238,11 @@ function DashboardView() {
 }
 
 export function MainContent({ collapsed }: MainContentProps) {
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useMediaQuery('(max-width: 768px)');
   return (
     <main
       className={classes.main}
-      style={{ marginLeft: isMobile ? "0px" : collapsed ? "72px" : "260px" }}
+      style={{ marginLeft: isMobile ? '0px' : collapsed ? '72px' : '260px' }}
     >
       <Routes>
         <Route path="/" element={<DashboardView />} />
@@ -266,5 +260,3 @@ export function MainContent({ collapsed }: MainContentProps) {
     </main>
   );
 }
-
-

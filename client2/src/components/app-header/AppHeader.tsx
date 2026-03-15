@@ -3,38 +3,36 @@ import {
   IconLayoutSidebarLeftCollapse,
   IconBell,
   IconSearch,
-} from "@tabler/icons-react";
-import { useMediaQuery } from "@mantine/hooks";
-import { useLocation } from "react-router-dom";
-import classes from "./AppHeader.module.css";
-import { navigation } from "@/components/app-sidebar/navigation";
+} from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
+import { useLocation } from 'react-router-dom';
+import classes from './AppHeader.module.css';
+import { navigation } from '@/components/app-sidebar/navigation';
 
 interface AppHeaderProps {
   collapsed: boolean;
   onToggle: () => void;
+  onSearchClick?: () => void;
 }
 
-export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
-  const isMobile = useMediaQuery("(max-width: 768px)");
+export function AppHeader({ collapsed, onToggle, onSearchClick }: AppHeaderProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const { pathname } = useLocation();
   const activeItem =
     navigation
       .flatMap((s) => s.items)
-      .find((item) => item.path === pathname || (item.path !== "/" && pathname.startsWith(item.path)))
-      ?.label ?? "Dashboard";
+      .find(
+        (item) => item.path === pathname || (item.path !== '/' && pathname.startsWith(item.path))
+      )?.label ?? 'Dashboard';
   return (
     <header
       className={classes.header}
       style={{
-        left: isMobile ? "0px" : collapsed ? "72px" : "260px",
+        left: isMobile ? '0px' : collapsed ? '72px' : '260px',
       }}
     >
       <div className={classes.headerLeft}>
-        <button
-          className={classes.toggleButton}
-          onClick={onToggle}
-          aria-label="Toggle sidebar"
-        >
+        <button className={classes.toggleButton} onClick={onToggle} aria-label="Toggle sidebar">
           {collapsed ? (
             <IconMenu2 size={18} stroke={1.6} />
           ) : (
@@ -50,7 +48,12 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
       </div>
 
       <div className={classes.headerRight}>
-        <button className={classes.iconButton} aria-label="Search">
+        <button
+          type="button"
+          className={classes.iconButton}
+          aria-label="Search"
+          onClick={onSearchClick}
+        >
           <IconSearch size={20} stroke={1.6} />
         </button>
 

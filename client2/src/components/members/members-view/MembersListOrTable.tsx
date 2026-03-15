@@ -1,16 +1,14 @@
-import type { DataTableSortStatus } from "mantine-datatable";
-import { Paper, Stack, Text } from "@mantine/core";
-import type { MemberRow } from "./types";
-import { MemberCard } from "./MemberCard";
-import { MembersTable } from "./MembersTable";
+import type { DataTableSortStatus } from 'mantine-datatable';
+import { Paper, Stack, Text } from '@mantine/core';
+import type { MemberRow } from './types';
+import { MemberCard } from './MemberCard';
+import { MembersTable } from './MembersTable';
 
 export interface MembersListOrTableProps {
   isMobile: boolean;
   records: MemberRow[];
   sortStatus: DataTableSortStatus<MemberRow>;
-  onSortStatusChange: React.Dispatch<
-    React.SetStateAction<DataTableSortStatus<MemberRow>>
-  >;
+  onSortStatusChange: React.Dispatch<React.SetStateAction<DataTableSortStatus<MemberRow>>>;
   noRecordsText: string;
   canImpersonate: boolean;
   onEditRoles: (member: MemberRow) => void;

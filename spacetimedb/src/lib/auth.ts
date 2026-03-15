@@ -96,7 +96,11 @@ export function getOrgRole(ctx: Ctx, userId: bigint, orgId: bigint): string | nu
   return null;
 }
 
-export function getChampionshipRole(ctx: Ctx, userId: bigint, championshipId: bigint): string | null {
+export function getChampionshipRole(
+  ctx: Ctx,
+  userId: bigint,
+  championshipId: bigint
+): string | null {
   for (const m of ctx.db.championship_member.iter()) {
     if (m.user_id === userId && m.championship_id === championshipId) return m.role;
   }

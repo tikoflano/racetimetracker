@@ -1,62 +1,52 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Group,
-  Button,
-  Menu,
-  Checkbox,
-  Text,
-  Box,
-  Stack,
-  Paper,
-  ActionIcon,
-} from "@mantine/core";
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Group, Button, Menu, Checkbox, Text, Box, Stack, Paper, ActionIcon } from '@mantine/core';
 
 import {
   IconChevronLeft,
   IconChevronRight,
   IconCalendarEvent,
   IconFilter,
-} from "@tabler/icons-react";
-import { ViewHeader } from "@/components/common";
+} from '@tabler/icons-react';
+import { ViewHeader } from '@/components/common';
 
-import { useTable } from "spacetimedb/react";
-import { tables } from "@/module_bindings";
-import type { Championship, Event, Organization } from "@/module_bindings/types";
-import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
+import { useTable } from 'spacetimedb/react';
+import { tables } from '@/module_bindings';
+import type { Championship, Event, Organization } from '@/module_bindings/types';
+import { useActiveOrgFromOrgs } from '@/providers/OrgProvider';
 
 const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function parseDate(s: string): Date | null {
-  const [y, m, d] = s.split("-").map(Number);
+  const [y, m, d] = s.split('-').map(Number);
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d);
 }
 
 function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function toDateStr(date: Date | string): string {
-  if (typeof date === "string") return date;
+  if (typeof date === 'string') return date;
   const d = date;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface CalendarGridProps {
   year: number;
@@ -121,8 +111,8 @@ function CalendarGrid({ year, month, dateEvents, champMap, onEventClick }: Calen
     <Box>
       <Box
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
           gap: 1,
           marginBottom: 1,
         }}
@@ -132,8 +122,8 @@ function CalendarGrid({ year, month, dateEvents, champMap, onEventClick }: Calen
             key={day}
             p="xs"
             style={{
-              textAlign: "center",
-              background: "var(--mantine-color-dark-6)",
+              textAlign: 'center',
+              background: 'var(--mantine-color-dark-6)',
             }}
           >
             <Text size="sm" fw={600} c="dimmed">
@@ -144,8 +134,8 @@ function CalendarGrid({ year, month, dateEvents, champMap, onEventClick }: Calen
       </Box>
       <Box
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
           gap: 1,
         }}
       >
@@ -161,16 +151,16 @@ function CalendarGrid({ year, month, dateEvents, champMap, onEventClick }: Calen
               style={{
                 minHeight: 100,
                 background: !cell.isCurrentMonth
-                  ? "var(--mantine-color-dark-7)"
+                  ? 'var(--mantine-color-dark-7)'
                   : isToday
-                    ? "var(--mantine-color-dark-5)"
-                    : "var(--mantine-color-dark-6)",
+                    ? 'var(--mantine-color-dark-5)'
+                    : 'var(--mantine-color-dark-6)',
               }}
             >
               <Text
                 size="sm"
                 fw={isToday ? 700 : 500}
-                c={isToday ? "blue" : cell.isCurrentMonth ? undefined : "dark.4"}
+                c={isToday ? 'blue' : cell.isCurrentMonth ? undefined : 'dark.4'}
                 mb={4}
               >
                 {cell.date.getDate()}
@@ -184,15 +174,15 @@ function CalendarGrid({ year, month, dateEvents, champMap, onEventClick }: Calen
                       size="xs"
                       onClick={() => onEventClick(evt)}
                       style={{
-                        display: "block",
-                        padding: "2px 6px",
-                        borderLeft: `3px solid ${champ?.color ?? "var(--mantine-color-blue-6)"}`,
+                        display: 'block',
+                        padding: '2px 6px',
+                        borderLeft: `3px solid ${champ?.color ?? 'var(--mantine-color-blue-6)'}`,
                         borderRadius: 2,
-                        background: "var(--mantine-color-dark-5)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        cursor: "pointer",
+                        background: 'var(--mantine-color-dark-5)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        cursor: 'pointer',
                       }}
                       title={evt.name}
                     >
@@ -319,10 +309,7 @@ export function CalendarView() {
       if (!start) continue;
       const endDate = end ?? start;
       if (endDate < todayStart) {
-        if (
-          !last ||
-          (parseDate(last.endDate) ?? parseDate(last.startDate)!) < endDate
-        ) {
+        if (!last || (parseDate(last.endDate) ?? parseDate(last.startDate)!) < endDate) {
           last = evt;
         }
       } else if (start >= todayStart) {
@@ -356,14 +343,13 @@ export function CalendarView() {
     navigate(`/events/${evt.id}`);
   };
 
-  const dropdownLabel =
-    allSelected
-      ? "All Championships"
-      : noneSelected
-        ? "No Championships"
-        : activeChampIds.size === 1
-          ? champMap.get([...activeChampIds][0])?.name ?? "1 selected"
-          : `${activeChampIds.size} Championships`;
+  const dropdownLabel = allSelected
+    ? 'All Championships'
+    : noneSelected
+      ? 'No Championships'
+      : activeChampIds.size === 1
+        ? (champMap.get([...activeChampIds][0])?.name ?? '1 selected')
+        : `${activeChampIds.size} Championships`;
 
   return (
     <Stack gap="lg">
@@ -373,15 +359,11 @@ export function CalendarView() {
         iconColor="blue"
         eyebrow="Schedule"
         title="Calendar"
-        subtitle={`${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""}`}
+        subtitle={`${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`}
         actions={
           <Menu shadow="md" width={260} position="bottom-end" closeOnItemClick={false}>
             <Menu.Target>
-              <Button
-                variant="white"
-                color="dark"
-                leftSection={<IconFilter size={16} />}
-              >
+              <Button variant="white" color="dark" leftSection={<IconFilter size={16} />}>
                 {dropdownLabel}
               </Button>
             </Menu.Target>
@@ -411,7 +393,7 @@ export function CalendarView() {
                       style={{
                         width: 10,
                         height: 10,
-                        borderRadius: "50%",
+                        borderRadius: '50%',
                         background: c.color,
                         flexShrink: 0,
                       }}
@@ -432,7 +414,7 @@ export function CalendarView() {
           <ActionIcon variant="subtle" onClick={prevMonth}>
             <IconChevronLeft size={18} />
           </ActionIcon>
-          <Text fw={600} size="lg" style={{ minWidth: 160, textAlign: "center" }}>
+          <Text fw={600} size="lg" style={{ minWidth: 160, textAlign: 'center' }}>
             {MONTH_NAMES[month]} {year}
           </Text>
           <ActionIcon variant="subtle" onClick={nextMonth}>
@@ -475,12 +457,8 @@ export function CalendarView() {
       </Paper>
 
       {filteredEvents.length === 0 && (
-        <Paper withBorder p="xl" radius="md" style={{ textAlign: "center" }}>
-          <IconCalendarEvent
-            size={48}
-            stroke={1.5}
-            style={{ opacity: 0.3, marginBottom: 8 }}
-          />
+        <Paper withBorder p="xl" radius="md" style={{ textAlign: 'center' }}>
+          <IconCalendarEvent size={48} stroke={1.5} style={{ opacity: 0.3, marginBottom: 8 }} />
           <Text size="lg" fw={500} c="dimmed">
             No events to display
           </Text>
@@ -492,5 +470,3 @@ export function CalendarView() {
     </Stack>
   );
 }
-
-

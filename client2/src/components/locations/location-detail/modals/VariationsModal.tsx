@@ -56,11 +56,7 @@ export function VariationsModal({
       onClose={onClose}
       title={
         <Group gap="sm" align="center">
-          <Box
-            w={12}
-            h={12}
-            style={{ borderRadius: '50%', background: track.color }}
-          />
+          <Box w={12} h={12} style={{ borderRadius: '50%', background: track.color }} />
           <ModalHeader
             icon={<IconRoute size={20} />}
             iconColor="blue"

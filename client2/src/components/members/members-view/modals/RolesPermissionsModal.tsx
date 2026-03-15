@@ -1,45 +1,33 @@
-import { Badge, Modal, Paper, Table, Text } from "@mantine/core";
-import { BADGE_FULL_STYLES, ModalFooter } from "@/components/common";
-import { ROLES_PERMISSIONS_ROWS } from "../roleConstants";
+import { Badge, Modal, Paper, Table, Text } from '@mantine/core';
+import { BADGE_FULL_STYLES, ModalFooter } from '@/components/common';
+import { ROLES_PERMISSIONS_ROWS } from '../roleConstants';
 
 export interface RolesPermissionsModalProps {
   opened: boolean;
   onClose: () => void;
 }
 
-export function RolesPermissionsModal({
-  opened,
-  onClose,
-}: RolesPermissionsModalProps) {
+export function RolesPermissionsModal({ opened, onClose }: RolesPermissionsModalProps) {
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title="Roles & permissions"
-      size="lg"
-    >
-      <Paper
-        p="md"
-        withBorder
-        style={{ background: "#13151b", border: "1px solid #1e2028" }}
-      >
+    <Modal opened={opened} onClose={onClose} title="Roles & permissions" size="lg">
+      <Paper p="md" withBorder style={{ background: '#13151b', border: '1px solid #1e2028' }}>
         <Table
           withTableBorder={false}
           withColumnBorders={false}
           highlightOnHover
-          style={{ tableLayout: "auto" }}
+          style={{ tableLayout: 'auto' }}
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ whiteSpace: "nowrap" }}>Scope</Table.Th>
-              <Table.Th style={{ whiteSpace: "nowrap" }}>Role</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Scope</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap' }}>Role</Table.Th>
               <Table.Th>Access</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {ROLES_PERMISSIONS_ROWS.map((row, i) => (
               <Table.Tr key={i}>
-                <Table.Td style={{ whiteSpace: "nowrap" }}>
+                <Table.Td style={{ whiteSpace: 'nowrap' }}>
                   <Badge
                     size="sm"
                     color={row.scopeColor}
@@ -50,7 +38,7 @@ export function RolesPermissionsModal({
                     {row.scope}
                   </Badge>
                 </Table.Td>
-                <Table.Td style={{ whiteSpace: "nowrap" }}>
+                <Table.Td style={{ whiteSpace: 'nowrap' }}>
                   <Badge
                     size="sm"
                     color={row.roleColor}

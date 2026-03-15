@@ -1,6 +1,6 @@
-import { ActionIcon, Menu } from "@mantine/core";
-import type { ActionIconProps, MenuProps } from "@mantine/core";
-import { IconDotsVertical } from "@tabler/icons-react";
+import { ActionIcon, Menu } from '@mantine/core';
+import type { ActionIconProps, MenuProps } from '@mantine/core';
+import { IconDotsVertical } from '@tabler/icons-react';
 
 export interface DotsMenuItem {
   icon: React.ReactNode;
@@ -12,23 +12,23 @@ export interface DotsMenuItem {
 
 interface DotsMenuProps {
   items: DotsMenuItem[];
-  size?: ActionIconProps["size"];
+  size?: ActionIconProps['size'];
   iconSize?: number;
   width?: number;
-  position?: MenuProps["position"];
-  variant?: ActionIconProps["variant"];
-  color?: ActionIconProps["color"];
+  position?: MenuProps['position'];
+  variant?: ActionIconProps['variant'];
+  color?: ActionIconProps['color'];
   stopPropagation?: boolean;
 }
 
 export function DotsMenu({
   items,
-  size = "sm",
+  size = 'sm',
   iconSize = 14,
   width = 160,
-  position = "bottom-end",
-  variant = "subtle",
-  color = "gray",
+  position = 'bottom-end',
+  variant = 'subtle',
+  color = 'gray',
   stopPropagation = false,
 }: DotsMenuProps) {
   return (

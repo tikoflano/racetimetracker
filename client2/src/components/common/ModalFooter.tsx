@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Button, Group } from "@mantine/core";
+import { ReactNode } from 'react';
+import { Button, Group } from '@mantine/core';
 
 export interface ModalFooterProps {
   /** Optional content on the left (e.g. "More information" link). */
@@ -19,7 +19,7 @@ export interface ModalFooterProps {
   /** Show loading state on the primary button. */
   submitLoading?: boolean;
   /** Button size. Default: "md". */
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 }
 
 /**
@@ -36,11 +36,11 @@ export function ModalFooter({
   onSubmit,
   submitDisabled = false,
   submitLoading = false,
-  size = "md",
+  size = 'md',
 }: ModalFooterProps) {
   const hasSubmit = Boolean(submitLabel && onSubmit);
   const showCancelButton = hasSubmit ? !onlySubmit : true;
-  const label = cancelLabel ?? (hasSubmit ? "Cancel" : "Close");
+  const label = cancelLabel ?? (hasSubmit ? 'Cancel' : 'Close');
 
   const buttons = (
     <>
@@ -50,12 +50,7 @@ export function ModalFooter({
         </Button>
       )}
       {hasSubmit && (
-        <Button
-          size={size}
-          onClick={onSubmit}
-          disabled={submitDisabled}
-          loading={submitLoading}
-        >
+        <Button size={size} onClick={onSubmit} disabled={submitDisabled} loading={submitLoading}>
           {submitLabel}
         </Button>
       )}

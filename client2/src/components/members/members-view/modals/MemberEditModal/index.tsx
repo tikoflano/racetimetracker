@@ -1,22 +1,13 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Group,
-  Modal,
-  Select,
-  Stack,
-  Text,
-} from "@mantine/core";
-import { IconInfoCircle, IconUsers } from "@tabler/icons-react";
-import type { Championship, Event } from "@/module_bindings/types";
-import { ModalHeader, modalHeaderStyles, ModalFooter } from "@/components/common";
-import type { MemberRow, MemberEditModalReducers } from "../../types";
-import { BADGE_FULL_STYLES } from "@/components/common";
-import { RolesPermissionsModal } from "../RolesPermissionsModal";
-import { useMemberEditForm } from "./useMemberEditForm";
-import { ChampionshipScopesSection } from "./ChampionshipScopesSection";
-import { EventScopesSection } from "./EventScopesSection";
+import { Badge, Box, Button, Group, Modal, Select, Stack, Text } from '@mantine/core';
+import { IconInfoCircle, IconUsers } from '@tabler/icons-react';
+import type { Championship, Event } from '@/module_bindings/types';
+import { ModalHeader, modalHeaderStyles, ModalFooter } from '@/components/common';
+import type { MemberRow, MemberEditModalReducers } from '../../types';
+import { BADGE_FULL_STYLES } from '@/components/common';
+import { RolesPermissionsModal } from '../RolesPermissionsModal';
+import { useMemberEditForm } from './useMemberEditForm';
+import { ChampionshipScopesSection } from './ChampionshipScopesSection';
+import { EventScopesSection } from './EventScopesSection';
 
 export interface MemberEditModalProps {
   member: MemberRow;
@@ -58,9 +49,7 @@ export function MemberEditModal({
         centered
         radius="md"
         overlayProps={{ blur: 3 }}
-        styles={modalHeaderStyles(
-          "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)"
-        )}
+        styles={modalHeaderStyles('linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)')}
       >
         <Stack gap="lg" pt="xs">
           {form.scopeError && (
@@ -73,13 +62,8 @@ export function MemberEditModal({
             <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">
               Organization role
             </Text>
-            {member.role === "owner" ? (
-              <Badge
-                color="green"
-                variant="light"
-                size="lg"
-                styles={BADGE_FULL_STYLES}
-              >
+            {member.role === 'owner' ? (
+              <Badge color="green" variant="light" size="lg" styles={BADGE_FULL_STYLES}>
                 Owner (full access)
               </Badge>
             ) : (
@@ -87,23 +71,17 @@ export function MemberEditModal({
                 <Select
                   value={form.role}
                   onChange={(v) =>
-                    form.setRole(
-                      (v as "admin" | "manager" | "timekeeper") || "manager"
-                    )
+                    form.setRole((v as 'admin' | 'manager' | 'timekeeper') || 'manager')
                   }
                   data={[
-                    { value: "admin", label: "Admin" },
-                    { value: "manager", label: "Manager" },
-                    { value: "timekeeper", label: "Timekeeper" },
+                    { value: 'admin', label: 'Admin' },
+                    { value: 'manager', label: 'Manager' },
+                    { value: 'timekeeper', label: 'Timekeeper' },
                   ]}
                   style={{ width: 140 }}
                 />
                 {form.role !== member.role && (
-                  <Button
-                    size="xs"
-                    loading={form.loading}
-                    onClick={form.handleSaveRole}
-                  >
+                  <Button size="xs" loading={form.loading} onClick={form.handleSaveRole}>
                     Save role
                   </Button>
                 )}

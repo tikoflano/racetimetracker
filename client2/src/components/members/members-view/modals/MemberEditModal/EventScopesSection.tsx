@@ -1,28 +1,19 @@
-import {
-  ActionIcon,
-  Badge,
-  Box,
-  Button,
-  Group,
-  Select,
-  Stack,
-  Text,
-} from "@mantine/core";
-import { IconCalendarEvent, IconTrash } from "@tabler/icons-react";
-import type { ScopeEvent } from "../../types";
-import { BADGE_FULL_STYLES } from "@/components/common";
+import { ActionIcon, Badge, Box, Button, Group, Select, Stack, Text } from '@mantine/core';
+import { IconCalendarEvent, IconTrash } from '@tabler/icons-react';
+import type { ScopeEvent } from '../../types';
+import { BADGE_FULL_STYLES } from '@/components/common';
 
 interface EventScopesSectionProps {
   memberScopes: ScopeEvent[];
   availableEvents: { id: bigint; name: string }[];
   addEventId: string | null;
   setAddEventId: (v: string | null) => void;
-  addEventRole: "manager" | "timekeeper";
-  setAddEventRole: (v: "manager" | "timekeeper") => void;
+  addEventRole: 'manager' | 'timekeeper';
+  setAddEventRole: (v: 'manager' | 'timekeeper') => void;
   loading: boolean;
   onAdd: () => void;
   onRemove: (scope: ScopeEvent) => void;
-  onUpdateRole: (scope: ScopeEvent, role: "manager" | "timekeeper") => void;
+  onUpdateRole: (scope: ScopeEvent, role: 'manager' | 'timekeeper') => void;
 }
 
 export function EventScopesSection({
@@ -43,8 +34,8 @@ export function EventScopesSection({
         Event scopes
       </Text>
       <Text size="xs" c="dimmed" mb="xs">
-        Grant access to specific events. Manager: manage tracks, categories,
-        riders, schedule. Timekeeper: timekeeping only.
+        Grant access to specific events. Manager: manage tracks, categories, riders, schedule.
+        Timekeeper: timekeeping only.
       </Text>
       {memberScopes.length > 0 && (
         <Stack gap="xs" mb="sm">
@@ -62,12 +53,10 @@ export function EventScopesSection({
                 </Badge>
                 <Select
                   value={s.role}
-                  onChange={(v) =>
-                    onUpdateRole(s, (v as "manager" | "timekeeper") || "manager")
-                  }
+                  onChange={(v) => onUpdateRole(s, (v as 'manager' | 'timekeeper') || 'manager')}
                   data={[
-                    { value: "manager", label: "Manager" },
-                    { value: "timekeeper", label: "Timekeeper" },
+                    { value: 'manager', label: 'Manager' },
+                    { value: 'timekeeper', label: 'Timekeeper' },
                   ]}
                   size="xs"
                   style={{ width: 110 }}
@@ -103,12 +92,10 @@ export function EventScopesSection({
           />
           <Select
             value={addEventRole}
-            onChange={(v) =>
-              setAddEventRole((v as "manager" | "timekeeper") || "manager")
-            }
+            onChange={(v) => setAddEventRole((v as 'manager' | 'timekeeper') || 'manager')}
             data={[
-              { value: "manager", label: "Manager" },
-              { value: "timekeeper", label: "Timekeeper" },
+              { value: 'manager', label: 'Manager' },
+              { value: 'timekeeper', label: 'Timekeeper' },
             ]}
             style={{ width: 110 }}
           />

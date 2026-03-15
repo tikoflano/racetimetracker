@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useForm } from "@mantine/form";
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from '@mantine/form';
 import {
   Box,
   Group,
@@ -18,10 +18,10 @@ import {
   Select,
   RangeSlider,
   Avatar,
-} from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
-import { useMediaQuery } from "@mantine/hooks";
-import { DataTable, type DataTableSortStatus } from "mantine-datatable";
+} from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useMediaQuery } from '@mantine/hooks';
+import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import {
   IconBuilding,
   IconUsers,
@@ -30,7 +30,7 @@ import {
   IconPencil,
   IconTrash,
   IconShare,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 import {
   ViewHeader,
   FilterToolbar,
@@ -40,13 +40,13 @@ import {
   ModalFooter,
   EmptyState,
   FormError,
-} from "@/components/common";
-import type { DotsMenuItem } from "@/components/common";
-import { useTable, useReducer } from "spacetimedb/react";
-import { tables, reducers } from "@/module_bindings";
-import type { Rider, Organization } from "@/module_bindings/types";
-import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
-import { getErrorMessage } from "@/utils";
+} from '@/components/common';
+import type { DotsMenuItem } from '@/components/common';
+import { useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '@/module_bindings';
+import type { Rider } from '@/module_bindings/types';
+import { useActiveOrgFromOrgs } from '@/providers/OrgProvider';
+import { getErrorMessage } from '@/utils';
 
 function calcAge(dateOfBirth: string): number | null {
   if (!dateOfBirth) return null;
@@ -59,11 +59,19 @@ function calcAge(dateOfBirth: string): number | null {
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-type SexFilter = "all" | "male" | "female";
+type SexFilter = 'all' | 'male' | 'female';
 
 const AVATAR_COLORS = [
-  "#3b82f6", "#ef4444", "#22c55e", "#eab308", "#8b5cf6",
-  "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#a855f7",
+  '#3b82f6',
+  '#ef4444',
+  '#22c55e',
+  '#eab308',
+  '#8b5cf6',
+  '#ec4899',
+  '#14b8a6',
+  '#f97316',
+  '#06b6d4',
+  '#a855f7',
 ];
 
 function avatarColor(name: string): string {
@@ -73,14 +81,16 @@ function avatarColor(name: string): string {
 }
 
 function RiderAvatar({ rider, size = 28 }: { rider: Rider; size?: number }) {
-  const initials = `${rider.firstName[0] ?? ""}${rider.lastName[0] ?? ""}`.toUpperCase();
+  const initials = `${rider.firstName[0] ?? ''}${rider.lastName[0] ?? ''}`.toUpperCase();
   if (rider.profilePicture) {
-    return (
-      <Avatar src={rider.profilePicture} size={size} radius="xl" />
-    );
+    return <Avatar src={rider.profilePicture} size={size} radius="xl" />;
   }
   return (
-    <Avatar size={size} radius="xl" style={{ background: avatarColor(`${rider.firstName}${rider.lastName}`) }}>
+    <Avatar
+      size={size}
+      radius="xl"
+      style={{ background: avatarColor(`${rider.firstName}${rider.lastName}`) }}
+    >
       <Text size="xs" fw={600} c="white" style={{ lineHeight: 1 }}>
         {initials}
       </Text>
@@ -90,6 +100,8 @@ function RiderAvatar({ rider, size = 28 }: { rider: Rider; size?: number }) {
 
 export function RidersView() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const scrollToRiderId = (location.state as { scrollToRiderId?: bigint } | null)?.scrollToRiderId;
   const [orgs] = useTable(tables.organization);
   const [allRiders] = useTable(tables.rider);
 
@@ -117,18 +129,18 @@ export function RidersView() {
 
   // Sort
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Rider>>({
-    columnAccessor: "name",
-    direction: "asc",
+    columnAccessor: 'name',
+    direction: 'asc',
   });
 
   // Filters
-  const [search, setSearch] = useState("");
-  const [sexFilter, setSexFilter] = useState<SexFilter>("all");
+  const [search, setSearch] = useState('');
+  const [sexFilter, setSexFilter] = useState<SexFilter>('all');
   const [ageRange, setAgeRange] = useState<[number, number] | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     try {
-      const stored = localStorage.getItem("rtt-riders-page-size");
+      const stored = localStorage.getItem('rtt-riders-page-size');
       if (stored) {
         const n = parseInt(stored, 10);
         if (PAGE_SIZE_OPTIONS.includes(n)) return n;
@@ -144,8 +156,7 @@ export function RidersView() {
 
   const sliderValue: [number, number] = ageRange ?? [ageRangeMin, ageRangeMax];
   const ageFiltered =
-    ageRange !== null &&
-    (ageRange[0] !== ageRangeMin || ageRange[1] !== ageRangeMax);
+    ageRange !== null && (ageRange[0] !== ageRangeMin || ageRange[1] !== ageRangeMax);
 
   const filteredRiders = useMemo<Rider[]>(() => {
     let list = orgRiders;
@@ -157,7 +168,7 @@ export function RidersView() {
           r.email.toLowerCase().includes(q)
       );
     }
-    if (sexFilter !== "all") {
+    if (sexFilter !== 'all') {
       list = list.filter((r: Rider) => r.sex === sexFilter);
     }
     if (ageFiltered && ageRange) {
@@ -167,18 +178,18 @@ export function RidersView() {
         return age >= ageRange[0] && age <= ageRange[1];
       });
     }
-    const dir = sortStatus.direction === "asc" ? 1 : -1;
+    const dir = sortStatus.direction === 'asc' ? 1 : -1;
     list = [...list].sort((a, b) => {
       switch (sortStatus.columnAccessor) {
-        case "name":
+        case 'name':
           return dir * `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`);
-        case "email":
+        case 'email':
           return dir * a.email.localeCompare(b.email);
-        case "phone":
+        case 'phone':
           return dir * a.phone.localeCompare(b.phone);
-        case "sex":
-          return dir * (a.sex || "").localeCompare(b.sex || "");
-        case "age": {
+        case 'sex':
+          return dir * (a.sex || '').localeCompare(b.sex || '');
+        case 'age': {
           const aa = calcAge(a.dateOfBirth) ?? -1;
           const ba = calcAge(b.dateOfBirth) ?? -1;
           return dir * (aa - ba);
@@ -190,28 +201,39 @@ export function RidersView() {
     return list;
   }, [orgRiders, search, sexFilter, ageFiltered, ageRange, sortStatus]);
 
-  const hasActiveFilter = search || sexFilter !== "all" || ageFiltered;
+  const hasActiveFilter = search || sexFilter !== 'all' || ageFiltered;
 
   useEffect(() => {
     setPage(1);
   }, [search, sexFilter, ageFiltered, ageRange, pageSize]);
+
+  useEffect(() => {
+    if (scrollToRiderId === undefined) return;
+    const id = String(scrollToRiderId);
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-rider-id="${id}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      navigate(location.pathname, { replace: true, state: {} });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [scrollToRiderId, location.pathname, navigate]);
 
   // Create / edit modal
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<bigint | null>(null);
   const riderForm = useForm({
     initialValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      sex: "male" as "male" | "female",
-      profilePicture: "",
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: '',
+      sex: 'male' as 'male' | 'female',
+      profilePicture: '',
     },
     validate: {
-      firstName: (v) => (!v?.trim() ? "First name is required" : null),
-      lastName: (v) => (!v?.trim() ? "Last name is required" : null),
+      firstName: (v) => (!v?.trim() ? 'First name is required' : null),
+      lastName: (v) => (!v?.trim() ? 'Last name is required' : null),
     },
   });
 
@@ -228,8 +250,8 @@ export function RidersView() {
       email: r.email,
       phone: r.phone,
       dateOfBirth: r.dateOfBirth,
-      sex: (r.sex || "male") as "male" | "female",
-      profilePicture: r.profilePicture || "",
+      sex: (r.sex || 'male') as 'male' | 'female',
+      profilePicture: r.profilePicture || '',
     });
     riderForm.clearErrors();
     setEditingId(r.id);
@@ -264,7 +286,7 @@ export function RidersView() {
       }
       resetForm();
     } catch (e: unknown) {
-      riderForm.setFieldError("firstName", getErrorMessage(e, "Failed to save rider"));
+      riderForm.setFieldError('firstName', getErrorMessage(e, 'Failed to save rider'));
     }
   };
 
@@ -273,20 +295,18 @@ export function RidersView() {
     try {
       await deleteRider({ riderId: r.id });
     } catch (e: unknown) {
-      console.error(getErrorMessage(e, "Failed to delete rider"));
+      console.error(getErrorMessage(e, 'Failed to delete rider'));
     }
   };
 
   // Registration link modal
   const [showRegModal, setShowRegModal] = useState(false);
-  const registrationUrl = activeOrg
-    ? `${window.location.origin}/register/${activeOrg.slug}`
-    : "";
+  const registrationUrl = activeOrg ? `${window.location.origin}/register/${activeOrg.slug}` : '';
 
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const activeFilterCount = (sexFilter !== "all" ? 1 : 0) + (ageFiltered ? 1 : 0);
+  const activeFilterCount = (sexFilter !== 'all' ? 1 : 0) + (ageFiltered ? 1 : 0);
 
   if (!activeOrg) {
     return (
@@ -298,8 +318,8 @@ export function RidersView() {
           icon={<IconBuilding size={48} />}
           message="You're not part of any organization. Create one from Organization to view and manage riders."
           action={{
-            label: "Go to Organization",
-            onClick: () => navigate("/members"),
+            label: 'Go to Organization',
+            onClick: () => navigate('/members'),
           }}
         />
       </Stack>
@@ -314,7 +334,7 @@ export function RidersView() {
         iconColor="blue"
         eyebrow={activeOrg.name}
         title="Riders"
-        subtitle={`${orgRiders.length} rider${orgRiders.length !== 1 ? "s" : ""}${!isMobile ? ` · ${activeOrg.name}` : ""}`}
+        subtitle={`${orgRiders.length} rider${orgRiders.length !== 1 ? 's' : ''}${!isMobile ? ` · ${activeOrg.name}` : ''}`}
         isMobile={isMobile}
         actions={
           <>
@@ -332,7 +352,11 @@ export function RidersView() {
                   variant="white"
                   color="dark"
                   leftSection={<IconPlus size={16} />}
-                  onClick={() => { setEditingId(null); riderForm.reset(); setShowForm(true); }}
+                  onClick={() => {
+                    setEditingId(null);
+                    riderForm.reset();
+                    setShowForm(true);
+                  }}
                 >
                   Add Rider
                 </Button>
@@ -349,7 +373,11 @@ export function RidersView() {
                   <>
                     <Menu.Item
                       leftSection={<IconPlus size={14} />}
-                      onClick={() => { setEditingId(null); riderForm.reset(); setShowForm(true); }}
+                      onClick={() => {
+                        setEditingId(null);
+                        riderForm.reset();
+                        setShowForm(true);
+                      }}
                     >
                       Add Rider
                     </Menu.Item>
@@ -374,26 +402,30 @@ export function RidersView() {
           <Stack gap="xs">
             <Badge
               size="lg"
-              variant={sexFilter === "male" ? "filled" : "light"}
+              variant={sexFilter === 'male' ? 'filled' : 'light'}
               color="blue"
-              style={{ cursor: "pointer" }}
-              onClick={() => setSexFilter(sexFilter === "male" ? "all" : "male")}
+              style={{ cursor: 'pointer' }}
+              onClick={() => setSexFilter(sexFilter === 'male' ? 'all' : 'male')}
             >
-              Male ({orgRiders.filter((r) => r.sex === "male").length})
+              Male ({orgRiders.filter((r) => r.sex === 'male').length})
             </Badge>
             <Badge
               size="lg"
-              variant={sexFilter === "female" ? "filled" : "light"}
+              variant={sexFilter === 'female' ? 'filled' : 'light'}
               color="pink"
-              style={{ cursor: "pointer" }}
-              onClick={() => setSexFilter(sexFilter === "female" ? "all" : "female")}
+              style={{ cursor: 'pointer' }}
+              onClick={() => setSexFilter(sexFilter === 'female' ? 'all' : 'female')}
             >
-              Female ({orgRiders.filter((r) => r.sex === "female").length})
+              Female ({orgRiders.filter((r) => r.sex === 'female').length})
             </Badge>
             {ageRangeMin < ageRangeMax && (
               <Group align="center" gap="xs" mt={4}>
-                <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>Age</Text>
-                <Text size="xs" c="dimmed" w={20} ta="right">{sliderValue[0]}</Text>
+                <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                  Age
+                </Text>
+                <Text size="xs" c="dimmed" w={20} ta="right">
+                  {sliderValue[0]}
+                </Text>
                 <RangeSlider
                   w={140}
                   min={ageRangeMin}
@@ -406,7 +438,9 @@ export function RidersView() {
                   label={null}
                   size="sm"
                 />
-                <Text size="xs" c="dimmed" w={20}>{sliderValue[1]}</Text>
+                <Text size="xs" c="dimmed" w={20}>
+                  {sliderValue[1]}
+                </Text>
               </Group>
             )}
             {activeFilterCount > 0 && (
@@ -415,7 +449,10 @@ export function RidersView() {
                 size="xs"
                 mt="xs"
                 fullWidth
-                onClick={() => { setSexFilter("all"); setAgeRange(null); }}
+                onClick={() => {
+                  setSexFilter('all');
+                  setAgeRange(null);
+                }}
               >
                 Clear filters
               </Button>
@@ -430,7 +467,7 @@ export function RidersView() {
         onSearchOpenChange={setSearchOpen}
         resultLabel={
           filteredRiders.length === orgRiders.length
-            ? `${orgRiders.length} rider${orgRiders.length !== 1 ? "s" : ""}`
+            ? `${orgRiders.length} rider${orgRiders.length !== 1 ? 's' : ''}`
             : `${filteredRiders.length} of ${orgRiders.length}`
         }
       />
@@ -442,15 +479,15 @@ export function RidersView() {
             <Paper p="sm" withBorder>
               <Text size="sm" c="dimmed" ta="center">
                 {hasActiveFilter
-                  ? "No riders match your filters."
-                  : "No riders in this organization yet. Add a rider with the button above, or share the registration link so riders can register themselves."}
+                  ? 'No riders match your filters.'
+                  : 'No riders in this organization yet. Add a rider with the button above, or share the registration link so riders can register themselves.'}
               </Text>
             </Paper>
           )}
           {filteredRiders.map((r) => {
             const age = calcAge(r.dateOfBirth);
             return (
-              <Paper key={String(r.id)} p="sm" withBorder>
+              <Paper key={String(r.id)} p="sm" withBorder data-rider-id={String(r.id)}>
                 <Group justify="space-between" align="flex-start" wrap="nowrap">
                   <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
                     <RiderAvatar rider={r} size={36} />
@@ -470,22 +507,39 @@ export function RidersView() {
                       )}
                       <Group gap="xs" mt={4}>
                         {r.sex && (
-                          <Badge size="xs" variant="light" color={r.sex === "female" ? "pink" : "blue"}>
-                            {r.sex === "male" ? "Male" : "Female"}
+                          <Badge
+                            size="xs"
+                            variant="light"
+                            color={r.sex === 'female' ? 'pink' : 'blue'}
+                          >
+                            {r.sex === 'male' ? 'Male' : 'Female'}
                           </Badge>
                         )}
                         {age !== null && (
-                          <Text size="xs" c="dimmed">Age {age}</Text>
+                          <Text size="xs" c="dimmed">
+                            Age {age}
+                          </Text>
                         )}
                       </Group>
                     </div>
                   </Group>
                   <DotsMenu
                     stopPropagation
-                    items={[
-                      { icon: <IconPencil size={14} />, label: "Edit", onClick: () => startEdit(r) },
-                      { icon: <IconTrash size={14} />, label: "Delete", color: "red", onClick: () => handleDelete(r) },
-                    ] satisfies DotsMenuItem[]}
+                    items={
+                      [
+                        {
+                          icon: <IconPencil size={14} />,
+                          label: 'Edit',
+                          onClick: () => startEdit(r),
+                        },
+                        {
+                          icon: <IconTrash size={14} />,
+                          label: 'Delete',
+                          color: 'red',
+                          onClick: () => handleDelete(r),
+                        },
+                      ] satisfies DotsMenuItem[]
+                    }
                   />
                 </Group>
               </Paper>
@@ -497,8 +551,8 @@ export function RidersView() {
           icon={<IconUsers size={48} color="var(--mantine-color-dimmed)" />}
           message={
             hasActiveFilter
-              ? "No riders match your filters."
-              : "No riders in this organization yet. Add a rider with Add Rider, or share the registration link so riders can register themselves."
+              ? 'No riders match your filters.'
+              : 'No riders in this organization yet. Add a rider with Add Rider, or share the registration link so riders can register themselves.'
           }
         />
       ) : (
@@ -507,6 +561,7 @@ export function RidersView() {
             withTableBorder={false}
             withColumnBorders={false}
             highlightOnHover
+            customRowAttributes={(record) => ({ 'data-rider-id': String(record.id) })}
             records={filteredRiders}
             totalRecords={filteredRiders.length}
             recordsPerPage={pageSize}
@@ -515,78 +570,94 @@ export function RidersView() {
             recordsPerPageOptions={PAGE_SIZE_OPTIONS}
             onRecordsPerPageChange={(n) => {
               setPageSize(n);
-              try { localStorage.setItem("rtt-riders-page-size", String(n)); } catch {}
+              try {
+                localStorage.setItem('rtt-riders-page-size', String(n));
+              } catch {}
             }}
             sortStatus={sortStatus}
-            onSortStatusChange={(s) => { setSortStatus(s); setPage(1); }}
+            onSortStatusChange={(s) => {
+              setSortStatus(s);
+              setPage(1);
+            }}
             columns={[
               {
-                accessor: "avatar",
-                title: "",
+                accessor: 'avatar',
+                title: '',
                 width: 44,
                 render: (r: Rider) => <RiderAvatar rider={r} size={28} />,
               },
               {
-                accessor: "name",
-                title: "Name",
+                accessor: 'name',
+                title: 'Name',
                 sortable: true,
                 render: (r: Rider) => `${r.firstName} ${r.lastName}`,
               },
               {
-                accessor: "email",
-                title: "Email",
+                accessor: 'email',
+                title: 'Email',
                 sortable: true,
                 render: (r: Rider) => (
-                  <Text size="sm" c={r.email ? undefined : "dimmed"}>
-                    {r.email || "—"}
+                  <Text size="sm" c={r.email ? undefined : 'dimmed'}>
+                    {r.email || '—'}
                   </Text>
                 ),
               },
               {
-                accessor: "phone",
-                title: "Phone",
+                accessor: 'phone',
+                title: 'Phone',
                 sortable: true,
                 render: (r: Rider) => (
-                  <Text size="sm" c={r.phone ? undefined : "dimmed"}>
-                    {r.phone || "—"}
+                  <Text size="sm" c={r.phone ? undefined : 'dimmed'}>
+                    {r.phone || '—'}
                   </Text>
                 ),
               },
               {
-                accessor: "sex",
-                title: "Sex",
+                accessor: 'sex',
+                title: 'Sex',
                 sortable: true,
                 render: (r: Rider) => (
-                  <Text size="sm" c={r.sex ? undefined : "dimmed"}>
-                    {r.sex === "male" ? "Male" : r.sex === "female" ? "Female" : "—"}
+                  <Text size="sm" c={r.sex ? undefined : 'dimmed'}>
+                    {r.sex === 'male' ? 'Male' : r.sex === 'female' ? 'Female' : '—'}
                   </Text>
                 ),
               },
               {
-                accessor: "age",
-                title: "Age",
+                accessor: 'age',
+                title: 'Age',
                 sortable: true,
                 render: (r: Rider) => {
                   const age = calcAge(r.dateOfBirth);
                   return (
-                    <Text size="sm" c={age !== null ? undefined : "dimmed"}>
-                      {age !== null ? age : "—"}
+                    <Text size="sm" c={age !== null ? undefined : 'dimmed'}>
+                      {age !== null ? age : '—'}
                     </Text>
                   );
                 },
               },
               {
-                accessor: "actions",
-                title: "",
+                accessor: 'actions',
+                title: '',
                 width: 40,
                 render: (r: Rider) => (
                   <DotsMenu
                     stopPropagation
                     width={200}
-                    items={[
-                      { icon: <IconPencil size={14} />, label: "Edit", onClick: () => startEdit(r) },
-                      { icon: <IconTrash size={14} />, label: "Delete", color: "red", onClick: () => handleDelete(r) },
-                    ] satisfies DotsMenuItem[]}
+                    items={
+                      [
+                        {
+                          icon: <IconPencil size={14} />,
+                          label: 'Edit',
+                          onClick: () => startEdit(r),
+                        },
+                        {
+                          icon: <IconTrash size={14} />,
+                          label: 'Delete',
+                          color: 'red',
+                          onClick: () => handleDelete(r),
+                        },
+                      ] satisfies DotsMenuItem[]
+                    }
                   />
                 ),
               },
@@ -603,8 +674,8 @@ export function RidersView() {
           <ModalHeader
             icon={<IconUsers size={20} />}
             iconColor="blue"
-            label={editingId !== null ? "Edit rider" : "Add rider"}
-            title={editingId !== null ? "Edit Rider" : "New Rider"}
+            label={editingId !== null ? 'Edit rider' : 'Add rider'}
+            title={editingId !== null ? 'Edit Rider' : 'New Rider'}
           />
         }
         centered
@@ -614,39 +685,46 @@ export function RidersView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={typeof riderForm.errors.firstName === "string" ? riderForm.errors.firstName : undefined} />
+          <FormError
+            error={
+              typeof riderForm.errors.firstName === 'string'
+                ? riderForm.errors.firstName
+                : undefined
+            }
+          />
           <Group justify="center">
             <input
               id="rider-photo-input"
               type="file"
               accept="image/*"
-              style={{ display: "none" }}
+              style={{ display: 'none' }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (ev) =>
-                  riderForm.setFieldValue("profilePicture", (ev.target?.result as string) ?? "");
+                  riderForm.setFieldValue('profilePicture', (ev.target?.result as string) ?? '');
                 reader.readAsDataURL(file);
-                e.target.value = "";
+                e.target.value = '';
               }}
             />
-            <Box style={{ position: "relative", display: "inline-block" }}>
+            <Box style={{ position: 'relative', display: 'inline-block' }}>
               <Avatar
                 src={riderForm.values.profilePicture || undefined}
                 size={64}
                 radius="xl"
                 style={{
-                  cursor: "pointer",
+                  cursor: 'pointer',
                   background: riderForm.values.profilePicture
                     ? undefined
                     : avatarColor(`${riderForm.values.firstName}${riderForm.values.lastName}`),
                 }}
-                onClick={() => document.getElementById("rider-photo-input")?.click()}
+                onClick={() => document.getElementById('rider-photo-input')?.click()}
               >
                 {!riderForm.values.profilePicture && (
                   <Text size="lg" fw={600} c="white">
-                    {`${riderForm.values.firstName[0] ?? ""}${riderForm.values.lastName[0] ?? ""}`.toUpperCase() || "?"}
+                    {`${riderForm.values.firstName[0] ?? ''}${riderForm.values.lastName[0] ?? ''}`.toUpperCase() ||
+                      '?'}
                   </Text>
                 )}
               </Avatar>
@@ -656,8 +734,8 @@ export function RidersView() {
                   radius="xl"
                   color="red"
                   variant="filled"
-                  style={{ position: "absolute", top: 0, right: 0 }}
-                  onClick={() => riderForm.setFieldValue("profilePicture", "")}
+                  style={{ position: 'absolute', top: 0, right: 0 }}
+                  onClick={() => riderForm.setFieldValue('profilePicture', '')}
                 >
                   ×
                 </ActionIcon>
@@ -668,15 +746,15 @@ export function RidersView() {
             <TextInput
               label="First Name *"
               placeholder="First name"
-              {...riderForm.getInputProps("firstName")}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              {...riderForm.getInputProps('firstName')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               autoFocus
             />
             <TextInput
               label="Last Name *"
               placeholder="Last name"
-              {...riderForm.getInputProps("lastName")}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              {...riderForm.getInputProps('lastName')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
           </Group>
           <Group grow>
@@ -684,15 +762,15 @@ export function RidersView() {
               label="Email"
               placeholder="email@example.com"
               type="email"
-              {...riderForm.getInputProps("email")}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              {...riderForm.getInputProps('email')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
             <TextInput
               label="Phone"
               placeholder="+1-555-0100"
               type="tel"
-              {...riderForm.getInputProps("phone")}
-              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              {...riderForm.getInputProps('phone')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
           </Group>
           <Group grow>
@@ -700,21 +778,21 @@ export function RidersView() {
               label="Date of Birth"
               value={riderForm.values.dateOfBirth ? new Date(riderForm.values.dateOfBirth) : null}
               onChange={(d) =>
-                riderForm.setFieldValue("dateOfBirth", d ? d.toISOString().slice(0, 10) : "")
+                riderForm.setFieldValue('dateOfBirth', d ? d.toISOString().slice(0, 10) : '')
               }
             />
             <Select
               label="Sex"
-              {...riderForm.getInputProps("sex")}
+              {...riderForm.getInputProps('sex')}
               data={[
-                { value: "male", label: "Male" },
-                { value: "female", label: "Female" },
+                { value: 'male', label: 'Male' },
+                { value: 'female', label: 'Female' },
               ]}
             />
           </Group>
           <ModalFooter
             onCancel={resetForm}
-            submitLabel={editingId !== null ? "Save" : "Add Rider"}
+            submitLabel={editingId !== null ? 'Save' : 'Add Rider'}
             onSubmit={handleSubmit}
           />
         </Stack>
@@ -751,7 +829,7 @@ export function RidersView() {
               The link is disabled. Visitors will see a "Registration Closed" message.
             </Text>
           )}
-          <Text size="sm" style={{ wordBreak: "break-all" }}>
+          <Text size="sm" style={{ wordBreak: 'break-all' }}>
             <Text
               component="a"
               href={registrationUrl}

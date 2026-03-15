@@ -1,11 +1,11 @@
-import { useCallback, useState } from "react";
-import type { DataTableSortStatus } from "mantine-datatable";
-import type { MemberRow } from "./types";
-import { useSearchSortTable } from "@/hooks/useSearchSortTable";
+import { useCallback, useState } from 'react';
+import type { DataTableSortStatus } from 'mantine-datatable';
+import type { MemberRow } from './types';
+import { useSearchSortTable } from '@/hooks/useSearchSortTable';
 
 const DEFAULT_SORT: DataTableSortStatus<MemberRow> = {
-  columnAccessor: "name",
-  direction: "asc",
+  columnAccessor: 'name',
+  direction: 'asc',
 };
 
 export interface UseMembersFiltersParams {
@@ -18,9 +18,7 @@ export interface UseMembersFiltersResult {
   roleFilters: string[];
   setRoleFilters: React.Dispatch<React.SetStateAction<string[]>>;
   sortStatus: DataTableSortStatus<MemberRow>;
-  setSortStatus: React.Dispatch<
-    React.SetStateAction<DataTableSortStatus<MemberRow>>
-  >;
+  setSortStatus: React.Dispatch<React.SetStateAction<DataTableSortStatus<MemberRow>>>;
   searchOpen: boolean;
   setSearchOpen: (v: boolean) => void;
   filteredAndSortedRecords: MemberRow[];
@@ -33,14 +31,11 @@ export function useMembersFilters({
 
   const matchSearch = useCallback((row: MemberRow, q: string) => {
     if (!q) return true;
-    return (
-      row.name.toLowerCase().includes(q) || row.email.toLowerCase().includes(q)
-    );
+    return row.name.toLowerCase().includes(q) || row.email.toLowerCase().includes(q);
   }, []);
 
   const additionalFilter = useCallback(
-    (row: MemberRow) =>
-      roleFilters.length === 0 || roleFilters.includes(row.role),
+    (row: MemberRow) => roleFilters.length === 0 || roleFilters.includes(row.role),
     [roleFilters]
   );
 

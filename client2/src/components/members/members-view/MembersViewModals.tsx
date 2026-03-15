@@ -1,12 +1,12 @@
-import type { Championship, Event } from "@/module_bindings/types";
-import type { MemberRow } from "./types";
+import type { Championship, Event } from '@/module_bindings/types';
+import type { MemberRow } from './types';
 import {
   InviteMemberModal,
   RenameOrgModal,
   TransferOwnershipModal,
   MemberEditModal,
-} from "./modals";
-import type { MemberEditModalReducers } from "./types";
+} from './modals';
+import type { MemberEditModalReducers } from './types';
 
 export interface MembersViewModalsProps {
   inviteModalOpen: boolean;

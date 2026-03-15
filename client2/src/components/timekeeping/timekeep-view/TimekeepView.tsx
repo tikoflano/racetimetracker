@@ -1,15 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Badge,
-  Box,
-  Button,
-  Group,
-  Paper,
-  SimpleGrid,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Badge, Box, Button, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import {
   IconWifi,
   IconWifiOff,
@@ -18,10 +8,10 @@ import {
   IconPlayerStop,
   IconX,
   IconBan,
-} from "@tabler/icons-react";
-import { useTable, useReducer, useSpacetimeDB } from "spacetimedb/react";
-import { tables, reducers } from "@/module_bindings";
-import { useAuth } from "@/auth";
+} from '@tabler/icons-react';
+import { useTable, useReducer, useSpacetimeDB } from 'spacetimedb/react';
+import { tables, reducers } from '@/module_bindings';
+import { useAuth } from '@/auth';
 import type {
   TimekeeperAssignment,
   EventTrack,
@@ -33,7 +23,7 @@ import type {
   EventRider,
   EventCategory,
   ServerTimeResponse,
-} from "@/module_bindings/types";
+} from '@/module_bindings/types';
 
 function formatElapsed(ms: number): string {
   if (ms < 0) ms = 0;
@@ -41,7 +31,7 @@ function formatElapsed(ms: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const tenths = Math.floor((ms % 1000) / 100);
-  return `${minutes}:${String(seconds).padStart(2, "0")}.${tenths}`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}.${tenths}`;
 }
 
 interface ElapsedTimerProps {
@@ -70,10 +60,10 @@ function ConnectionIndicator({ isConnected }: { isConnected: boolean }) {
     <Badge
       size="sm"
       variant="light"
-      color={isConnected ? "green" : "red"}
+      color={isConnected ? 'green' : 'red'}
       leftSection={isConnected ? <IconWifi size={12} /> : <IconWifiOff size={12} />}
     >
-      {isConnected ? "Connected" : "Disconnected"}
+      {isConnected ? 'Connected' : 'Disconnected'}
     </Badge>
   );
 }
@@ -113,7 +103,7 @@ export function TimekeepView() {
   useEffect(() => {
     if (clockSynced) return;
     const response = serverTimeResponses.find(
-      (r: ServerTimeResponse) => r.requestId === clockRequestId.current,
+      (r: ServerTimeResponse) => r.requestId === clockRequestId.current
     );
     if (response) {
       setClockOffset(Number(response.serverTime) - Date.now());
@@ -200,7 +190,7 @@ export function TimekeepView() {
       </Group>
 
       {myAssignments.length === 0 && (
-        <Paper withBorder p="xl" radius="md" style={{ textAlign: "center" }}>
+        <Paper withBorder p="xl" radius="md" style={{ textAlign: 'center' }}>
           <IconClock size={48} color="var(--mantine-color-dimmed)" />
           <Text c="dimmed" mt="md">
             No track assignments yet.
@@ -214,29 +204,29 @@ export function TimekeepView() {
       {myAssignments.length > 0 && (
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
           {myAssignments.map(({ assignment, event, track, trackRuns }) => {
-            const canStart = assignment.position === "start" || assignment.position === "both";
-            const canStop = assignment.position === "end" || assignment.position === "both";
+            const canStart = assignment.position === 'start' || assignment.position === 'both';
+            const canStop = assignment.position === 'end' || assignment.position === 'both';
 
-            const queuedRuns = trackRuns.filter((r: Run) => r.status === "queued");
-            const runningRuns = trackRuns.filter((r: Run) => r.status === "running");
+            const queuedRuns = trackRuns.filter((r: Run) => r.status === 'queued');
+            const runningRuns = trackRuns.filter((r: Run) => r.status === 'running');
             const nextQueued = queuedRuns.length > 0 ? queuedRuns[0] : null;
 
-            const finishedCount = trackRuns.filter((r: Run) => r.status === "finished").length;
-            const dnsCount = trackRuns.filter((r: Run) => r.status === "dns").length;
-            const dnfCount = trackRuns.filter((r: Run) => r.status === "dnf").length;
+            const finishedCount = trackRuns.filter((r: Run) => r.status === 'finished').length;
+            const dnsCount = trackRuns.filter((r: Run) => r.status === 'dns').length;
+            const dnfCount = trackRuns.filter((r: Run) => r.status === 'dnf').length;
 
             const positionLabel =
-              assignment.position === "both"
-                ? "Start & End"
-                : assignment.position === "start"
-                  ? "Start"
-                  : "Finish";
+              assignment.position === 'both'
+                ? 'Start & End'
+                : assignment.position === 'start'
+                  ? 'Start'
+                  : 'Finish';
             const positionBadgeColor =
-              assignment.position === "both"
-                ? "blue"
-                : assignment.position === "start"
-                  ? "green"
-                  : "yellow";
+              assignment.position === 'both'
+                ? 'blue'
+                : assignment.position === 'start'
+                  ? 'green'
+                  : 'yellow';
 
             return (
               <Paper
@@ -244,7 +234,7 @@ export function TimekeepView() {
                 withBorder
                 p="md"
                 radius="md"
-                style={{ display: "flex", flexDirection: "column" }}
+                style={{ display: 'flex', flexDirection: 'column' }}
               >
                 <Group justify="space-between" align="flex-start" mb="sm">
                   <Box style={{ minWidth: 0 }}>
@@ -261,7 +251,7 @@ export function TimekeepView() {
                         />
                       )}
                       <Text fw={600} size="md" truncate>
-                        {track?.name ?? "Track"}
+                        {track?.name ?? 'Track'}
                       </Text>
                     </Group>
                     <Text size="sm" c="dimmed" truncate>
@@ -282,28 +272,25 @@ export function TimekeepView() {
                       p="sm"
                       mb="sm"
                       style={{
-                        borderRadius: "var(--mantine-radius-md)",
-                        background: "var(--mantine-color-red-light)",
-                        border: "1px solid var(--mantine-color-red-3)",
+                        borderRadius: 'var(--mantine-radius-md)',
+                        background: 'var(--mantine-color-red-light)',
+                        border: '1px solid var(--mantine-color-red-3)',
                       }}
                     >
                       <Group gap="sm" mb="xs">
                         <Text fw={700} size="xl" c="red">
-                          #{num ?? "?"}
+                          #{num ?? '?'}
                         </Text>
                         <Box>
                           <Text size="sm" fw={500}>
-                            {rider ? `${rider.firstName} ${rider.lastName}` : "Unknown"}
+                            {rider ? `${rider.firstName} ${rider.lastName}` : 'Unknown'}
                           </Text>
                           <Badge color="red" variant="filled" size="xs">
                             Racing
                           </Badge>
                         </Box>
                       </Group>
-                      <ElapsedTimer
-                        startTimeMs={Number(run.startTime)}
-                        clockOffset={clockOffset}
-                      />
+                      <ElapsedTimer startTimeMs={Number(run.startTime)} clockOffset={clockOffset} />
                       {canStop ? (
                         <Group gap="xs" mt="sm">
                           <Button
@@ -341,20 +328,20 @@ export function TimekeepView() {
                     p="sm"
                     mb="sm"
                     style={{
-                      borderRadius: "var(--mantine-radius-md)",
-                      background: "var(--mantine-color-green-light)",
-                      border: "1px solid var(--mantine-color-green-3)",
+                      borderRadius: 'var(--mantine-radius-md)',
+                      background: 'var(--mantine-color-green-light)',
+                      border: '1px solid var(--mantine-color-green-3)',
                     }}
                   >
                     <Group gap="sm" mb="sm">
                       <Text fw={700} size="xl" c="green">
-                        #{getRiderNumber(event!.id, nextQueued.riderId) ?? "?"}
+                        #{getRiderNumber(event!.id, nextQueued.riderId) ?? '?'}
                       </Text>
                       <Box>
                         <Text size="sm" fw={500}>
                           {(() => {
                             const r = riderMap.get(nextQueued.riderId);
-                            return r ? `${r.firstName} ${r.lastName}` : "Unknown";
+                            return r ? `${r.firstName} ${r.lastName}` : 'Unknown';
                           })()}
                         </Text>
                         <Text size="xs" c="dimmed">
@@ -388,7 +375,7 @@ export function TimekeepView() {
                 )}
 
                 {queuedRuns.length === 0 && runningRuns.length === 0 && (
-                  <Box py="lg" style={{ textAlign: "center" }}>
+                  <Box py="lg" style={{ textAlign: 'center' }}>
                     <IconClock size={32} color="var(--mantine-color-dimmed)" />
                     <Text size="sm" c="dimmed" mt="xs">
                       No riders in queue
@@ -401,9 +388,9 @@ export function TimekeepView() {
                   c="dimmed"
                   mt="auto"
                   pt="sm"
-                  style={{ borderTop: "1px solid var(--mantine-color-default-border)" }}
+                  style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
                 >
-                  {queuedRuns.length} queued · {runningRuns.length} racing · {finishedCount}{" "}
+                  {queuedRuns.length} queued · {runningRuns.length} racing · {finishedCount}{' '}
                   finished · {dnfCount} DNF · {dnsCount} DNS
                 </Text>
               </Paper>
@@ -414,5 +401,3 @@ export function TimekeepView() {
     </Stack>
   );
 }
-
-

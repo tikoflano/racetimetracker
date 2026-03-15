@@ -1,10 +1,10 @@
-import { Avatar, Badge, Group, Paper, Stack, Text } from "@mantine/core";
-import { IconCalendarEvent, IconTrophy } from "@tabler/icons-react";
-import type { MemberRow } from "./types";
-import { BADGE_FULL_STYLES } from "@/components/common";
-import { ROLE_COLORS, ROLE_LABELS } from "./constants";
-import { ROLE_ICONS } from "./roleConstants";
-import { MemberRowActions } from "./MemberRowActions";
+import { Avatar, Badge, Group, Paper, Stack, Text } from '@mantine/core';
+import { IconCalendarEvent, IconTrophy } from '@tabler/icons-react';
+import type { MemberRow } from './types';
+import { BADGE_FULL_STYLES } from '@/components/common';
+import { ROLE_COLORS, ROLE_LABELS } from './constants';
+import { ROLE_ICONS } from './roleConstants';
+import { MemberRowActions } from './MemberRowActions';
 
 export interface MemberCardProps {
   member: MemberRow;
@@ -25,7 +25,7 @@ export function MemberCard({
 }: MemberCardProps) {
   const totalChamp = member.championshipScopes.length;
   const totalEvent = member.eventScopes.length;
-  const isPending = member.status === "pending";
+  const isPending = member.status === 'pending';
 
   return (
     <Paper p="md" withBorder>
@@ -45,12 +45,7 @@ export function MemberCard({
               {member.name}
             </Text>
             {member.email && (
-              <Text
-                size="xs"
-                c="dimmed"
-                truncate
-                style={{ lineHeight: 1.3 }}
-              >
+              <Text size="xs" c="dimmed" truncate style={{ lineHeight: 1.3 }}>
                 {member.email}
               </Text>
             )}

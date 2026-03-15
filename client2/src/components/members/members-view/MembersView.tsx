@@ -1,25 +1,25 @@
-import { useState, useMemo } from "react";
-import { Paper, Stack, Text, Title } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
-import { IconBuilding } from "@tabler/icons-react";
-import { useTable, useReducer } from "spacetimedb/react";
-import { tables, reducers } from "@/module_bindings";
-import type { Organization } from "@/module_bindings/types";
-import { useAuth } from "@/auth";
-import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
-import { ViewHeader, FilterToolbar, EmptyState } from "@/components/common";
-import { CreateOrganizationModal } from "./modals";
-import type { MemberRow } from "./types";
-import { MembersFilterBadges } from "./MembersFilterBadges";
-import { MembersViewHeaderActions } from "./MembersViewHeaderActions";
-import { MembersListOrTable } from "./MembersListOrTable";
-import { useMemberRows } from "./useMemberRows";
-import { useMembersFilters } from "./useMembersFilters";
-import { useMembersActions } from "./useMembersActions";
-import { MembersViewModals } from "./MembersViewModals";
+import { useState, useMemo } from 'react';
+import { Paper, Stack, Text, Title } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
+import { IconBuilding } from '@tabler/icons-react';
+import { useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '@/module_bindings';
+import type { Organization } from '@/module_bindings/types';
+import { useAuth } from '@/auth';
+import { useActiveOrgFromOrgs } from '@/providers/OrgProvider';
+import { ViewHeader, FilterToolbar, EmptyState } from '@/components/common';
+import { CreateOrganizationModal } from './modals';
+import type { MemberRow } from './types';
+import { MembersFilterBadges } from './MembersFilterBadges';
+import { MembersViewHeaderActions } from './MembersViewHeaderActions';
+import { MembersListOrTable } from './MembersListOrTable';
+import { useMemberRows } from './useMemberRows';
+import { useMembersFilters } from './useMembersFilters';
+import { useMembersActions } from './useMembersActions';
+import { MembersViewModals } from './MembersViewModals';
 
 export function MembersView() {
-  const isMobile = useMediaQuery("(max-width: 768px)") ?? false;
+  const isMobile = useMediaQuery('(max-width: 768px)') ?? false;
   const [orgs] = useTable(tables.organization);
   const [orgMembers] = useTable(tables.org_member);
   const [users] = useTable(tables.user);
@@ -84,24 +84,19 @@ export function MembersView() {
 
   const orgId = activeOrg?.id ?? null;
 
-  const {
-    handleTransfer,
-    handleLeave,
-    handleImpersonate,
-    handleResendInvite,
-    handleRemove,
-  } = useMembersActions({
-    orgId,
-    transferTargetId,
-    setError,
-    setTransferTargetId,
-    setTransferModalOpen,
-    transferOrgOwnership,
-    leaveOrganization,
-    resendOrgInvitation,
-    removeOrgMember,
-    startImpersonation,
-  });
+  const { handleTransfer, handleLeave, handleImpersonate, handleResendInvite, handleRemove } =
+    useMembersActions({
+      orgId,
+      transferTargetId,
+      setError,
+      setTransferTargetId,
+      setTransferModalOpen,
+      transferOrgOwnership,
+      leaveOrganization,
+      resendOrgInvitation,
+      removeOrgMember,
+      startImpersonation,
+    });
 
   if (hasNoOrgs) {
     return (
@@ -113,7 +108,7 @@ export function MembersView() {
           icon={<IconBuilding size={48} />}
           message="You're not part of any organization. Create one to manage members, championships, events, and more."
           action={{
-            label: "Create organization",
+            label: 'Create organization',
             onClick: () => setCreateModalOpen(true),
           }}
         />
@@ -128,8 +123,8 @@ export function MembersView() {
 
   const noRecordsText =
     memberRows.length > 0
-      ? "No members match your search or filter."
-      : "No members yet. Invite someone to get started.";
+      ? 'No members match your search or filter.'
+      : 'No members yet. Invite someone to get started.';
 
   return (
     <Stack gap="lg">
@@ -138,8 +133,8 @@ export function MembersView() {
         iconColor="green"
         gradient="linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)"
         eyebrow="Organization"
-        title={activeOrg?.name ?? "Organization"}
-        subtitle={`${roleCounts.all} member${roleCounts.all !== 1 ? "s" : ""}${!isMobile ? " · manage roles and permissions" : ""}`}
+        title={activeOrg?.name ?? 'Organization'}
+        subtitle={`${roleCounts.all} member${roleCounts.all !== 1 ? 's' : ''}${!isMobile ? ' · manage roles and permissions' : ''}`}
         isMobile={isMobile}
         actions={
           <MembersViewHeaderActions
@@ -179,7 +174,7 @@ export function MembersView() {
         onSearchOpenChange={setSearchOpen}
         resultLabel={
           filteredAndSortedRecords.length === memberRows.length
-            ? `${memberRows.length} member${memberRows.length !== 1 ? "s" : ""}`
+            ? `${memberRows.length} member${memberRows.length !== 1 ? 's' : ''}`
             : `${filteredAndSortedRecords.length} of ${memberRows.length}`
         }
       />
@@ -210,7 +205,7 @@ export function MembersView() {
         onTransfer={handleTransfer}
         renameModalOpen={renameModalOpen}
         setRenameModalOpen={setRenameModalOpen}
-        renameInitialName={activeOrg?.name ?? ""}
+        renameInitialName={activeOrg?.name ?? ''}
         renameOrganization={renameOrganization}
         editMemberModal={editMemberModal}
         setEditMemberModal={setEditMemberModal}

@@ -52,8 +52,7 @@ export const update_org_member = spacetimedb.reducer(
       throw new SenderError('Invalid role');
     const org = ctx.db.organization.id.find(member.org_id);
     if (!org) throw new SenderError('Organization not found');
-    if (org.owner_user_id === member.user_id)
-      throw new SenderError('Cannot change owner role');
+    if (org.owner_user_id === member.user_id) throw new SenderError('Cannot change owner role');
     ctx.db.org_member.id.update({ ...member, role: args.role });
   }
 );

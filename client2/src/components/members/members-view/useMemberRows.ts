@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import type {
   Organization,
   OrgMember,
@@ -7,14 +7,8 @@ import type {
   ChampionshipMember,
   Event,
   EventMember,
-} from "@/module_bindings/types";
-import type {
-  MemberRow,
-  MemberRole,
-  RoleCounts,
-  ScopeChampionship,
-  ScopeEvent,
-} from "./types";
+} from '@/module_bindings/types';
+import type { MemberRow, MemberRole, RoleCounts, ScopeChampionship, ScopeEvent } from './types';
 
 export interface UseMemberRowsParams {
   activeOrg: Organization | null;
@@ -62,9 +56,7 @@ export function useMemberRows({
     const org = activeOrg;
     const ownerUser = users.find((u: User) => u.id === org.ownerUserId) ?? null;
     const rows: MemberRow[] = [];
-    const orgChampionships = championships.filter(
-      (c: Championship) => c.orgId === org.id
-    );
+    const orgChampionships = championships.filter((c: Championship) => c.orgId === org.id);
     const orgEvents = events.filter((e: Event) => e.orgId === org.id);
 
     const getChampionshipScopes = (userId: bigint): ScopeChampionship[] => {
@@ -75,15 +67,12 @@ export function useMemberRows({
             orgChampionships.some((c: Championship) => c.id === cm.championshipId)
         )
         .map((cm: ChampionshipMember) => {
-          const champ = orgChampionships.find(
-            (c: Championship) => c.id === cm.championshipId
-          );
+          const champ = orgChampionships.find((c: Championship) => c.id === cm.championshipId);
           return {
             id: cm.id,
             championshipId: cm.championshipId,
-            championshipName:
-              champ?.name ?? `Championship #${cm.championshipId}`,
-            role: cm.role as "manager" | "timekeeper",
+            championshipName: champ?.name ?? `Championship #${cm.championshipId}`,
+            role: cm.role as 'manager' | 'timekeeper',
           };
         });
     };
@@ -92,8 +81,7 @@ export function useMemberRows({
       return eventMembers
         .filter(
           (em: EventMember) =>
-            em.userId === userId &&
-            orgEvents.some((e: Event) => e.id === em.eventId)
+            em.userId === userId && orgEvents.some((e: Event) => e.id === em.eventId)
         )
         .map((em: EventMember) => {
           const evt = orgEvents.find((e: Event) => e.id === em.eventId);
@@ -101,7 +89,7 @@ export function useMemberRows({
             id: em.id,
             eventId: em.eventId,
             eventName: evt?.name ?? `Event #${em.eventId}`,
-            role: em.role as "manager" | "timekeeper",
+            role: em.role as 'manager' | 'timekeeper',
           };
         });
     };
@@ -112,9 +100,9 @@ export function useMemberRows({
         name: ownerUser
           ? ownerUser.name || ownerUser.email || `User #${ownerUser.id}`
           : `User #${org.ownerUserId}`,
-        email: ownerUser?.email || "",
-        status: "active",
-        role: "owner",
+        email: ownerUser?.email || '',
+        status: 'active',
+        role: 'owner',
         userId: org.ownerUserId,
         isPending: false,
         championshipScopes: getChampionshipScopes(org.ownerUserId),
@@ -124,21 +112,19 @@ export function useMemberRows({
 
     const seenUserIds = new Set<string>();
     if (org.ownerUserId) seenUserIds.add(String(org.ownerUserId));
-    const orgMembersForOrg = orgMembers.filter(
-      (m: OrgMember) => m.orgId === org.id
-    );
+    const orgMembersForOrg = orgMembers.filter((m: OrgMember) => m.orgId === org.id);
 
     for (const m of orgMembersForOrg) {
       const userIdKey = String(m.userId);
       if (seenUserIds.has(userIdKey)) continue;
       seenUserIds.add(userIdKey);
       const u = users.find((user: User) => user.id === m.userId) ?? null;
-      const isPending = !!u?.googleSub?.startsWith("pending:");
+      const isPending = !!u?.googleSub?.startsWith('pending:');
       rows.push({
         id: `member-${String(org.id)}-${String(m.id)}`,
         name: u ? u.name || u.email || `User #${u.id}` : `User #${m.userId}`,
-        email: u?.email || "",
-        status: isPending ? "pending" : "active",
+        email: u?.email || '',
+        status: isPending ? 'pending' : 'active',
         role: m.role as MemberRole,
         userId: u?.id,
         orgMemberId: m.id,
@@ -150,24 +136,16 @@ export function useMemberRows({
 
     const roleCounts: RoleCounts = {
       all: rows.length,
-      owner: rows.filter((m) => m.role === "owner").length,
-      admin: rows.filter((m) => m.role === "admin").length,
-      manager: rows.filter((m) => m.role === "manager").length,
-      timekeeper: rows.filter((m) => m.role === "timekeeper").length,
+      owner: rows.filter((m) => m.role === 'owner').length,
+      admin: rows.filter((m) => m.role === 'admin').length,
+      manager: rows.filter((m) => m.role === 'manager').length,
+      timekeeper: rows.filter((m) => m.role === 'timekeeper').length,
     };
 
     const adminCandidates = rows.filter(
-      (m) => m.role === "admin" && m.status === "active" && m.userId != null
+      (m) => m.role === 'admin' && m.status === 'active' && m.userId != null
     );
 
     return { memberRows: rows, roleCounts, adminCandidates };
-  }, [
-    activeOrg,
-    orgMembers,
-    users,
-    championships,
-    championshipMembers,
-    events,
-    eventMembers,
-  ]);
+  }, [activeOrg, orgMembers, users, championships, championshipMembers, events, eventMembers]);
 }

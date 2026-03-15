@@ -8,8 +8,8 @@ import {
   IconUsersGroup,
   IconTool,
   IconFlag,
-} from "@tabler/icons-react";
-import { IS_DEV } from "@/env";
+} from '@tabler/icons-react';
+import { IS_DEV } from '@/env';
 
 export interface NavItem {
   icon: React.ElementType;
@@ -24,28 +24,28 @@ export interface NavSection {
 
 export const navigation: NavSection[] = [
   {
-    title: "Main",
+    title: 'Main',
     items: [
-      { icon: IconLayoutDashboard, label: "Dashboard", path: "/" },
-      { icon: IconFlag, label: "Event Preview", path: "/event-preview" },
-      { icon: IconCalendar, label: "Calendar", path: "/calendar" },
-      { icon: IconClock, label: "Timekeeping", path: "/timekeep" },
+      { icon: IconLayoutDashboard, label: 'Dashboard', path: '/' },
+      { icon: IconFlag, label: 'Event Preview', path: '/event-preview' },
+      { icon: IconCalendar, label: 'Calendar', path: '/calendar' },
+      { icon: IconClock, label: 'Timekeeping', path: '/timekeep' },
     ],
   },
   {
-    title: "Manage",
+    title: 'Manage',
     items: [
-      { icon: IconUsersGroup, label: "Organization", path: "/members" },
-      { icon: IconTrophy, label: "Championships", path: "/championships" },
-      { icon: IconMapPin, label: "Locations", path: "/locations" },
-      { icon: IconBike, label: "Riders", path: "/riders" },
+      { icon: IconUsersGroup, label: 'Organization', path: '/members' },
+      { icon: IconTrophy, label: 'Championships', path: '/championships' },
+      { icon: IconMapPin, label: 'Locations', path: '/locations' },
+      { icon: IconBike, label: 'Riders', path: '/riders' },
     ],
   },
   ...(IS_DEV
     ? [
         {
-          title: "Dev",
-          items: [{ icon: IconTool, label: "Dev Tools", path: "/dev" }],
+          title: 'Dev',
+          items: [{ icon: IconTool, label: 'Dev Tools', path: '/dev' }],
         } as NavSection,
       ]
     : []),

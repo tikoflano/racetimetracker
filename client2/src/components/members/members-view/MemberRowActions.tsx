@@ -1,6 +1,6 @@
-import { ActionIcon, Menu } from "@mantine/core";
-import { IconDotsVertical, IconMail, IconPencil, IconTrash, IconUser } from "@tabler/icons-react";
-import type { MemberRow } from "./types";
+import { ActionIcon, Menu } from '@mantine/core';
+import { IconDotsVertical, IconMail, IconPencil, IconTrash, IconUser } from '@tabler/icons-react';
+import type { MemberRow } from './types';
 
 export interface MemberRowActionsProps {
   member: MemberRow;
@@ -22,21 +22,18 @@ export function MemberRowActions({
   onRemove,
   compact = false,
 }: MemberRowActionsProps) {
-  if (member.role === "owner") return null;
+  if (member.role === 'owner') return null;
 
-  const isPending = member.status === "pending";
+  const isPending = member.status === 'pending';
   const showImpersonate =
-    canImpersonate &&
-    member.role !== "admin" &&
-    member.status === "active" &&
-    !!member.userId;
+    canImpersonate && member.role !== 'admin' && member.status === 'active' && !!member.userId;
 
   return (
     <Menu shadow="md" width={200} position="bottom-end">
       <Menu.Target>
         <ActionIcon
           variant="subtle"
-          size={compact ? "sm" : "sm"}
+          size={compact ? 'sm' : 'sm'}
           color="gray"
           style={compact ? undefined : { flexShrink: 0 }}
         >
@@ -44,25 +41,16 @@ export function MemberRowActions({
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
-        <Menu.Item
-          leftSection={<IconPencil size={14} />}
-          onClick={() => onEditRoles(member)}
-        >
+        <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => onEditRoles(member)}>
           Edit role & scopes
         </Menu.Item>
         {showImpersonate && (
-          <Menu.Item
-            leftSection={<IconUser size={14} />}
-            onClick={() => onImpersonate(member)}
-          >
+          <Menu.Item leftSection={<IconUser size={14} />} onClick={() => onImpersonate(member)}>
             Impersonate
           </Menu.Item>
         )}
         {isPending && (
-          <Menu.Item
-            leftSection={<IconMail size={14} />}
-            onClick={() => onResendInvite(member)}
-          >
+          <Menu.Item leftSection={<IconMail size={14} />} onClick={() => onResendInvite(member)}>
             Resend invitation
           </Menu.Item>
         )}

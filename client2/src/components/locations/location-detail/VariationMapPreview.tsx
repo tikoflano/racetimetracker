@@ -4,8 +4,7 @@ import L from 'leaflet';
 import type { TrackVariation } from './types';
 import { START_ICON, END_ICON } from './mapIcons';
 
-const TILE_LAYER_URL =
-  'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png';
+const TILE_LAYER_URL = 'https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png';
 const TILE_LAYER_ATTRIBUTION =
   '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 

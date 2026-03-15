@@ -43,7 +43,12 @@ import {
   IconChevronRight,
 } from '@tabler/icons-react';
 import { resizeImage } from '../ImageUploader';
-import { type Location, type LocationImage, loadLocations, saveLocations } from '../locationStorage';
+import {
+  type Location,
+  type LocationImage,
+  loadLocations,
+  saveLocations,
+} from '../locationStorage';
 import { ModalHeader, modalHeaderStyles, FormError, ModalFooter } from '@/components/common';
 import type { Track, TrackVariation, TrackImage } from './types';
 import {
@@ -167,13 +172,19 @@ export function LocationDetailView() {
 
   const currentLocation = locations.find((v) => v.id === locationId);
 
-  const locationImages: LocationImage[] = useMemo(() => currentLocation?.images ?? [], [currentLocation?.images]);
+  const locationImages: LocationImage[] = useMemo(
+    () => currentLocation?.images ?? [],
+    [currentLocation?.images]
+  );
   const coverImage: LocationImage | undefined =
     locationImages.find((img) => img.isCover) ?? locationImages[0];
 
   const bannerContrast = useImageContrast(coverImage?.url ?? currentLocation?.imageUrl);
   const locationTracks = useMemo(
-    () => tracks.filter((t) => t.locationId === locationId).sort((a, b) => a.name.localeCompare(b.name)),
+    () =>
+      tracks
+        .filter((t) => t.locationId === locationId)
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [tracks, locationId]
   );
 
@@ -317,10 +328,8 @@ export function LocationDetailView() {
         const existing = next.get(trackId) ?? [];
         const nextId =
           existing.length > 0
-            ? existing.reduce<bigint>(
-                (max, img) => (img.id > max ? img.id : max),
-                existing[0].id
-              ) + 1n
+            ? existing.reduce<bigint>((max, img) => (img.id > max ? img.id : max), existing[0].id) +
+              1n
             : BigInt(Date.now());
         const newImage: TrackImage = {
           id: nextId,
@@ -451,11 +460,7 @@ export function LocationDetailView() {
     const { name, color } = trackForm.values;
     if (editingTrackId !== null) {
       setTracks((prev) =>
-        prev.map((t) =>
-          t.id === editingTrackId
-            ? { ...t, name: name.trim(), color }
-            : t
-        )
+        prev.map((t) => (t.id === editingTrackId ? { ...t, name: name.trim(), color } : t))
       );
     } else {
       const newTrack: Track = {
@@ -745,7 +750,9 @@ export function LocationDetailView() {
                             : 'rgba(15,23,42,0.92)',
                         color: bannerContrast !== 'dark' ? 'var(--mantine-color-dark-9)' : 'white',
                         borderColor:
-                          bannerContrast !== 'dark' ? 'rgba(148,163,184,0.8)' : 'rgba(15,23,42,0.9)',
+                          bannerContrast !== 'dark'
+                            ? 'rgba(148,163,184,0.8)'
+                            : 'rgba(15,23,42,0.9)',
                       }}
                     >
                       Add Track
@@ -781,7 +788,10 @@ export function LocationDetailView() {
                             <Menu.Divider />
                           </>
                         )}
-                        <Menu.Item leftSection={<IconPencil size={14} />} onClick={startEditLocation}>
+                        <Menu.Item
+                          leftSection={<IconPencil size={14} />}
+                          onClick={startEditLocation}
+                        >
                           Edit
                         </Menu.Item>
                         <Menu.Item
@@ -895,11 +905,7 @@ export function LocationDetailView() {
                 aria-label={isMapCollapsed ? 'Show map' : 'Hide map'}
                 onClick={() => setIsMapCollapsed((v) => !v)}
                 leftSection={
-                  isMapCollapsed ? (
-                    <IconChevronDown size={14} />
-                  ) : (
-                    <IconChevronUp size={14} />
-                  )
+                  isMapCollapsed ? <IconChevronDown size={14} /> : <IconChevronUp size={14} />
                 }
                 style={{
                   backgroundColor: 'rgba(15, 23, 42, 0.92)',
@@ -1033,12 +1039,12 @@ export function LocationDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={typeof locationForm.errors.name === 'string' ? locationForm.errors.name : undefined} />
-          <TextInput
-            label="Name"
-            {...locationForm.getInputProps('name')}
-            autoFocus
+          <FormError
+            error={
+              typeof locationForm.errors.name === 'string' ? locationForm.errors.name : undefined
+            }
           />
+          <TextInput label="Name" {...locationForm.getInputProps('name')} autoFocus />
           <TextInput
             label="Description"
             placeholder="Description (optional)"
@@ -1143,17 +1149,16 @@ export function LocationDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="md" pt="xs">
-          <FormError error={typeof trackForm.errors.name === 'string' ? trackForm.errors.name : undefined} />
+          <FormError
+            error={typeof trackForm.errors.name === 'string' ? trackForm.errors.name : undefined}
+          />
           <TextInput
             label="Name"
             {...trackForm.getInputProps('name')}
             onKeyDown={(e) => e.key === 'Enter' && handleTrackSubmit()}
             autoFocus
           />
-          <ColorInput
-            label="Color"
-            {...trackForm.getInputProps('color')}
-          />
+          <ColorInput label="Color" {...trackForm.getInputProps('color')} />
           <ModalFooter
             onCancel={resetTrackForm}
             submitLabel={editingTrackId ? 'Save' : 'Create'}
@@ -1708,35 +1713,35 @@ export function LocationDetailView() {
                       </Stack>
                     </Group>
                   </Card.Section>
-
                 </Card>
               );
             })}
           </SimpleGrid>
         )}
-        {expandedTrack !== null && (() => {
-          const track = locationTracks.find((t) => t.id === expandedTrack);
-          if (!track) return null;
-          const vars = variationsByTrack.get(track.id) ?? [];
-          return (
-            <VariationsModal
-              opened
-              onClose={() => setExpandedTrack(null)}
-              track={track}
-              variations={vars}
-              currentSlide={variationsModalSlide}
-              onSlideChange={setVariationsModalSlide}
-              carouselEmblaRef={variationsCarouselEmblaRef}
-              onEditVariation={startEditVar}
-              onDeleteVariation={handleDeleteVar}
-              onAddVariationFromModal={(trackId) => {
-                setReopenVariationsTrackId(trackId);
-                setExpandedTrack(null);
-                startAddVar(trackId);
-              }}
-            />
-          );
-        })()}
+        {expandedTrack !== null &&
+          (() => {
+            const track = locationTracks.find((t) => t.id === expandedTrack);
+            if (!track) return null;
+            const vars = variationsByTrack.get(track.id) ?? [];
+            return (
+              <VariationsModal
+                opened
+                onClose={() => setExpandedTrack(null)}
+                track={track}
+                variations={vars}
+                currentSlide={variationsModalSlide}
+                onSlideChange={setVariationsModalSlide}
+                carouselEmblaRef={variationsCarouselEmblaRef}
+                onEditVariation={startEditVar}
+                onDeleteVariation={handleDeleteVar}
+                onAddVariationFromModal={(trackId) => {
+                  setReopenVariationsTrackId(trackId);
+                  setExpandedTrack(null);
+                  startAddVar(trackId);
+                }}
+              />
+            );
+          })()}
       </Stack>
     </Stack>
   );

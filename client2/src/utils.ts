@@ -1,19 +1,16 @@
-import type { DataTableSortStatus } from "mantine-datatable";
+import type { DataTableSortStatus } from 'mantine-datatable';
 
 /** Extract user-facing message from unknown error */
 export function getErrorMessage(e: unknown, fallback: string): string {
   if (e instanceof Error && e.message) return e.message;
-  if (typeof e === "string") return e;
+  if (typeof e === 'string') return e;
   return fallback;
 }
 
 /** Sort records by column for DataTable */
-export function sortRecords<T>(
-  records: T[],
-  sortStatus: DataTableSortStatus<T>
-): T[] {
+export function sortRecords<T>(records: T[], sortStatus: DataTableSortStatus<T>): T[] {
   const key = sortStatus.columnAccessor as keyof T;
-  const dir = sortStatus.direction === "asc" ? 1 : -1;
+  const dir = sortStatus.direction === 'asc' ? 1 : -1;
   return [...records].sort((a, b) => {
     const aVal = a[key];
     const bVal = b[key];

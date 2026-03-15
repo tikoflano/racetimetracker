@@ -105,8 +105,7 @@ export const delete_track_variation = spacetimedb.reducer(
   (ctx, args) => {
     const tv = ctx.db.track_variation.id.find(args.variation_id);
     if (!tv) throw new SenderError('Track variation not found');
-    if (tv.name === 'Default')
-      throw new SenderError('Cannot delete the Default variation.');
+    if (tv.name === 'Default') throw new SenderError('Cannot delete the Default variation.');
     const track = ctx.db.track.id.find(tv.track_id);
     if (!track) throw new SenderError('Track not found');
     requireLocationManager(ctx, track.location_id);

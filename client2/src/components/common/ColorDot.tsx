@@ -1,4 +1,4 @@
-import { Box } from "@mantine/core";
+import { Box } from '@mantine/core';
 
 interface ColorDotProps {
   color: string;
@@ -7,10 +7,6 @@ interface ColorDotProps {
 
 export function ColorDot({ color, size = 10 }: ColorDotProps) {
   return (
-    <Box
-      w={size}
-      h={size}
-      style={{ borderRadius: "50%", background: color, flexShrink: 0 }}
-    />
+    <Box w={size} h={size} style={{ borderRadius: '50%', background: color, flexShrink: 0 }} />
   );
 }

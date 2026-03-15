@@ -6,13 +6,13 @@ import {
   useMemo,
   useEffect,
   type ReactNode,
-} from "react";
-import { useTable } from "spacetimedb/react";
-import { tables } from "@/module_bindings";
-import type { Organization } from "@/module_bindings/types";
-import { useAuth } from "@/auth";
+} from 'react';
+import { useTable } from 'spacetimedb/react';
+import { tables } from '@/module_bindings';
+import type { Organization } from '@/module_bindings/types';
+import { useAuth } from '@/auth';
 
-export const ACTIVE_ORG_KEY = "active_org_id";
+export const ACTIVE_ORG_KEY = 'active_org_id';
 
 interface OrgContextValue {
   activeOrgId: bigint | null;
@@ -29,7 +29,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const [orgs] = useTable(tables.organization);
 
   const [activeOrgId, setActiveOrgIdRaw] = useState<bigint | null>(() => {
-    if (typeof window === "undefined") return null;
+    if (typeof window === 'undefined') return null;
     try {
       const stored = localStorage.getItem(ACTIVE_ORG_KEY);
       return stored ? BigInt(stored) : null;
@@ -39,7 +39,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   });
 
   const setActiveOrgId = useCallback((id: bigint) => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       localStorage.setItem(ACTIVE_ORG_KEY, String(id));
     }
     setActiveOrgIdRaw(id);
@@ -52,8 +52,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (userOrgs.length === 0) return;
-    if (activeOrgId && userOrgs.some((o: Organization) => o.id === activeOrgId))
-      return;
+    if (activeOrgId && userOrgs.some((o: Organization) => o.id === activeOrgId)) return;
     setActiveOrgId(userOrgs[0].id);
   }, [userOrgs, activeOrgId, setActiveOrgId]);
 
@@ -62,14 +61,12 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     [activeOrgId, setActiveOrgId]
   );
 
-  return (
-    <OrgContext.Provider value={value}>{children}</OrgContext.Provider>
-  );
+  return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
 
 export function useActiveOrg(): bigint {
   const { activeOrgId } = useContext(OrgContext);
-  if (!activeOrgId) throw new Error("No active organization");
+  if (!activeOrgId) throw new Error('No active organization');
   return activeOrgId;
 }
 
@@ -77,9 +74,7 @@ export function useActiveOrgMaybe(): bigint | null {
   return useContext(OrgContext).activeOrgId;
 }
 
-export function useActiveOrgFromOrgs(
-  orgs: readonly Organization[]
-): Organization | null {
+export function useActiveOrgFromOrgs(orgs: readonly Organization[]): Organization | null {
   const activeOrgId = useActiveOrgMaybe();
   return useMemo(() => {
     if (orgs.length === 0) return null;

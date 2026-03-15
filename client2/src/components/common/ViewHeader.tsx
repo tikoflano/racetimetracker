@@ -1,4 +1,4 @@
-import { Box, Group, Text, Title, ThemeIcon } from "@mantine/core";
+import { Box, Group, Text, Title, ThemeIcon } from '@mantine/core';
 
 interface ViewHeaderProps {
   icon: React.ReactNode;
@@ -11,12 +11,11 @@ interface ViewHeaderProps {
   isMobile?: boolean;
 }
 
-const DEFAULT_GRADIENT =
-  "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)";
+const DEFAULT_GRADIENT = 'linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)';
 
 export function ViewHeader({
   icon,
-  iconColor = "blue",
+  iconColor = 'blue',
   gradient = DEFAULT_GRADIENT,
   eyebrow,
   title,
@@ -26,11 +25,11 @@ export function ViewHeader({
 }: ViewHeaderProps) {
   return (
     <Box
-      p={isMobile ? "md" : "xl"}
+      p={isMobile ? 'md' : 'xl'}
       style={{
         background: gradient,
-        borderRadius: "var(--mantine-radius-md)",
-        border: "1px solid #1e2028",
+        borderRadius: 'var(--mantine-radius-md)',
+        border: '1px solid #1e2028',
       }}
     >
       <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
@@ -50,12 +49,12 @@ export function ViewHeader({
               order={isMobile ? 4 : 2}
               c="white"
               fw={700}
-              style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+              style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
             >
               {title}
             </Title>
             {subtitle && (
-              <Text size={isMobile ? "xs" : "sm"} c={`${iconColor}.2`} mt={2}>
+              <Text size={isMobile ? 'xs' : 'sm'} c={`${iconColor}.2`} mt={2}>
                 {subtitle}
               </Text>
             )}

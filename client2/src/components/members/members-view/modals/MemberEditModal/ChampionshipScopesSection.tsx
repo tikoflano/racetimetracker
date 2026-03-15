@@ -1,28 +1,19 @@
-import {
-  ActionIcon,
-  Badge,
-  Box,
-  Button,
-  Group,
-  Select,
-  Stack,
-  Text,
-} from "@mantine/core";
-import { IconTrophy, IconTrash } from "@tabler/icons-react";
-import type { ScopeChampionship } from "../../types";
-import { BADGE_FULL_STYLES } from "@/components/common";
+import { ActionIcon, Badge, Box, Button, Group, Select, Stack, Text } from '@mantine/core';
+import { IconTrophy, IconTrash } from '@tabler/icons-react';
+import type { ScopeChampionship } from '../../types';
+import { BADGE_FULL_STYLES } from '@/components/common';
 
 interface ChampionshipScopesSectionProps {
   memberScopes: ScopeChampionship[];
   availableChampionships: { id: bigint; name: string }[];
   addChampId: string | null;
   setAddChampId: (v: string | null) => void;
-  addChampRole: "manager" | "timekeeper";
-  setAddChampRole: (v: "manager" | "timekeeper") => void;
+  addChampRole: 'manager' | 'timekeeper';
+  setAddChampRole: (v: 'manager' | 'timekeeper') => void;
   loading: boolean;
   onAdd: () => void;
   onRemove: (scope: ScopeChampionship) => void;
-  onUpdateRole: (scope: ScopeChampionship, role: "manager" | "timekeeper") => void;
+  onUpdateRole: (scope: ScopeChampionship, role: 'manager' | 'timekeeper') => void;
 }
 
 export function ChampionshipScopesSection({
@@ -43,8 +34,8 @@ export function ChampionshipScopesSection({
         Championship scopes
       </Text>
       <Text size="xs" c="dimmed" mb="xs">
-        Grant access to specific championships. Manager: manage events, tracks,
-        riders, schedule. Timekeeper: timekeeping only.
+        Grant access to specific championships. Manager: manage events, tracks, riders, schedule.
+        Timekeeper: timekeeping only.
       </Text>
       {memberScopes.length > 0 && (
         <Stack gap="xs" mb="sm">
@@ -62,12 +53,10 @@ export function ChampionshipScopesSection({
                 </Badge>
                 <Select
                   value={s.role}
-                  onChange={(v) =>
-                    onUpdateRole(s, (v as "manager" | "timekeeper") || "manager")
-                  }
+                  onChange={(v) => onUpdateRole(s, (v as 'manager' | 'timekeeper') || 'manager')}
                   data={[
-                    { value: "manager", label: "Manager" },
-                    { value: "timekeeper", label: "Timekeeper" },
+                    { value: 'manager', label: 'Manager' },
+                    { value: 'timekeeper', label: 'Timekeeper' },
                   ]}
                   size="xs"
                   style={{ width: 110 }}
@@ -103,12 +92,10 @@ export function ChampionshipScopesSection({
           />
           <Select
             value={addChampRole}
-            onChange={(v) =>
-              setAddChampRole((v as "manager" | "timekeeper") || "manager")
-            }
+            onChange={(v) => setAddChampRole((v as 'manager' | 'timekeeper') || 'manager')}
             data={[
-              { value: "manager", label: "Manager" },
-              { value: "timekeeper", label: "Timekeeper" },
+              { value: 'manager', label: 'Manager' },
+              { value: 'timekeeper', label: 'Timekeeper' },
             ]}
             style={{ width: 110 }}
           />

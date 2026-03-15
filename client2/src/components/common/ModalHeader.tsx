@@ -1,4 +1,4 @@
-import { Group, Text, ThemeIcon } from "@mantine/core";
+import { Group, Text, ThemeIcon } from '@mantine/core';
 
 interface ModalHeaderProps {
   icon: React.ReactNode;
@@ -7,12 +7,7 @@ interface ModalHeaderProps {
   title: string;
 }
 
-export function ModalHeader({
-  icon,
-  iconColor = "blue",
-  label,
-  title,
-}: ModalHeaderProps) {
+export function ModalHeader({ icon, iconColor = 'blue', label, title }: ModalHeaderProps) {
   return (
     <Group gap="sm">
       <ThemeIcon size={36} radius="md" color={iconColor} variant="light">
@@ -31,13 +26,13 @@ export function ModalHeader({
 }
 
 export function modalHeaderStyles(
-  gradient = "linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)",
+  gradient = 'linear-gradient(135deg, #1C2348 0%, #2A3364 60%, #313B72 100%)'
 ) {
   return {
     header: {
       background: gradient,
-      borderBottom: "1px solid #1e2028",
+      borderBottom: '1px solid #1e2028',
     },
-    close: { color: "white" },
+    close: { color: 'white' },
   };
 }

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Modal, Stack, TextInput } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { IconBuilding } from "@tabler/icons-react";
-import { ModalHeader, modalHeaderStyles, ModalFooter } from "@/components/common";
-import { getErrorMessage } from "@/utils";
+import { useEffect, useState } from 'react';
+import { Modal, Stack, TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { IconBuilding } from '@tabler/icons-react';
+import { ModalHeader, modalHeaderStyles, ModalFooter } from '@/components/common';
+import { getErrorMessage } from '@/utils';
 
 export interface CreateOrganizationModalProps {
   opened: boolean;
@@ -18,11 +18,11 @@ export function CreateOrganizationModal({
 }: CreateOrganizationModalProps) {
   const [loading, setLoading] = useState(false);
   const form = useForm({
-    initialValues: { name: "" },
+    initialValues: { name: '' },
     validate: {
       name: (v) => {
         const trimmed = v?.trim();
-        if (!trimmed) return "Organization name is required";
+        if (!trimmed) return 'Organization name is required';
         return null;
       },
     },
@@ -42,7 +42,7 @@ export function CreateOrganizationModal({
       form.reset();
       onClose();
     } catch (e: unknown) {
-      form.setFieldError("name", getErrorMessage(e, "Failed to create organization"));
+      form.setFieldError('name', getErrorMessage(e, 'Failed to create organization'));
     } finally {
       setLoading(false);
     }
@@ -64,9 +64,7 @@ export function CreateOrganizationModal({
       radius="md"
       size="lg"
       overlayProps={{ blur: 3 }}
-      styles={modalHeaderStyles(
-        "linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)"
-      )}
+      styles={modalHeaderStyles('linear-gradient(135deg, #1a3a2a 0%, #1e5c3a 60%, #237a4b 100%)')}
     >
       <Stack gap="md" pt="xs">
         <TextInput
@@ -74,9 +72,9 @@ export function CreateOrganizationModal({
           placeholder="Organization name"
           autoFocus
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !loading) handleCreate();
+            if (e.key === 'Enter' && !loading) handleCreate();
           }}
-          {...form.getInputProps("name")}
+          {...form.getInputProps('name')}
         />
         <ModalFooter
           onCancel={onClose}

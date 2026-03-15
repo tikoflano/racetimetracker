@@ -1,4 +1,4 @@
-import { Button, Paper, Stack, Text } from "@mantine/core";
+import { Button, Paper, Stack, Text } from '@mantine/core';
 
 interface EmptyStateProps {
   icon: React.ReactNode;

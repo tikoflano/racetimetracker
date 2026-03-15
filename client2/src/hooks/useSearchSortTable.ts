@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import type { DataTableSortStatus } from "mantine-datatable";
-import { sortRecords } from "@/utils";
+import { useMemo, useState } from 'react';
+import type { DataTableSortStatus } from 'mantine-datatable';
+import { sortRecords } from '@/utils';
 
 export interface UseSearchSortTableOptions<T> {
   /** Return true if record matches the search query (q is trimmed lowercased) */
@@ -30,16 +30,13 @@ export function useSearchSortTable<T>(
   options: UseSearchSortTableOptions<T>
 ): UseSearchSortTableResult<T> {
   const { matchSearch, additionalFilter } = options;
-  const [search, setSearch] = useState("");
-  const [sortStatus, setSortStatus] =
-    useState<DataTableSortStatus<T>>(initialSort);
+  const [search, setSearch] = useState('');
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<T>>(initialSort);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const filteredAndSortedRecords = useMemo(() => {
     const q = search.toLowerCase().trim();
-    const filtered = records.filter(
-      (r) => matchSearch(r, q) && (additionalFilter?.(r) ?? true)
-    );
+    const filtered = records.filter((r) => matchSearch(r, q) && (additionalFilter?.(r) ?? true));
     return sortRecords(filtered, sortStatus);
   }, [records, search, sortStatus, matchSearch, additionalFilter]);
 

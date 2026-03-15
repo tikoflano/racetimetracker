@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "@mantine/form";
+import { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from '@mantine/form';
 import {
   Box,
   Group,
@@ -15,11 +15,11 @@ import {
   Menu,
   Select,
   ThemeIcon,
-} from "@mantine/core";
-import { ColorInput } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
-import { DatePickerInput } from "@mantine/dates";
-import { DataTable } from "mantine-datatable";
+} from '@mantine/core';
+import { ColorInput } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
+import { DatePickerInput } from '@mantine/dates';
+import { DataTable } from 'mantine-datatable';
 import {
   IconTrophy,
   IconPlus,
@@ -28,7 +28,7 @@ import {
   IconTrash,
   IconPin,
   IconArrowLeft,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 import {
   ViewHeader,
   FilterToolbar,
@@ -39,44 +39,44 @@ import {
   EmptyState,
   ColorDot,
   FormError,
-} from "@/components/common";
-import type { DotsMenuItem } from "@/components/common";
-import { useTable, useReducer } from "spacetimedb/react";
-import { tables, reducers } from "@/module_bindings";
-import { useAuth } from "@/auth";
-import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
+} from '@/components/common';
+import type { DotsMenuItem } from '@/components/common';
+import { useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '@/module_bindings';
+import { useAuth } from '@/auth';
+import { useActiveOrgFromOrgs } from '@/providers/OrgProvider';
 import type {
   Championship,
   Event,
   Location,
   Organization,
   PinnedEvent,
-} from "@/module_bindings/types";
-import { getErrorMessage } from "@/utils";
+} from '@/module_bindings/types';
+import { getErrorMessage } from '@/utils';
 
 function todayStr(): string {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-type EventStatus = "in_progress" | "not_started" | "completed";
+type EventStatus = 'in_progress' | 'not_started' | 'completed';
 
 const STATUS_LABEL: Record<EventStatus, string> = {
-  in_progress: "In Progress",
-  not_started: "Not Started",
-  completed: "Completed",
+  in_progress: 'In Progress',
+  not_started: 'Not Started',
+  completed: 'Completed',
 };
 
 const STATUS_COLOR: Record<EventStatus, string> = {
-  in_progress: "green",
-  not_started: "yellow",
-  completed: "gray",
+  in_progress: 'green',
+  not_started: 'yellow',
+  completed: 'gray',
 };
 
 function getEventStatus(e: Event, today: string): EventStatus {
-  if (today < e.startDate) return "not_started";
-  if (today > e.endDate) return "completed";
-  return "in_progress";
+  if (today < e.startDate) return 'not_started';
+  if (today > e.endDate) return 'completed';
+  return 'in_progress';
 }
 
 interface EventRow {
@@ -89,7 +89,7 @@ export function ChampionshipDetailView() {
   const { champId } = useParams<{ champId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [orgs] = useTable(tables.organization);
   const [allChampionships] = useTable(tables.championship);
@@ -105,7 +105,7 @@ export function ChampionshipDetailView() {
 
   const cid = useMemo(() => {
     try {
-      return BigInt(champId ?? "0");
+      return BigInt(champId ?? '0');
     } catch {
       return 0n;
     }
@@ -119,7 +119,7 @@ export function ChampionshipDetailView() {
   const pinnedEventIds = useMemo(() => {
     if (!user) return new Set<bigint>();
     return new Set(
-      pinnedEvents.filter((p: PinnedEvent) => p.userId === user.id).map((p) => p.eventId),
+      pinnedEvents.filter((p: PinnedEvent) => p.userId === user.id).map((p) => p.eventId)
     );
   }, [user, pinnedEvents]);
 
@@ -128,7 +128,7 @@ export function ChampionshipDetailView() {
   const orgLocations = useMemo<Location[]>(() => {
     if (!activeOrgId) return [];
     return [...allLocations.filter((v: Location) => v.orgId === activeOrgId)].sort((a, b) =>
-      a.name.localeCompare(b.name),
+      a.name.localeCompare(b.name)
     );
   }, [allLocations, activeOrgId]);
 
@@ -140,7 +140,7 @@ export function ChampionshipDetailView() {
 
   const champEvents = useMemo<Event[]>(() => {
     return [...allEvents.filter((e: Event) => e.championshipId === cid)].sort((a, b) =>
-      a.startDate.localeCompare(b.startDate),
+      a.startDate.localeCompare(b.startDate)
     );
   }, [allEvents, cid]);
 
@@ -148,14 +148,14 @@ export function ChampionshipDetailView() {
     return champEvents.map((e: Event) => ({
       event: e,
       status: getEventStatus(e, today),
-      locationName: locationMap.get(e.locationId)?.name ?? "—",
+      locationName: locationMap.get(e.locationId)?.name ?? '—',
     }));
   }, [champEvents, today, locationMap]);
 
-  const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
 
   const filteredEventRows = useMemo<EventRow[]>(() => {
-    if (statusFilter === "all") return eventRows;
+    if (statusFilter === 'all') return eventRows;
     return eventRows.filter((r) => r.status === statusFilter);
   }, [eventRows, statusFilter]);
 
@@ -168,9 +168,9 @@ export function ChampionshipDetailView() {
   // Edit championship modal
   const [showEdit, setShowEdit] = useState(false);
   const editChampForm = useForm({
-    initialValues: { name: "", description: "", color: "" },
+    initialValues: { name: '', description: '', color: '' },
     validate: {
-      name: (v) => (!v?.trim() ? "Name cannot be empty" : null),
+      name: (v) => (!v?.trim() ? 'Name cannot be empty' : null),
     },
   });
 
@@ -196,7 +196,7 @@ export function ChampionshipDetailView() {
       });
       setShowEdit(false);
     } catch (e: unknown) {
-      editChampForm.setFieldError("name", getErrorMessage(e, "Failed to update"));
+      editChampForm.setFieldError('name', getErrorMessage(e, 'Failed to update'));
     }
   };
 
@@ -210,17 +210,17 @@ export function ChampionshipDetailView() {
     locationId: string | null;
   }>({
     initialValues: {
-      name: "",
-      description: "",
-      startDate: "",
-      endDate: "",
+      name: '',
+      description: '',
+      startDate: '',
+      endDate: '',
       locationId: null,
     },
     validate: {
-      name: (v) => (!v?.trim() ? "Event name is required" : null),
-      startDate: (v) => (!v ? "Start date is required" : null),
-      endDate: (v) => (!v ? "End date is required" : null),
-      locationId: (v) => (!v ? "Select a location" : null),
+      name: (v) => (!v?.trim() ? 'Event name is required' : null),
+      startDate: (v) => (!v ? 'Start date is required' : null),
+      endDate: (v) => (!v ? 'End date is required' : null),
+      locationId: (v) => (!v ? 'Select a location' : null),
     },
   });
 
@@ -243,16 +243,16 @@ export function ChampionshipDetailView() {
       });
       resetEventForm();
     } catch (e: unknown) {
-      addEventForm.setFieldError("name", getErrorMessage(e, "Failed to create event"));
+      addEventForm.setFieldError('name', getErrorMessage(e, 'Failed to create event'));
     }
   };
 
   // Inline event rename
   const [editingEventId, setEditingEventId] = useState<bigint | null>(null);
   const editEventNameForm = useForm({
-    initialValues: { name: "" },
+    initialValues: { name: '' },
     validate: {
-      name: (v) => (!v?.trim() ? "Name cannot be empty" : null),
+      name: (v) => (!v?.trim() ? 'Name cannot be empty' : null),
     },
   });
 
@@ -274,7 +274,7 @@ export function ChampionshipDetailView() {
       });
       setEditingEventId(null);
     } catch (err: unknown) {
-      editEventNameForm.setFieldError("name", getErrorMessage(err, "Failed to rename"));
+      editEventNameForm.setFieldError('name', getErrorMessage(err, 'Failed to rename'));
     }
   };
 
@@ -286,26 +286,26 @@ export function ChampionshipDetailView() {
     );
   }
 
-  const filterBadges = (["all", "in_progress", "not_started", "completed"] as const).map((f) => {
+  const filterBadges = (['all', 'in_progress', 'not_started', 'completed'] as const).map((f) => {
     const labels: Record<string, string> = {
-      all: "All",
-      in_progress: "In Progress",
-      not_started: "Not Started",
-      completed: "Completed",
+      all: 'All',
+      in_progress: 'In Progress',
+      not_started: 'Not Started',
+      completed: 'Completed',
     };
     const colors: Record<string, string> = {
-      all: "blue",
-      in_progress: "green",
-      not_started: "yellow",
-      completed: "gray",
+      all: 'blue',
+      in_progress: 'green',
+      not_started: 'yellow',
+      completed: 'gray',
     };
     return (
       <Badge
         key={f}
         size="lg"
-        variant={statusFilter === f ? "filled" : "light"}
+        variant={statusFilter === f ? 'filled' : 'light'}
         color={colors[f]}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: 'pointer' }}
         onClick={() => setStatusFilter(f)}
       >
         {labels[f]} ({statusCounts[f]})
@@ -320,8 +320,8 @@ export function ChampionshipDetailView() {
         variant="subtle"
         size="xs"
         leftSection={<IconArrowLeft size={14} />}
-        onClick={() => navigate("/championships")}
-        style={{ alignSelf: "flex-start" }}
+        onClick={() => navigate('/championships')}
+        style={{ alignSelf: 'flex-start' }}
       >
         Championships
       </Button>
@@ -332,7 +332,7 @@ export function ChampionshipDetailView() {
           <ThemeIcon
             size={52}
             radius="md"
-            style={{ background: champ.color + "33", color: champ.color }}
+            style={{ background: champ.color + '33', color: champ.color }}
           >
             <IconTrophy size={28} />
           </ThemeIcon>
@@ -341,7 +341,7 @@ export function ChampionshipDetailView() {
         gradient={`linear-gradient(135deg, ${champ.color}18 0%, ${champ.color}38 60%, ${champ.color}55 100%)`}
         eyebrow={activeOrg?.name}
         title={champ.name}
-        subtitle={champ.description || "No description yet."}
+        subtitle={champ.description || 'No description yet.'}
         isMobile={isMobile}
         actions={
           <>
@@ -359,20 +359,30 @@ export function ChampionshipDetailView() {
                   size="lg"
                   iconSize={18}
                   width={200}
-                  items={[
-                    { icon: <IconPencil size={14} />, label: "Edit championship", onClick: startEditing },
-                    {
-                      icon: <IconTrash size={14} />,
-                      label: "Delete",
-                      color: "red",
-                      onClick: () => {
-                        if (confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) {
-                          deleteChampionship({ championshipId: champ.id });
-                          navigate("/championships");
-                        }
+                  items={
+                    [
+                      {
+                        icon: <IconPencil size={14} />,
+                        label: 'Edit championship',
+                        onClick: startEditing,
                       },
-                    },
-                  ] satisfies DotsMenuItem[]}
+                      {
+                        icon: <IconTrash size={14} />,
+                        label: 'Delete',
+                        color: 'red',
+                        onClick: () => {
+                          if (
+                            confirm(
+                              `Delete "${champ.name}" and all its events? This cannot be undone.`
+                            )
+                          ) {
+                            deleteChampionship({ championshipId: champ.id });
+                            navigate('/championships');
+                          }
+                        },
+                      },
+                    ] satisfies DotsMenuItem[]
+                  }
                 />
               </>
             ) : (
@@ -382,7 +392,7 @@ export function ChampionshipDetailView() {
                     variant="filled"
                     size="md"
                     color="dark"
-                    style={{ backgroundColor: "rgba(15,23,42,0.75)", color: "white" }}
+                    style={{ backgroundColor: 'rgba(15,23,42,0.75)', color: 'white' }}
                   >
                     <IconDotsVertical size={16} />
                   </ActionIcon>
@@ -395,9 +405,11 @@ export function ChampionshipDetailView() {
                     leftSection={<IconTrash size={14} />}
                     color="red"
                     onClick={() => {
-                      if (confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)) {
+                      if (
+                        confirm(`Delete "${champ.name}" and all its events? This cannot be undone.`)
+                      ) {
                         deleteChampionship({ championshipId: champ.id });
-                        navigate("/championships");
+                        navigate('/championships');
                       }
                     }}
                   >
@@ -414,16 +426,18 @@ export function ChampionshipDetailView() {
       <FilterToolbar
         filterContent={
           <Stack gap="xs">
-            <Text size="xs" c="dimmed" fw={600} tt="uppercase">Filter by status</Text>
+            <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+              Filter by status
+            </Text>
             {filterBadges}
           </Stack>
         }
-        activeFilterCount={statusFilter !== "all" ? 1 : 0}
+        activeFilterCount={statusFilter !== 'all' ? 1 : 0}
         search=""
         onSearchChange={() => {}}
         searchOpen={false}
         onSearchOpenChange={() => {}}
-        resultLabel={`${filteredEventRows.length} event${filteredEventRows.length !== 1 ? "s" : ""} in this championship`}
+        resultLabel={`${filteredEventRows.length} event${filteredEventRows.length !== 1 ? 's' : ''} in this championship`}
         leftContent={
           isMobile ? (
             <Button
@@ -444,7 +458,7 @@ export function ChampionshipDetailView() {
         <EmptyState
           icon={<IconTrophy size={48} color="var(--mantine-color-dimmed)" />}
           message="No events yet. Create one to get started."
-          action={{ label: "Add Event", onClick: () => setShowAddEvent(true) }}
+          action={{ label: 'Add Event', onClick: () => setShowAddEvent(true) }}
         />
       ) : isMobile ? (
         /* Mobile cards */
@@ -454,17 +468,17 @@ export function ChampionshipDetailView() {
               key={String(r.event.id)}
               p="md"
               withBorder
-              style={{ cursor: "pointer", position: "relative" }}
+              style={{ cursor: 'pointer', position: 'relative' }}
               onClick={() => navigate(`/event/${r.event.id}`)}
             >
               <Group gap="xs" align="center" mb={6} style={{ paddingRight: 32 }}>
                 <ColorDot
                   color={
-                    r.status === "in_progress"
-                      ? "#22c55e"
-                      : r.status === "not_started"
-                        ? "#facc15"
-                        : "#9ca3af"
+                    r.status === 'in_progress'
+                      ? '#22c55e'
+                      : r.status === 'not_started'
+                        ? '#facc15'
+                        : '#9ca3af'
                   }
                 />
                 <Text fw={600} size="sm" style={{ flex: 1, minWidth: 0 }} lineClamp={1}>
@@ -478,7 +492,7 @@ export function ChampionshipDetailView() {
                 {r.locationName} · {r.event.startDate} – {r.event.endDate}
               </Text>
               <Box
-                style={{ position: "absolute", top: 8, right: 8 }}
+                style={{ position: 'absolute', top: 8, right: 8 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <Group gap={4}>
@@ -486,7 +500,7 @@ export function ChampionshipDetailView() {
                     <ActionIcon
                       variant="subtle"
                       size="sm"
-                      color={pinnedEventIds.has(r.event.id) ? "blue" : "gray"}
+                      color={pinnedEventIds.has(r.event.id) ? 'blue' : 'gray'}
                       onClick={() => togglePin({ eventId: r.event.id })}
                     >
                       <IconPin size={14} />
@@ -494,9 +508,15 @@ export function ChampionshipDetailView() {
                   )}
                   <DotsMenu
                     width={180}
-                    items={[
-                      { icon: <IconPencil size={14} />, label: "Rename", onClick: () => startEditEvent(r.event) },
-                    ] satisfies DotsMenuItem[]}
+                    items={
+                      [
+                        {
+                          icon: <IconPencil size={14} />,
+                          label: 'Rename',
+                          onClick: () => startEditEvent(r.event),
+                        },
+                      ] satisfies DotsMenuItem[]
+                    }
                   />
                 </Group>
               </Box>
@@ -513,36 +533,36 @@ export function ChampionshipDetailView() {
             records={filteredEventRows}
             columns={[
               {
-                accessor: "pin",
-                title: "",
+                accessor: 'pin',
+                title: '',
                 width: 36,
                 render: (r: EventRow) =>
                   user ? (
                     <ActionIcon
                       variant="subtle"
                       size="sm"
-                      color={pinnedEventIds.has(r.event.id) ? "blue" : "gray"}
+                      color={pinnedEventIds.has(r.event.id) ? 'blue' : 'gray'}
                       onClick={(e) => {
                         e.stopPropagation();
                         togglePin({ eventId: r.event.id });
                       }}
-                      title={pinnedEventIds.has(r.event.id) ? "Unpin" : "Pin"}
+                      title={pinnedEventIds.has(r.event.id) ? 'Unpin' : 'Pin'}
                     >
                       <IconPin size={14} />
                     </ActionIcon>
                   ) : null,
               },
               {
-                accessor: "name",
-                title: "Name",
+                accessor: 'name',
+                title: 'Name',
                 render: (r: EventRow) =>
-                    editingEventId === r.event.id ? (
+                  editingEventId === r.event.id ? (
                     <Group gap="xs" align="center" onClick={(e) => e.stopPropagation()}>
                       <TextInput
-                        {...editEventNameForm.getInputProps("name")}
+                        {...editEventNameForm.getInputProps('name')}
                         onKeyDown={(ev) => {
-                          if (ev.key === "Enter") handleSaveEventName(r.event);
-                          if (ev.key === "Escape") setEditingEventId(null);
+                          if (ev.key === 'Enter') handleSaveEventName(r.event);
+                          if (ev.key === 'Escape') setEditingEventId(null);
                         }}
                         autoFocus
                         size="xs"
@@ -551,11 +571,7 @@ export function ChampionshipDetailView() {
                       <Button size="xs" onClick={() => handleSaveEventName(r.event)}>
                         Save
                       </Button>
-                      <Button
-                        variant="subtle"
-                        size="xs"
-                        onClick={() => setEditingEventId(null)}
-                      >
+                      <Button variant="subtle" size="xs" onClick={() => setEditingEventId(null)}>
                         Cancel
                       </Button>
                       {editEventNameForm.errors.name && (
@@ -569,8 +585,8 @@ export function ChampionshipDetailView() {
                   ),
               },
               {
-                accessor: "status",
-                title: "Status",
+                accessor: 'status',
+                title: 'Status',
                 render: (r: EventRow) => (
                   <Badge color={STATUS_COLOR[r.status]} variant="light">
                     {STATUS_LABEL[r.status]}
@@ -578,35 +594,41 @@ export function ChampionshipDetailView() {
                 ),
               },
               {
-                accessor: "locationName",
-                title: "Location",
+                accessor: 'locationName',
+                title: 'Location',
                 render: (r: EventRow) => (
-                  <Text size="sm" c={r.locationName === "—" ? "dimmed" : undefined}>
+                  <Text size="sm" c={r.locationName === '—' ? 'dimmed' : undefined}>
                     {r.locationName}
                   </Text>
                 ),
               },
               {
-                accessor: "startDate",
-                title: "Start",
+                accessor: 'startDate',
+                title: 'Start',
                 render: (r: EventRow) => r.event.startDate,
               },
               {
-                accessor: "endDate",
-                title: "End",
+                accessor: 'endDate',
+                title: 'End',
                 render: (r: EventRow) => r.event.endDate,
               },
               {
-                accessor: "actions",
-                title: "",
+                accessor: 'actions',
+                title: '',
                 width: 40,
                 render: (r: EventRow) => (
                   <DotsMenu
                     stopPropagation
                     width={200}
-                    items={[
-                      { icon: <IconPencil size={14} />, label: "Rename", onClick: () => startEditEvent(r.event) },
-                    ] satisfies DotsMenuItem[]}
+                    items={
+                      [
+                        {
+                          icon: <IconPencil size={14} />,
+                          label: 'Rename',
+                          onClick: () => startEditEvent(r.event),
+                        },
+                      ] satisfies DotsMenuItem[]
+                    }
                   />
                 ),
               },
@@ -634,22 +656,23 @@ export function ChampionshipDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={typeof editChampForm.errors.name === "string" ? editChampForm.errors.name : undefined} />
+          <FormError
+            error={
+              typeof editChampForm.errors.name === 'string' ? editChampForm.errors.name : undefined
+            }
+          />
           <TextInput
             label="Name *"
-            {...editChampForm.getInputProps("name")}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
+            {...editChampForm.getInputProps('name')}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             autoFocus
           />
           <TextInput
             label="Description"
-            {...editChampForm.getInputProps("description")}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
+            {...editChampForm.getInputProps('description')}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           />
-          <ColorInput
-            label="Color"
-            {...editChampForm.getInputProps("color")}
-          />
+          <ColorInput label="Color" {...editChampForm.getInputProps('color')} />
           <ModalFooter
             onCancel={() => setShowEdit(false)}
             submitLabel="Save"
@@ -677,35 +700,51 @@ export function ChampionshipDetailView() {
         styles={modalHeaderStyles()}
       >
         <Stack gap="sm" pt="xs">
-          <FormError error={typeof addEventForm.errors.name === "string" ? addEventForm.errors.name : undefined} />
+          <FormError
+            error={
+              typeof addEventForm.errors.name === 'string' ? addEventForm.errors.name : undefined
+            }
+          />
           <TextInput
             label="Event Name *"
             placeholder="Event name"
-            {...addEventForm.getInputProps("name")}
+            {...addEventForm.getInputProps('name')}
             autoFocus
           />
           <TextInput
             label="Description"
             placeholder="Optional description"
-            {...addEventForm.getInputProps("description")}
+            {...addEventForm.getInputProps('description')}
           />
           <Group grow wrap="wrap">
             <DatePickerInput
               label="Start date *"
-              value={addEventForm.values.startDate ? new Date(addEventForm.values.startDate + "T00:00:00") : null}
-              onChange={(d) => addEventForm.setFieldValue("startDate", d ? d.toISOString().slice(0, 10) : "")}
+              value={
+                addEventForm.values.startDate
+                  ? new Date(addEventForm.values.startDate + 'T00:00:00')
+                  : null
+              }
+              onChange={(d) =>
+                addEventForm.setFieldValue('startDate', d ? d.toISOString().slice(0, 10) : '')
+              }
             />
             <DatePickerInput
               label="End date *"
-              value={addEventForm.values.endDate ? new Date(addEventForm.values.endDate + "T00:00:00") : null}
-              onChange={(d) => addEventForm.setFieldValue("endDate", d ? d.toISOString().slice(0, 10) : "")}
+              value={
+                addEventForm.values.endDate
+                  ? new Date(addEventForm.values.endDate + 'T00:00:00')
+                  : null
+              }
+              onChange={(d) =>
+                addEventForm.setFieldValue('endDate', d ? d.toISOString().slice(0, 10) : '')
+              }
             />
           </Group>
           <Select
             label="Location *"
             placeholder="Select location..."
             data={orgLocations.map((v) => ({ value: String(v.id), label: v.name }))}
-            {...addEventForm.getInputProps("locationId")}
+            {...addEventForm.getInputProps('locationId')}
             searchable
             allowDeselect={false}
           />
@@ -719,5 +758,3 @@ export function ChampionshipDetailView() {
     </Stack>
   );
 }
-
-
