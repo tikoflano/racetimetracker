@@ -118,3 +118,9 @@ Implementation pattern:
 ## UI testing
 
 - **Ad-hoc browser tests:** Use the ui-test-playwright skill when the user asks to test a specific behavior in a real browser. Always implement the scenario in a spec file under `e2e/scratch/` (name the file as appropriate, e.g. `scratch.spec.ts` or a descriptive name). Run `npm run test:e2e:scratch` from the repo root, and report pass/fail.
+
+## Demo videos
+
+- **Feature demo videos:** Use the feature-demo-video skill when the user asks for a **demo** of features, a **demo video**, or to show a video of a set of features (not for testing). Implement a single Playwright spec in `e2e/scratch/` that demonstrates the requested flows (narrative walkthrough; assertions minimal or none), run with `PLAYWRIGHT_VIDEO=on npm run test:e2e:scratch`, then open the generated `test-results/<run-folder>/video.webm` in the editor and report the path.
+
+- **Demo video agent (with review):** Use the demo-video-agent when the user wants a **structured demo**: understand the feature from the codebase and docs, draft user stories, review them with the user, and only after explicit confirmation run the feature-demo-video skill to produce the video. Do not run Playwright or generate the video until the user confirms the user stories and scope.

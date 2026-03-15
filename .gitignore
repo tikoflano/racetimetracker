@@ -9,7 +9,8 @@ client2/src/module_bindings/
 .vscode/
 .agents/
 .claude/
-.cursor/
+# Ignore .cursor contents, then re-include agents and skills so they are tracked
+.cursor/*
 !.cursor/agents/
 !.cursor/agents/**
 !.cursor/skills/
