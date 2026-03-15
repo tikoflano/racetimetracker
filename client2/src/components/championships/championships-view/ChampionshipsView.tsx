@@ -41,6 +41,7 @@ import type { DotsMenuItem } from "@/components/common";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
 import type { Championship, Event, Organization } from "@/module_bindings/types";
+import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
 import { getErrorMessage } from "@/utils";
 
 function todayStr(): string {
@@ -89,16 +90,7 @@ export function ChampionshipsView() {
   const createChampionship = useReducer(reducers.createChampionship);
   const deleteChampionship = useReducer(reducers.deleteChampionship);
 
-  const activeOrg = useMemo<Organization | null>(() => {
-    if (orgs.length === 0) return null;
-    const stored = window.localStorage.getItem("active_org_id");
-    if (stored) {
-      const id = BigInt(stored);
-      return orgs.find((o: Organization) => o.id === id) ?? (orgs[0] as Organization);
-    }
-    return orgs[0] as Organization;
-  }, [orgs]);
-
+  const activeOrg = useActiveOrgFromOrgs(orgs);
   const activeOrgId = activeOrg?.id ?? null;
 
   const today = todayStr();

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "@mantine/form";
 import {
+  Alert,
   Box,
   Group,
   Stack,
@@ -42,6 +43,7 @@ import type { DotsMenuItem } from "@/components/common";
 import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
 import type { Rider, Organization } from "@/module_bindings/types";
+import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
 import { getErrorMessage } from "@/utils";
 
 function calcAge(dateOfBirth: string): number | null {
@@ -93,16 +95,7 @@ export function RidersView() {
   const deleteRider = useReducer(reducers.deleteRider);
   const setRegistrationEnabled = useReducer(reducers.setRegistrationEnabled);
 
-  const activeOrg = useMemo<Organization | null>(() => {
-    if (orgs.length === 0) return null;
-    const stored = window.localStorage.getItem("active_org_id");
-    if (stored) {
-      const id = BigInt(stored);
-      return orgs.find((o: Organization) => o.id === id) ?? (orgs[0] as Organization);
-    }
-    return orgs[0] as Organization;
-  }, [orgs]);
-
+  const activeOrg = useActiveOrgFromOrgs(orgs);
   const activeOrgId = activeOrg?.id ?? null;
 
   const orgRiders = useMemo<Rider[]>(() => {
@@ -292,7 +285,13 @@ export function RidersView() {
 
   const activeFilterCount = (sexFilter !== "all" ? 1 : 0) + (ageFiltered ? 1 : 0);
 
-  if (!activeOrg) return null;
+  if (!activeOrg) {
+    return (
+      <Alert color="blue" variant="light" title="Select an organization">
+        Select an organization from the sidebar or go to Championships to view and manage riders.
+      </Alert>
+    );
+  }
 
   return (
     <Stack gap="lg">

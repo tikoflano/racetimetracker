@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Paper, Stack, Text, Title } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconBuilding } from "@tabler/icons-react";
@@ -6,6 +6,7 @@ import { useTable, useReducer } from "spacetimedb/react";
 import { tables, reducers } from "@/module_bindings";
 import type { Organization } from "@/module_bindings/types";
 import { useAuth } from "@/auth";
+import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
 import { ViewHeader, FilterToolbar } from "@/components/common";
 import type { MemberRow } from "./types";
 import { MembersFilterBadges } from "./MembersFilterBadges";
@@ -42,18 +43,7 @@ export function MembersView() {
   const updateEventMember = useReducer(reducers.updateEventMember);
   const removeEventMember = useReducer(reducers.removeEventMember);
 
-  const activeOrg = useMemo<Organization | null>(() => {
-    if (orgs.length === 0) return null;
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("active_org_id");
-      if (stored) {
-        const id = BigInt(stored);
-        const found = orgs.find((o: Organization) => o.id === id);
-        if (found) return found;
-      }
-    }
-    return orgs[0] as Organization;
-  }, [orgs]);
+  const activeOrg = useActiveOrgFromOrgs(orgs);
 
   const { memberRows, roleCounts, adminCandidates } = useMemberRows({
     activeOrg,

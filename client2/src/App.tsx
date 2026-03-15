@@ -1,5 +1,10 @@
-import { AppShell } from '@/components/app-shell/AppShell';
+import { AppShell } from "@/components/app-shell/AppShell";
+import { OrgProvider } from "@/providers/OrgProvider";
 
 export default function App() {
-  return <AppShell />;
+  return (
+    <OrgProvider>
+      <AppShell />
+    </OrgProvider>
+  );
 }

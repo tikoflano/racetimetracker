@@ -23,6 +23,7 @@ import { ViewHeader } from "@/components/common";
 import { useTable } from "spacetimedb/react";
 import { tables } from "@/module_bindings";
 import type { Championship, Event, Organization } from "@/module_bindings/types";
+import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
 
 const MONTH_NAMES = [
   "January",
@@ -223,19 +224,7 @@ export function CalendarView() {
   const [allChampionships] = useTable(tables.championship);
   const [allEvents] = useTable(tables.event);
 
-  const activeOrg = useMemo<Organization | null>(() => {
-    if (orgs.length === 0) return null;
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("active_org_id");
-      if (stored) {
-        const id = BigInt(stored);
-        const found = orgs.find((o: Organization) => o.id === id);
-        if (found) return found;
-      }
-    }
-    return orgs[0] as Organization;
-  }, [orgs]);
-
+  const activeOrg = useActiveOrgFromOrgs(orgs);
   const activeOrgId = activeOrg?.id ?? null;
 
   const championships = useMemo(() => {

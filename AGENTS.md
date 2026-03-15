@@ -62,6 +62,10 @@ Views that require an active organization (championships, riders, members, locat
 
 Reference: `ChampionshipsView.tsx`, `RidersView.tsx`, `OrgMembersView.tsx`, `LocationsView.tsx`, `ChampionshipDetailView.tsx`, `LocationDetailView.tsx`.
 
+### Active org (client2)
+
+In the experimental **client2** shell, active organization is owned by the Org provider (`client2/src/providers/OrgProvider.tsx`). Views must use `useActiveOrgMaybe()` or `useActiveOrg()` (and optionally `useActiveOrgFromOrgs(orgs)` to resolve the active org from the orgs list). Do **not** read the active-org storage key from `localStorage` in components.
+
 ## Terminology
 
 - Always use **"rider"** (not "racer") when referring to participants. If a request uses "racer", replace it with "rider" and let the requester know.
