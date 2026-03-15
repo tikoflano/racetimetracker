@@ -175,9 +175,45 @@ On pipeline success:
 3. After the demo video is delivered, ask the user:
 
 > What would you like to do?
-> - **Merge** — `git merge agent/{goal-slug}` from main
-> - **Discard** — `git worktree remove ../racetimetracker-{goal-slug} && git branch -D agent/{goal-slug}`
+> - **Merge** — I'll commit the work, merge into the base branch, and remove the worktree
+> - **Discard** — remove the worktree and delete the branch
 > - **Revise** — describe what to change and I'll re-run from Code Writer
+
+---
+
+## Step 9 — Merge (when user chooses Merge)
+
+When the user confirms they want to merge:
+
+1. **Commit the work in the worktree** (in case agents left uncommitted changes):
+
+```bash
+cd ../racetimetracker-{goal-slug}
+git add -A
+git status
+# If there are changes to commit:
+git commit -m "feat: {short goal description}"
+```
+
+2. **Merge into the base branch** from the main repo:
+
+```bash
+cd /workspaces/racetimetracker
+git checkout main
+git merge agent/{goal-slug} -m "Merge agent/{goal-slug}"
+```
+
+(Use the actual base branch name if different from `main`, e.g. the branch that was checked out when the worktree was created.)
+
+3. **Confirm the merge**, then **remove the worktree and delete the branch**:
+
+```bash
+# After confirming merge succeeded (e.g. git log shows the merge)
+git worktree remove ../racetimetracker-{goal-slug}
+git branch -d agent/{goal-slug}
+```
+
+If the worktree is dirty or the branch was already merged, use `git worktree remove --force` and/or `git branch -D` only if appropriate. Tell the user when the merge and cleanup are done.
 
 ---
 
