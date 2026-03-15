@@ -203,6 +203,9 @@ export function RidersView() {
 
   const hasActiveFilter = search || sexFilter !== 'all' || ageFiltered;
 
+  // Highlight row when navigated from global search; clear after animation
+  const [highlightedRiderId, setHighlightedRiderId] = useState<bigint | null>(null);
+
   useEffect(() => {
     setPage(1);
   }, [search, sexFilter, ageFiltered, ageRange, pageSize]);
@@ -210,13 +213,20 @@ export function RidersView() {
   useEffect(() => {
     if (scrollToRiderId === undefined) return;
     const id = String(scrollToRiderId);
-    const timer = setTimeout(() => {
+    const scrollTimer = setTimeout(() => {
       const el = document.querySelector(`[data-rider-id="${id}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedRiderId(scrollToRiderId);
       navigate(location.pathname, { replace: true, state: {} });
     }, 150);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(scrollTimer);
   }, [scrollToRiderId, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (highlightedRiderId === null) return;
+    const clearTimer = setTimeout(() => setHighlightedRiderId(null), 1500);
+    return () => clearTimeout(clearTimer);
+  }, [highlightedRiderId]);
 
   // Create / edit modal
   const [showForm, setShowForm] = useState(false);
@@ -487,7 +497,13 @@ export function RidersView() {
           {filteredRiders.map((r) => {
             const age = calcAge(r.dateOfBirth);
             return (
-              <Paper key={String(r.id)} p="sm" withBorder data-rider-id={String(r.id)}>
+              <Paper
+                key={String(r.id)}
+                p="sm"
+                withBorder
+                data-rider-id={String(r.id)}
+                data-highlight-from-search={highlightedRiderId === r.id ? '' : undefined}
+              >
                 <Group justify="space-between" align="flex-start" wrap="nowrap">
                   <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
                     <RiderAvatar rider={r} size={36} />
@@ -561,7 +577,10 @@ export function RidersView() {
             withTableBorder={false}
             withColumnBorders={false}
             highlightOnHover
-            customRowAttributes={(record) => ({ 'data-rider-id': String(record.id) })}
+            customRowAttributes={(record) => ({
+              'data-rider-id': String(record.id),
+              ...(highlightedRiderId === record.id ? { 'data-highlight-from-search': '' } : {}),
+            })}
             records={filteredRiders}
             totalRecords={filteredRiders.length}
             recordsPerPage={pageSize}

@@ -37,12 +37,26 @@ export function RiderSearchModal({ opened, onClose }: RiderSearchModalProps) {
 
   const filteredRiders = useMemo<Rider[]>(() => {
     if (!debouncedQuery) return orgRiders;
-    return orgRiders.filter(
-      (r) =>
-        r.firstName.toLowerCase().includes(debouncedQuery) ||
-        r.lastName.toLowerCase().includes(debouncedQuery) ||
-        r.email.toLowerCase().includes(debouncedQuery)
-    );
+    const tokens = debouncedQuery.split(/\s+/).filter(Boolean);
+    return orgRiders.filter((r) => {
+      const first = r.firstName.toLowerCase();
+      const last = r.lastName.toLowerCase();
+      const email = r.email.toLowerCase();
+      // Single token or full query: match any single field (current behavior)
+      if (
+        first.includes(debouncedQuery) ||
+        last.includes(debouncedQuery) ||
+        email.includes(debouncedQuery)
+      )
+        return true;
+      // Multiple tokens: match first+last (or last+first)
+      if (tokens.length >= 2) {
+        const [t0, t1] = tokens;
+        if ((first.includes(t0) && last.includes(t1)) || (first.includes(t1) && last.includes(t0)))
+          return true;
+      }
+      return false;
+    });
   }, [orgRiders, debouncedQuery]);
 
   const handleRiderClick = (r: Rider) => {
@@ -76,11 +90,11 @@ export function RiderSearchModal({ opened, onClose }: RiderSearchModalProps) {
         ) : (
           <>
             <TextInput
+              data-autofocus
               placeholder="Search by name or email..."
               leftSection={<IconSearch size={16} />}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              autoFocus
             />
             <ScrollArea.Autosize mah={320}>
               {filteredRiders.length === 0 ? (

@@ -12,3 +12,17 @@ body,
     overflow: hidden;
   }
 }
+
+/* Highlight rider row when navigated from global search */
+@keyframes rider-highlight-from-search {
+  from {
+    background-color: rgba(59, 130, 246, 0.35);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+[data-highlight-from-search] {
+  animation: rider-highlight-from-search 1.5s ease-out forwards;
+}

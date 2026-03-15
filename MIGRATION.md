@@ -9,11 +9,13 @@ Tracks remaining work to migrate all features from `client/` to `client2/`.
 ## Views
 
 ### ✅ Members (`/members`)
+
 Fully implemented with live SpaceTimeDB backend.
 
 ---
 
 ### 🔧 Calendar (`/calendar`)
+
 UI is complete. Needs backend wiring.
 
 - [ ] Replace mock data with live `event` + `championship` table subscriptions
@@ -24,6 +26,7 @@ UI is complete. Needs backend wiring.
 ---
 
 ### 🔧 Locations (`/locations`)
+
 UI is complete (cards, search, sort, filter, create modal with map/geocoding). Needs backend wiring.
 
 - [ ] Subscribe to `venue` and `track` tables (drop `MOCK_VENUES`, `MOCK_TRACKS`)
@@ -37,9 +40,11 @@ UI is complete (cards, search, sort, filter, create modal with map/geocoding). N
 ---
 
 ### 🔧 Location Detail (`/locations/:id`)
+
 UI is mostly complete (venue header, image carousel, track list, variation table, map). Needs backend wiring and a few missing UI features.
 
 **Backend (all currently local state):**
+
 - [ ] Subscribe to `venue`, `track`, `track_variation`, `image` tables
 - [ ] Venue edit → `updateVenue` reducer
 - [ ] Venue delete → `deleteVenue` reducer, navigate back
@@ -49,6 +54,7 @@ UI is mostly complete (venue header, image carousel, track list, variation table
 - [ ] Auth guard: `canManageOrgEvents`
 
 **UI gaps vs. old client:**
+
 - [ ] Map: click on map to place START/END pin (currently manual lat/lng text input only)
 - [ ] Map: drag marker to reposition pin
 - [ ] Error handling on reducer calls (show notifications on failure)
@@ -57,6 +63,7 @@ UI is mostly complete (venue header, image carousel, track list, variation table
 ---
 
 ### ⬜ Riders (`/riders`)
+
 Not started.
 
 - [ ] Header banner with rider count
@@ -77,6 +84,7 @@ Not started.
 ---
 
 ### ⬜ Championships (`/championships`)
+
 Not started.
 
 - [ ] Header banner with championship count
@@ -94,6 +102,7 @@ Not started.
 ---
 
 ### ⬜ Event Detail (`/events/:id`)
+
 Not started.
 
 - [ ] Event header: name (inline edit → `updateEvent`), description, venue, start/end dates
@@ -109,24 +118,29 @@ Not started.
 ---
 
 ### ⬜ Event Manage (`/events/:id/manage`)
+
 Not started. This is the most complex view in the app.
 
 **Event metadata:**
+
 - [ ] Edit name, dates, description, venue
 
 **Riders tab:**
+
 - [ ] Table of registered riders (category, check-in status, assigned number)
 - [ ] Add rider to event → `addRiderToEvent`
 - [ ] Update rider registration (category, number, check-in) → `updateEventRider`
 - [ ] Import riders from another event → `importRidersFromEvent`
 
 **Categories tab:**
+
 - [ ] Create/edit/delete categories → `createEventCategory`, `updateEventCategory`, `deleteEventCategory`
 - [ ] Set number ranges (start/end) per category
 - [ ] Import categories from another event → `importCategoriesFromEvent`
 - [ ] Link/unlink categories to tracks → `addTrackToCategory`, `removeTrackFromCategory`
 
 **Tracks tab:**
+
 - [ ] Add tracks from venue → `addTrackToEvent`
 - [ ] Remove tracks → `removeTrackFromEvent`
 - [ ] Reorder tracks (sort order)
@@ -134,6 +148,7 @@ Not started. This is the most complex view in the app.
 - [ ] Generate or clear timed schedule → `generateTrackSchedule`, `clearTrackSchedule`
 
 **Run queue:**
+
 - [ ] Queue riders for a track → `queueRun`
 - [ ] View queued/running/finished/DNF/DNS per track
 
@@ -143,6 +158,7 @@ Not started. This is the most complex view in the app.
 ---
 
 ### ⬜ Events List (`/events`)
+
 Not started. (No direct equivalent in old client — it used the Calendar as the entry point.)
 
 - [ ] List or calendar-entry point to events within the active org/championship
@@ -151,6 +167,7 @@ Not started. (No direct equivalent in old client — it used the Calendar as the
 ---
 
 ### ⬜ Timekeep (`/timekeep`)
+
 Not started. Requires real-time clock sync.
 
 - [ ] Grid of track assignments for logged-in user (`timekeeper_assignment` filtered by `userId`)
@@ -172,6 +189,7 @@ Not started. Requires real-time clock sync.
 ---
 
 ### ⬜ Track Display (`/track/:eventTrackId`)
+
 Not started. Read-only big-screen display.
 
 - [ ] Track name and variation shown prominently
@@ -188,6 +206,7 @@ Not started. Read-only big-screen display.
 ---
 
 ### ⬜ Leaderboard (`/leaderboard/:eventId`)
+
 Not started. Public-facing big-screen display.
 
 - [ ] Full-screen dark-themed layout (no sidebar/header)
@@ -206,6 +225,7 @@ Not started. Public-facing big-screen display.
 ---
 
 ### ⬜ Public Registration (`/register/:orgSlug`)
+
 Not started. Public route, no auth or sidebar.
 
 - [ ] Standalone layout (no sidebar, no header)
@@ -218,6 +238,7 @@ Not started. Public route, no auth or sidebar.
 ---
 
 ### 🔧 Dashboard (`/`)
+
 Currently shows hardcoded mock stats. Low priority, but should show real data eventually.
 
 - [ ] Pinned events list (from `pinned_event` table)
@@ -229,12 +250,15 @@ Currently shows hardcoded mock stats. Low priority, but should show real data ev
 ## Cross-Cutting Work
 
 ### Routing
+
 - [ ] Add sidebar entries + `MainContent` routes for: Riders, Championships, Events
 - [ ] Add routes outside main layout for: Leaderboard, Track Display, Public Registration
 - [ ] Fix Locations detail to use URL param (`/locations/:id`) instead of component state
 
 ### Auth & Permissions
+
 Port these permission helpers from old client to client2:
+
 - [ ] `canOrganizeEvent(eventId)` — event manage access
 - [ ] `canManageOrgEvents()` — riders, locations, championships CRUD
 - [ ] `canManageOrg()` — org settings
@@ -242,5 +266,6 @@ Port these permission helpers from old client to client2:
 - [ ] `canImpersonate()` — admin impersonation
 
 ### Active Org Context
+
 - [ ] All views that filter by `orgId` need access to the active org (Riders, Championships, Events, Locations)
 - [ ] Verify org switcher works correctly when user belongs to multiple orgs
