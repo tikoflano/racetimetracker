@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "@mantine/form";
 import {
-  Alert,
   Box,
   Group,
   Stack,
   Text,
+  Title,
   Paper,
   Button,
   TextInput,
@@ -22,6 +23,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
+  IconBuilding,
   IconUsers,
   IconPlus,
   IconDotsVertical,
@@ -87,6 +89,7 @@ function RiderAvatar({ rider, size = 28 }: { rider: Rider; size?: number }) {
 }
 
 export function RidersView() {
+  const navigate = useNavigate();
   const [orgs] = useTable(tables.organization);
   const [allRiders] = useTable(tables.rider);
 
@@ -287,9 +290,19 @@ export function RidersView() {
 
   if (!activeOrg) {
     return (
-      <Alert color="blue" variant="light" title="Select an organization">
-        Select an organization from the sidebar or go to Championships to view and manage riders.
-      </Alert>
+      <Stack gap="lg">
+        <Title order={2} fw={700}>
+          Riders
+        </Title>
+        <EmptyState
+          icon={<IconBuilding size={48} />}
+          message="You're not part of any organization. Create one from Organization to view and manage riders."
+          action={{
+            label: "Go to Organization",
+            onClick: () => navigate("/members"),
+          }}
+        />
+      </Stack>
     );
   }
 
@@ -430,7 +443,7 @@ export function RidersView() {
               <Text size="sm" c="dimmed" ta="center">
                 {hasActiveFilter
                   ? "No riders match your filters."
-                  : "No riders yet. Add one or share the registration link."}
+                  : "No riders in this organization yet. Add a rider with the button above, or share the registration link so riders can register themselves."}
               </Text>
             </Paper>
           )}
@@ -485,7 +498,7 @@ export function RidersView() {
           message={
             hasActiveFilter
               ? "No riders match your filters."
-              : "No riders yet. Add one or share the registration link."
+              : "No riders in this organization yet. Add a rider with Add Rider, or share the registration link so riders can register themselves."
           }
         />
       ) : (

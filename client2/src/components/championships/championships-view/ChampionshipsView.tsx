@@ -6,6 +6,7 @@ import {
   Group,
   Stack,
   Text,
+  Title,
   Paper,
   Button,
   TextInput,
@@ -19,6 +20,7 @@ import { ColorInput } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import {
+  IconBuilding,
   IconTrophy,
   IconPlus,
   IconDotsVertical,
@@ -208,7 +210,23 @@ export function ChampionshipsView() {
     }
   };
 
-  if (!activeOrg) return null;
+  if (!activeOrg) {
+    return (
+      <Stack gap="lg">
+        <Title order={2} fw={700}>
+          Championships
+        </Title>
+        <EmptyState
+          icon={<IconBuilding size={48} />}
+          message="You're not part of any organization. Create one from Organization to view and manage championships."
+          action={{
+            label: "Go to Organization",
+            onClick: () => navigate("/members"),
+          }}
+        />
+      </Stack>
+    );
+  }
 
   const statusCounts = {
     all: champRows.length,
@@ -345,7 +363,12 @@ export function ChampionshipsView() {
       {champRows.length === 0 ? (
         <EmptyState
           icon={<IconTrophy size={48} color="var(--mantine-color-dimmed)" />}
-          message="No championships yet. Create one to get started."
+          message="No championships in this organization yet. Create one with New Championship to get started."
+        />
+      ) : sortedRows.length === 0 ? (
+        <EmptyState
+          icon={<IconTrophy size={48} color="var(--mantine-color-dimmed)" />}
+          message="No championships match your filters."
         />
       ) : isMobile ? (
         /* Mobile card list */

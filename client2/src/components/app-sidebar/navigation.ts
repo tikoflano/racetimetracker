@@ -35,10 +35,10 @@ export const navigation: NavSection[] = [
   {
     title: "Manage",
     items: [
+      { icon: IconUsersGroup, label: "Organization", path: "/members" },
       { icon: IconTrophy, label: "Championships", path: "/championships" },
       { icon: IconMapPin, label: "Locations", path: "/locations" },
       { icon: IconBike, label: "Riders", path: "/riders" },
-      { icon: IconUsersGroup, label: "Members", path: "/members" },
     ],
   },
   ...(IS_DEV

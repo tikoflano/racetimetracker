@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Paper, Stack, Text, Title } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconBuilding } from "@tabler/icons-react";
@@ -7,7 +7,8 @@ import { tables, reducers } from "@/module_bindings";
 import type { Organization } from "@/module_bindings/types";
 import { useAuth } from "@/auth";
 import { useActiveOrgFromOrgs } from "@/providers/OrgProvider";
-import { ViewHeader, FilterToolbar } from "@/components/common";
+import { ViewHeader, FilterToolbar, EmptyState } from "@/components/common";
+import { CreateOrganizationModal } from "./modals";
 import type { MemberRow } from "./types";
 import { MembersFilterBadges } from "./MembersFilterBadges";
 import { MembersViewHeaderActions } from "./MembersViewHeaderActions";
@@ -27,7 +28,7 @@ export function MembersView() {
   const [events] = useTable(tables.event);
   const [eventMembers] = useTable(tables.event_member);
 
-  const { canImpersonate: userCanImpersonate } = useAuth();
+  const { user, canImpersonate: userCanImpersonate } = useAuth();
   const inviteOrgMember = useReducer(reducers.inviteOrgMember);
   const resendOrgInvitation = useReducer(reducers.resendOrgInvitation);
   const removeOrgMember = useReducer(reducers.removeOrgMember);
@@ -36,6 +37,7 @@ export function MembersView() {
   const transferOrgOwnership = useReducer(reducers.transferOrgOwnership);
   const leaveOrganization = useReducer(reducers.leaveOrganization);
   const startImpersonation = useReducer(reducers.startImpersonation);
+  const createOrganization = useReducer(reducers.createOrganization);
   const addChampionshipMember = useReducer(reducers.addChampionshipMember);
   const updateChampionshipMember = useReducer(reducers.updateChampionshipMember);
   const removeChampionshipMember = useReducer(reducers.removeChampionshipMember);
@@ -73,6 +75,12 @@ export function MembersView() {
   const [error, setError] = useState<string | null>(null);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [editMemberModal, setEditMemberModal] = useState<MemberRow | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  const hasNoOrgs = useMemo(() => {
+    if (!user) return true;
+    return orgMembers.filter((m) => m.userId === user.id).length === 0;
+  }, [user, orgMembers]);
 
   const orgId = activeOrg?.id ?? null;
 
@@ -95,18 +103,25 @@ export function MembersView() {
     startImpersonation,
   });
 
-  if (orgs.length === 0) {
+  if (hasNoOrgs) {
     return (
       <Stack gap="lg">
         <Title order={2} fw={700}>
-          Members
+          Organization
         </Title>
-        <Paper withBorder p="xl">
-          <Text c="dimmed" ta="center">
-            No organizations found. Create an organization in the main app to
-            manage members here.
-          </Text>
-        </Paper>
+        <EmptyState
+          icon={<IconBuilding size={48} />}
+          message="You're not part of any organization. Create one to manage members, championships, events, and more."
+          action={{
+            label: "Create organization",
+            onClick: () => setCreateModalOpen(true),
+          }}
+        />
+        <CreateOrganizationModal
+          opened={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          createOrganization={createOrganization}
+        />
       </Stack>
     );
   }
